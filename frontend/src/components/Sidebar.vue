@@ -127,7 +127,7 @@ import {
   loginPage,
 } from "@/utils/constants";
 import { files as api } from "@/api";
-import ProgressBar from "@/components/ProgressBar.vue";
+//import ProgressBar from "@/components/ProgressBar.vue";
 import prettyBytes from "pretty-bytes";
 
 const USAGE_DEFAULT = { used: "0 B", total: "0 B", usedPercentage: 0 };
@@ -139,7 +139,7 @@ export default {
     return { usage };
   },
   components: {
-    ProgressBar,
+//    ProgressBar,
   },
   inject: ["$showError"],
   computed: {
