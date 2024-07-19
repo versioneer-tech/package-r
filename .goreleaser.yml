@@ -1,0 +1,93 @@
+project_name: package-r
+
+env:
+  - GO111MODULE=on
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/versioneer-tech/package-r/v2/version.Version={{ .Version }} -X github.com/versioneer-tech/package-r/v2/version.CommitSHA={{ .ShortCommit }}
+    main: main.go
+    binary: package-r
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - 7
+
+archives:
+  -
+    name_template: "{{.Os}}-{{.Arch}}{{if .Arm}}v{{.Arm}}{{end}}-{{ .ProjectName }}"
+    format: tar.gz
+
+dockers:
+  -
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--platform=linux/amd64"
+    goos: linux
+    goarch: amd64
+    image_templates:
+      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-amd64"
+    extra_files:
+      - docker_config.json
+      - healthcheck.sh
+  -
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--platform=linux/arm64"
+    goos: linux
+    goarch: arm64
+    image_templates:
+      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-arm64"
+    extra_files:
+      - docker_config.json
+      - healthcheck.sh
+  -
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.name={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--platform=linux/arm/v7"
+    goos: linux
+    goarch: arm
+    goarm: '7'
+    image_templates:
+      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
+    extra_files:
+      - docker_config.json
+      - healthcheck.sh
+docker_manifests:
+  - name_template: "ghcr.io/versioneer-tech/package-r:latest"
+    image_templates:
+      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-amd64"
+      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-arm64"
+      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
+  - name_template: "ghcr.io/versioneer-tech/package-r:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-amd64"
+      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-arm64"
+      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
