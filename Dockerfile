@@ -13,7 +13,8 @@ HEALTHCHECK --start-period=2s --interval=5s --timeout=3s \
 VOLUME /srv
 EXPOSE 80
 
-COPY docker_config.json /.package-r.json
+RUN jq -n '{port: 80, baseURL: "", address: "", log: "stdout", database: "/database.db", root: "/srv", branding: $ARGS.named}' --arg name "$BRANDING_NAME" > /.package-r.json
+
 COPY package-r /package-r
 
 ENTRYPOINT [ "/package-r" ]
