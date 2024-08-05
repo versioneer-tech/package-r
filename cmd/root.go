@@ -344,6 +344,8 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 		Rules:    nil,
 	}
 
+	set.Branding.Name = os.Getenv("BRANDING_NAME")
+
 	var err error
 	if _, noauth := getParamB(flags, "noauth"); noauth {
 		set.AuthMethod = auth.MethodNoAuth
