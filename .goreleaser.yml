@@ -41,7 +41,6 @@ dockers:
     image_templates:
       - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-amd64"
     extra_files:
-      - docker_config.json
       - healthcheck.sh
   -
     dockerfile: Dockerfile
@@ -59,7 +58,6 @@ dockers:
     image_templates:
       - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-arm64"
     extra_files:
-      - docker_config.json
       - healthcheck.sh
   -
     dockerfile: Dockerfile
@@ -78,7 +76,6 @@ dockers:
     image_templates:
       - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
     extra_files:
-      - docker_config.json
       - healthcheck.sh
 docker_manifests:
   - name_template: "ghcr.io/versioneer-tech/package-r:latest"
