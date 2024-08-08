@@ -104,7 +104,7 @@ func (f *File) Readdir(n int) ([]os.FileInfo, error) {
 	}
 	var fis = make([]os.FileInfo, 0, len(output.CommonPrefixes)+len(output.Contents))
 	for _, subfolder := range output.CommonPrefixes {
-		fis = append(fis, NewFileInfo(path.Base("/"+*subfolder.Prefix), true, 0, time.Now().Add(time.Duration(100))))
+		fis = append(fis, NewFileInfo(path.Base("/"+*subfolder.Prefix), true, 0, time.Unix(0, 0)))
 	}
 	for _, fileObject := range output.Contents {
 		if strings.HasSuffix(*fileObject.Key, "/") {
