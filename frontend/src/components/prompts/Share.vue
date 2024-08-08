@@ -232,7 +232,7 @@ export default {
       }
     },
     humanTime(time) {
-      return dayjs(time * 1000).fromNow();
+      return dayjs(time * 1000).isAfter("1.1.2000") ? dayjs(time * 1000).fromNow() : "";
     },
     buildLink(share) {
       return api.getShareURL(share);

@@ -139,8 +139,9 @@ const deleteLink = async (event: Event, link: any) => {
     },
   });
 };
+
 const humanTime = (time: number) => {
-  return dayjs(time * 1000).fromNow();
+  return dayjs(time * 1000).isAfter("1.1.2000") ? dayjs(time * 1000).fromNow() : "";
 };
 
 const buildLink = (share: Share) => {

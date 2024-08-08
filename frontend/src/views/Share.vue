@@ -211,7 +211,9 @@ const humanSize = computed(() => {
     return "";
   }
 });
-const humanTime = computed(() => dayjs(req.value?.modified).fromNow());
+
+const humanTime = computed(() => dayjs(req.value?.modified).isAfter("1.1.2000") ? dayjs(req.value?.modified).fromNow() : "");
+
 const modTime = computed(() =>
   req.value
     ? new Date(Date.parse(req.value.modified)).toLocaleString()

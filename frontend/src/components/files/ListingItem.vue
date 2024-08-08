@@ -110,9 +110,9 @@ const humanSize = () => {
 
 const humanTime = () => {
   if (!props.readOnly && authStore.user?.dateFormat) {
-    return dayjs(props.modified).format("L LT");
+    return dayjs(props.modified).isAfter("1.1.2000") ? dayjs(props.modified).format("L LT") : "";
   }
-  return dayjs(props.modified).fromNow();
+  return dayjs(props.modified).isAfter("1.1.2000") ? dayjs(props.modified).fromNow() : "";
 };
 
 const dragStart = () => {
