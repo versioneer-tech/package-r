@@ -266,7 +266,6 @@ func (fs Fs) Stat(name string) (os.FileInfo, error) {
 	return NewFileInfo(path.Base(name), false, *out.ContentLength, *out.LastModified), nil
 }
 
-//nolint:gomnd
 func (fs Fs) statDirectory(name string) (os.FileInfo, error) {
 	nameClean := path.Clean(name)
 	out, err := fs.s3API.ListObjectsV2(&s3.ListObjectsV2Input{
