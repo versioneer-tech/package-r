@@ -71,16 +71,6 @@
           <div v-if="!req.isDir" class="share__box__element" style="height: 3em">
             <strong>{{ $t("prompts.size") }}:</strong> {{ humanSize }}
           </div>
-          <div v-if="!req.isDir" class="share__box__element" style="height: 3em">
-            <strong>Link: </strong>
-            <a
-              target="_blank"
-              :href=req.link
-              class="link"
-            >
-              {{ req.link }}
-            </a>
-          </div>  
           <div class="share__box__element share__box__center">
             <a
               target="_blank"
@@ -90,11 +80,21 @@
             >
               <div>
                 <i class="material-icons">file_download</i>
-                PRESIGNED_FILE_LIST
+                URL_LIST
               </div>
             </a>
-          </div>
-                  
+            <a v-if="!req.isDir"
+              target="_blank"
+              :href="req.content"
+              class="button button--flat"
+              style="height: 4em"
+            >
+              <div>
+                <i class="material-icons">open_in_new</i
+                >CONTENT
+              </div>
+            </a>
+          </div>  
         </div>
         <div
           id="shareList"

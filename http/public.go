@@ -42,7 +42,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 
 		d.user = user
 
-		file, err := files.NewFileInfo(&files.FileOptions{
+		fileInfo, err := files.NewFileInfo(&files.FileOptions{
 			Fs:      d.user.Fs,
 			Path:    link.Path,
 			Modify:  d.user.Perm.Modify,
@@ -60,7 +60,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		// file relative path
 		filePath := ""
 
-		if file.IsDir {
+		if fileInfo.IsDir {
 			basePath = filepath.Dir(basePath)
 			filePath = ifPath
 		}
@@ -70,7 +70,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 
 		token := link.Token
 
-		file, err = files.NewFileInfo(&files.FileOptions{
+		fileInfo, err = files.NewFileInfo(&files.FileOptions{
 			Fs:      d.user.Fs,
 			Path:    filePath,
 			Modify:  d.user.Perm.Modify,
@@ -82,7 +82,19 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		d.raw = file
+		if !fileInfo.IsDir {
+			var keys []string
+			file, err := fileInfo.Fs.Open(fileInfo.Path)
+			if err == nil {
+				keys = append(keys, file.Name())
+				presignedURLs, _, err := presign(keys)
+				if err == nil {
+					fileInfo.Content = presignedURLs[0]
+				}
+			}
+		}
+
+		d.raw = fileInfo
 		return fn(w, r, d)
 	}
 }
@@ -114,6 +126,43 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 	return renderJSON(w, r, file)
 })
 
+func presign(keys []string) (presignedUrls []string, status int, err error) {
+	var presignedURLs []string
+
+	session, errSession := session.NewSession(&aws.Config{
+		Credentials:      credentials.NewStaticCredentials(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), ""),
+		Endpoint:         aws.String(os.Getenv("AWS_ENDPOINT_URL")),
+		Region:           aws.String(os.Getenv("AWS_REGION")),
+		S3ForcePathStyle: aws.Bool(true),
+	})
+
+	if errSession != nil {
+		log.Print("Could not create session:", errSession)
+		return presignedURLs, 0, nil
+	}
+
+	s3Client := s3.New(session)
+
+	for _, key := range keys {
+		getObjectInput := s3.GetObjectInput{
+			Bucket: aws.String(os.Getenv("BUCKET_DEFAULT")),
+			Key:    aws.String(key),
+		}
+
+		req, _ := s3Client.GetObjectRequest(&getObjectInput)
+
+		presignedURL, err := req.Presign(7 * 24 * time.Hour) // 7d
+		if err != nil {
+			log.Printf("Could not presign %v: %v", getObjectInput, err)
+			return presignedURLs, http.StatusInternalServerError, err
+		}
+
+		presignedURLs = append(presignedURLs, presignedURL)
+	}
+
+	return presignedURLs, 0, nil
+}
+
 var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	fileInfo := d.raw.(*files.FileInfo)
 	file, err := fileInfo.Fs.Open(fileInfo.Path)
@@ -134,37 +183,11 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 		keys = append(keys, file.Name())
 	}
 
-	session, errSession := session.NewSession(&aws.Config{
-		Credentials:      credentials.NewStaticCredentials(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), ""),
-		Endpoint:         aws.String(os.Getenv("AWS_ENDPOINT_URL")),
-		Region:           aws.String(os.Getenv("AWS_REGION")),
-		S3ForcePathStyle: aws.Bool(true),
-	})
+	presignedURLs, status, err := presign(keys)
 
-	if errSession != nil {
-		log.Print("Could not create session:", errSession)
-		return 0, nil
-	}
+	if err != nil {
+		return status, err
 
-	s3Client := s3.New(session)
-
-	var presignedURLs []string
-
-	for _, key := range keys {
-		getObjectInput := s3.GetObjectInput{
-			Bucket: aws.String(os.Getenv("BUCKET_DEFAULT")),
-			Key:    aws.String(key),
-		}
-
-		req, _ := s3Client.GetObjectRequest(&getObjectInput)
-
-		presignedURL, err := req.Presign(7 * 24 * time.Hour) // 7d
-		if err != nil {
-			log.Printf("Could not presign %v: %v", getObjectInput, err)
-			return http.StatusInternalServerError, err
-		}
-
-		presignedURLs = append(presignedURLs, presignedURL)
 	}
 
 	//nolint:goconst
