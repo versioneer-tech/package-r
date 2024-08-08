@@ -62,6 +62,8 @@ func (f *File) Name() string { return f.name }
 // If n <= 2, Readdir returns at most n FileInfo structures from the directory and subdirectories. In this case, if
 // Readdir returns an empty slice, it will return a non-nil error
 // explaining why. At the end of a directory, the error is io.EOF.
+//
+//nolint:gomnd
 func (f *File) Readdir(n int) ([]os.FileInfo, error) {
 	if f.readdirNotTruncated {
 		return nil, io.EOF
@@ -102,7 +104,7 @@ func (f *File) Readdir(n int) ([]os.FileInfo, error) {
 	}
 	var fis = make([]os.FileInfo, 0, len(output.CommonPrefixes)+len(output.Contents))
 	for _, subfolder := range output.CommonPrefixes {
-		fis = append(fis, NewFileInfo(path.Base("/"+*subfolder.Prefix), true, 0, time.Unix(0, 0)))
+		fis = append(fis, NewFileInfo(path.Base("/"+*subfolder.Prefix), true, 0, time.Now().Add(time.Duration(100))))
 	}
 	for _, fileObject := range output.Contents {
 		if strings.HasSuffix(*fileObject.Key, "/") {

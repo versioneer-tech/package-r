@@ -266,6 +266,7 @@ func (fs Fs) Stat(name string) (os.FileInfo, error) {
 	return NewFileInfo(path.Base(name), false, *out.ContentLength, *out.LastModified), nil
 }
 
+//nolint:gomnd
 func (fs Fs) statDirectory(name string) (os.FileInfo, error) {
 	nameClean := path.Clean(name)
 	out, err := fs.s3API.ListObjectsV2(&s3.ListObjectsV2Input{
@@ -287,7 +288,7 @@ func (fs Fs) statDirectory(name string) (os.FileInfo, error) {
 			Err:  os.ErrNotExist,
 		}
 	}
-	return NewFileInfo(path.Base(name), true, 0, time.Unix(0, 0)), nil
+	return NewFileInfo(path.Base(name), true, 0, time.Now().Add(time.Duration(100))), nil
 }
 
 // Chmod doesn't exists in S3 but could be implemented by analyzing ACLs

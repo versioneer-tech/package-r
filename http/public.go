@@ -126,18 +126,19 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 	return renderJSON(w, r, file)
 })
 
+//nolint:gocritic
 func presign(keys []string) (presignedUrls []string, status int, err error) {
-	var presignedURLs []string
+	presignedURLs := []string{}
 
-	session, errSession := session.NewSession(&aws.Config{
+	session, err := session.NewSession(&aws.Config{
 		Credentials:      credentials.NewStaticCredentials(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), ""),
 		Endpoint:         aws.String(os.Getenv("AWS_ENDPOINT_URL")),
 		Region:           aws.String(os.Getenv("AWS_REGION")),
 		S3ForcePathStyle: aws.Bool(true),
 	})
 
-	if errSession != nil {
-		log.Print("Could not create session:", errSession)
+	if err != nil {
+		log.Print("Could not create session:", err)
 		return presignedURLs, 0, nil
 	}
 
@@ -172,8 +173,8 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 
 	var keys []string
 	if fileInfo.IsDir {
-		obs, err := file.Readdir(-100)
-		if err != nil {
+		obs, err2 := file.Readdir(-100)
+		if err2 != nil {
 			return http.StatusInternalServerError, err
 		}
 		for _, obj := range obs {
