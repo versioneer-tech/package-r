@@ -2,9 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.0.7](https://github.com/versioneer-tech/package-r/compare/v1.0.6...v1.0.7) (2024-08-08)
-
-### [1.0.6](https://github.com/versioneer-tech/package-r/compare/v1.0.4...v1.0.6) (2024-08-08)
+### [1.0.7](https://github.com/versioneer-tech/package-r/compare/v1.0.4...v1.0.7) (2024-08-08)
 
 - don't show meta information for prefixes (folders) on the various pages
 - allow to directly open shared items (i.e. individual file like a README) in new window
