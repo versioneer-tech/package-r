@@ -92,6 +92,7 @@
     </div> -->
 
     <p class="credits">
+      <b>{{ name }}</b> powered by 
       <span>
         <span v-if="disableExternal">packageR</span>
         <a
@@ -99,7 +100,7 @@
           rel="noopener noreferrer"
           target="_blank"
           href="https://github.com/versioneer-tech/package-r"
-          >packageR</a
+          >packageR </a
         >
         <span> {{ version }}</span>
       </span>
@@ -119,6 +120,7 @@ import { useLayoutStore } from "@/stores/layout";
 
 import * as auth from "@/utils/auth";
 import {
+  name,
   version,
   signup,
   disableExternal,
@@ -150,6 +152,7 @@ export default {
       return this.currentPromptName === "sidebar";
     },
     signup: () => signup,
+    name: () => name,
     version: () => version,
     disableExternal: () => disableExternal,
     disableUsedPercentage: () => disableUsedPercentage,

@@ -1,6 +1,6 @@
-# packageR
+<img src="frontend/public/img/logo.png" height="40"/> 
 
-<img src="frontend/public/img/logo.png" height="25"/>
+# packageR 
 
 ## Goal
 
