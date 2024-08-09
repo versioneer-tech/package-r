@@ -188,6 +188,9 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 				}
 				return http.StatusInternalServerError, err
 			}
+			if len(obs) == 0 {
+				break
+			}
 			for _, obj := range obs {
 				keys = append(keys, obj.Name())
 			}
