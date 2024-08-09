@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"mime"
 	"os"
 	"path"
@@ -86,25 +87,28 @@ func (f *File) Readdir(n int) ([]os.FileInfo, error) {
 	if name != "" && !strings.HasSuffix(name, "/") {
 		name += "/"
 	}
-	output, err := f.fs.s3API.ListObjectsV2(&s3.ListObjectsV2Input{
+	listObjectsV2Input := s3.ListObjectsV2Input{
 		ContinuationToken: f.readdirContinuationToken,
 		Bucket:            aws.String(f.fs.bucket),
 		Prefix:            aws.String(name),
 		Delimiter:         aws.String(delimiter),
 		MaxKeys:           aws.Int64(maxKeys),
-	})
+	}
+	log.Printf("ListObjectsV2 -> %s", listObjectsV2Input)
+	response, err := f.fs.s3API.ListObjectsV2(&listObjectsV2Input)
 	if err != nil {
 		return nil, err
 	}
-	f.readdirContinuationToken = output.NextContinuationToken
-	if !(*output.IsTruncated) {
+	log.Printf("ListObjectsV2 <- %v keys (more=%v) with prefix %s in bucket %s", *response.KeyCount, *response.IsTruncated, *response.Prefix, *response.Name)
+	f.readdirContinuationToken = response.NextContinuationToken
+	if !(*response.IsTruncated) {
 		f.readdirNotTruncated = true
 	}
-	var fis = make([]os.FileInfo, 0, len(output.CommonPrefixes)+len(output.Contents))
-	for _, subfolder := range output.CommonPrefixes {
+	var fis = make([]os.FileInfo, 0, len(response.CommonPrefixes)+len(response.Contents))
+	for _, subfolder := range response.CommonPrefixes {
 		fis = append(fis, NewFileInfo(path.Base("/"+*subfolder.Prefix), true, 0, time.Unix(0, 0)))
 	}
-	for _, fileObject := range output.Contents {
+	for _, fileObject := range response.Contents {
 		if strings.HasSuffix(*fileObject.Key, "/") {
 			// S3 includes <name>/ in the Contents listing for <name>
 			continue
@@ -125,7 +129,7 @@ func (f *File) Readdir(n int) ([]os.FileInfo, error) {
 func (f *File) ReaddirAll() ([]os.FileInfo, error) {
 	var fileInfos []os.FileInfo
 	for {
-		infos, err := f.Readdir(100)
+		infos, err := f.Readdir(1000)
 		fileInfos = append(fileInfos, infos...)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
@@ -362,18 +366,20 @@ func (f *File) openReadStream(startAt int64) error {
 	if startAt > 0 {
 		streamRange = aws.String(fmt.Sprintf("bytes=%d-%d", startAt, f.cachedInfo.Size()))
 	}
-
-	resp, err := f.fs.s3API.GetObject(&s3.GetObjectInput{
+	getObjectInput := s3.GetObjectInput{
 		Bucket: aws.String(f.fs.bucket),
 		Key:    aws.String(f.name),
 		Range:  streamRange,
-	})
+	}
+	log.Printf("GetObject -> %s", getObjectInput)
+	response, err := f.fs.s3API.GetObject(&getObjectInput)
 	if err != nil {
 		return err
 	}
+	log.Printf("GetObject <- %s", response.String())
 
 	f.streamReadOffset = startAt
-	f.streamRead = resp.Body
+	f.streamRead = response.Body
 	return nil
 }
 

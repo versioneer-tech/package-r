@@ -80,7 +80,7 @@
             >
               <div>
                 <i class="material-icons">file_download</i>
-                URL_LIST
+                {{ req.isDir && req.items.length ? "URLS" : "URL"}}
               </div>
             </a>
             <a v-if="!req.isDir"
