@@ -37,7 +37,7 @@
       </form>
     </div>
 
-    <div class="column">
+    <!-- <div class="column">
       <form
         class="card"
         v-if="!authStore.user?.lockPassword"
@@ -73,7 +73,7 @@
           />
         </div>
       </form>
-    </div>
+    </div> -->
   </div>
 </template>
 

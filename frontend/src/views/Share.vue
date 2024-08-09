@@ -1,6 +1,7 @@
 <template>
   <div>
     <header-bar showMenu showLogo>
+      {{ name }}
       <title />
     </header-bar>
 
@@ -175,6 +176,7 @@ import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { StatusError } from "@/api/utils";
 import { copy } from "@/utils/clipboard";
+import { name } from "@/utils/constants";
 
 const error = ref<StatusError | null>(null);
 const showLimit = ref<number>(100);

@@ -92,7 +92,7 @@
     </div> -->
 
     <p class="credits">
-      <b>{{ name }}</b> powered by 
+      powered by 
       <span>
         <span v-if="disableExternal">packageR</span>
         <a

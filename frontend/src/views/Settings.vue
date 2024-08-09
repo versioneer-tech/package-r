@@ -1,6 +1,8 @@
 <template>
   <div class="dashboard">
-    <header-bar showMenu showLogo />
+    <header-bar showMenu showLogo >
+      {{ name }}
+    </header-bar>
 
     <div id="nav">
       <div class="wrapper">
@@ -55,6 +57,7 @@ import { useLayoutStore } from "@/stores/layout";
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { name } from "@/utils/constants";
 
 const { t } = useI18n();
 

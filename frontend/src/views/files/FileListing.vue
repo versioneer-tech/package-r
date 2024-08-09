@@ -1,14 +1,15 @@
 <template>
   <div>
     <header-bar showMenu showLogo>
-      <search />
+      {{ name }}
+      <!-- <search /> -->      
       <title />
-      <action
+      <!-- <action
         class="search-button"
         icon="search"
         :label="t('buttons.search')"
         @action="openSearch()"
-      />
+      /> -->
 
       <template #actions>
         <template v-if="!isMobile">
@@ -283,6 +284,7 @@ import { useLayoutStore } from "@/stores/layout";
 
 import { users, files as api } from "@/api";
 import { enableExec } from "@/utils/constants";
+import { name } from "@/utils/constants";
 import * as upload from "@/utils/upload";
 import css from "@/utils/css";
 import throttle from "lodash/throttle";
