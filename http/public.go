@@ -2,12 +2,14 @@ package http
 
 import (
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -171,31 +173,50 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 		return http.StatusInternalServerError, err
 	}
 
+	maxObs, err := strconv.Atoi(os.Getenv("MAX_OBJECTS"))
+	if err != nil {
+		maxObs = 5000
+	}
+
 	var keys []string
 	if fileInfo.IsDir {
-		obs, err2 := file.Readdir(-100)
-		if err2 != nil {
-			return http.StatusInternalServerError, err
+		for {
+			obs, err2 := file.Readdir(-1000)
+			if err2 != nil {
+				if errors.Is(err2, io.EOF) {
+					break
+				}
+				return http.StatusInternalServerError, err
+			}
+			if len(obs) == 0 {
+				break
+			}
+			for _, obj := range obs {
+				keys = append(keys, obj.Name())
+			}
+			log.Printf("prepare presign (current %v)", len(keys))
+			if len(keys) >= maxObs {
+				break
+			}
 		}
-		for _, obj := range obs {
-			keys = append(keys, obj.Name())
-		}
+
 	} else {
 		keys = append(keys, file.Name())
 	}
 
+	log.Printf("start presign (total %v)", len(keys))
 	presignedURLs, status, err := presign(keys)
 
 	if err != nil {
 		return status, err
-
 	}
 
 	//nolint:goconst
 	if r.URL.Query().Get("file") == "true" {
 		reader := strings.NewReader(strings.Join(presignedURLs, "\n"))
-		filename := "PRESIGNED_FILE_LIST.txt"
-		w.Header().Set("Content-Disposition", "attachment; filename*=utf-8''"+url.PathEscape(filename))
+		filename := url.PathEscape(strings.ReplaceAll(os.Getenv("BRANDING_NAME")+"/"+file.Name()+".txt", "/", "__"))
+		log.Printf("return presign file '%s'", filename)
+		w.Header().Set("Content-Disposition", "attachment; filename*=utf-8''"+filename)
 		w.Header().Add("Content-Security-Policy", `script-src 'none';`)
 		w.Header().Set("Cache-Control", "private")
 		http.ServeContent(w, r, filename, time.Now(), reader)

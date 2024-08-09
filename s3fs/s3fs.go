@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"mime"
 	"os"
 	"path"
@@ -242,10 +243,13 @@ func (fs Fs) Stat(name string) (os.FileInfo, error) {
 	if name == "/" {
 		key = aws.String("*")
 	}
-	out, err := fs.s3API.HeadObject(&s3.HeadObjectInput{
+
+	headObjectInput := s3.HeadObjectInput{
 		Bucket: aws.String(fs.bucket),
 		Key:    key,
-	})
+	}
+	log.Printf("HeadObject -> %s", headObjectInput)
+	response, err := fs.s3API.HeadObject(&headObjectInput)
 	if err != nil {
 		var errRequestFailure awserr.RequestFailure
 		if errors.As(err, &errRequestFailure) {
@@ -263,7 +267,8 @@ func (fs Fs) Stat(name string) (os.FileInfo, error) {
 		// user asked for a directory, but this is a file
 		return FileInfo{name: name}, nil
 	}
-	return NewFileInfo(path.Base(name), false, *out.ContentLength, *out.LastModified), nil
+	log.Printf("HeadObject <- %s", response.String())
+	return NewFileInfo(path.Base(name), false, *response.ContentLength, *response.LastModified), nil
 }
 
 func (fs Fs) statDirectory(name string) (os.FileInfo, error) {
