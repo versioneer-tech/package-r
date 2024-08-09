@@ -22,6 +22,7 @@ type ChecksumAlg = "md5" | "sha1" | "sha256" | "sha512";
 interface Share {
   hash: string;
   path: string;
+  description: string;
   expire?: any;
   userID?: number;
   token?: string;

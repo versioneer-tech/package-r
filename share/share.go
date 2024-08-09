@@ -1,9 +1,10 @@
 package share
 
 type CreateBody struct {
-	Password string `json:"password"`
-	Expires  string `json:"expires"`
-	Unit     string `json:"unit"`
+	Password    string `json:"password"`
+	Expires     string `json:"expires"`
+	Unit        string `json:"unit"`
+	Description string `json:"description,omitempty"`
 }
 
 // Link is the information needed to build a shareable link.
@@ -16,5 +17,6 @@ type Link struct {
 	// Token is a random value that will only be set when PasswordHash is set. It is
 	// URL-Safe and is used to download links in password-protected shares via a
 	// query arg.
-	Token string `json:"token,omitempty"`
+	Token       string `json:"token,omitempty"`
+	Description string `json:"description,omitempty"`
 }

@@ -10,6 +10,7 @@
           <tr>
             <th>#</th>
             <th>{{ $t("settings.shareDuration") }}</th>
+            <th>{{ $t("settings.shareDescription") }}</th>
             <th></th>
             <th></th>
           </tr>
@@ -22,6 +23,7 @@
               }}</template>
               <template v-else>{{ $t("permanent") }}</template>
             </td>
+            <td>{{ link.description }}</td>
             <td class="small">
               <button
                 class="action copy-clipboard"
@@ -101,6 +103,12 @@
           type="password"
           v-model.trim="password"
           tabindex="3"
+        />
+        <p>{{ $t("settings.shareDescription") }}</p>
+        <input
+          class="input input--block"
+          v-model.trim="description"
+          tabindex="4"
         />
       </div>
 
@@ -201,9 +209,9 @@ export default {
         let res = null;
 
         if (!this.time) {
-          res = await api.create(this.url, this.password);
+          res = await api.create(this.url, this.password, this.description);
         } else {
-          res = await api.create(this.url, this.password, this.time, this.unit);
+          res = await api.create(this.url, this.password, this.description, this.time, this.unit);
         }
 
         this.links.push(res);
