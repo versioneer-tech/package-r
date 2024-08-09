@@ -99,7 +99,8 @@ func (f *File) Readdir(n int) ([]os.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("ListObjectsV2 <- %v keys (more=%v) with prefix %s in bucket %s", *response.KeyCount, *response.IsTruncated, *response.Prefix, *response.Name)
+	log.Printf("ListObjectsV2 <- %v keys (more=%v) with prefix %s in bucket %s",
+		*response.KeyCount, *response.IsTruncated, *response.Prefix, *response.Name)
 	f.readdirContinuationToken = response.NextContinuationToken
 	if !(*response.IsTruncated) {
 		f.readdirNotTruncated = true
