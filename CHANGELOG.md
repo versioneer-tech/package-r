@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [1.0.8](https://github.com/versioneer-tech/package-r/compare/v1.0.7...v1.0.8) (2024-08-10)
 
+- allow to put additional description on share link and add to UI
+
 ### [1.0.7](https://github.com/versioneer-tech/package-r/compare/v1.0.4...v1.0.7) (2024-08-08)
 
 - don't show meta information for prefixes (folders) on the various pages
