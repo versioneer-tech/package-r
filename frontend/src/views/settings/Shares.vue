@@ -1,4 +1,4 @@
-<template>
+  <template>
   <errors v-if="error" :errorCode="error.status" />
   <div class="row" v-else-if="!layoutStore.loading">
     <div class="column">
@@ -15,6 +15,7 @@
               <th v-if="authStore.user?.perm.admin">
                 {{ t("settings.username") }}
               </th>
+              <th>{{ t("settings.shareDescription") }}</th>
               <th></th>
               <th></th>
             </tr>
@@ -30,6 +31,9 @@
                 <template v-else>{{ t("permanent") }}</template>
               </td>
               <td v-if="authStore.user?.perm.admin">{{ link.username }}</td>
+              <td>
+                {{ link.description }}
+              </td>
               <td class="small">
                 <button
                   class="action"
