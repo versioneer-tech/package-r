@@ -125,8 +125,8 @@ type customFSUser struct {
 	fs afero.Fs
 }
 
-func (cu *customFSUser) Get(baseScope string, id interface{}) (*users.User, error) {
-	user, err := cu.Store.Get(baseScope, id)
+func (cu *customFSUser) Get(id interface{}) (*users.User, error) {
+	user, err := cu.Store.Get(id)
 	if err != nil {
 		return nil, err
 	}

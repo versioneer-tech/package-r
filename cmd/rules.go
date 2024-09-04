@@ -32,7 +32,7 @@ rules.`,
 func runRules(st *storage.Storage, cmd *cobra.Command, usersFn func(*users.User), globalFn func(*settings.Settings)) {
 	id := getUserIdentifier(cmd.Flags())
 	if id != nil {
-		user, err := st.Users.Get("", id)
+		user, err := st.Users.Get(id)
 		checkErr(err)
 
 		if usersFn != nil {

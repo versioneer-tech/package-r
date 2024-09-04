@@ -40,7 +40,7 @@ list or set it to 0.`,
 		}
 
 		if mustGetBool(cmd.Flags(), "replace") {
-			oldUsers, err := d.store.Users.Gets("")
+			oldUsers, err := d.store.Users.Gets()
 			checkErr(err)
 
 			err = marshal("users.backup.json", list)
@@ -55,7 +55,7 @@ list or set it to 0.`,
 		overwrite := mustGetBool(cmd.Flags(), "overwrite")
 
 		for _, user := range list {
-			onDB, err := d.store.Users.Get("", user.ID)
+			onDB, err := d.store.Users.Get(user.ID)
 
 			// User exists in DB.
 			if err == nil {
@@ -67,7 +67,7 @@ list or set it to 0.`,
 				// with the new username. If there is, print an error and cancel the
 				// operation
 				if user.Username != onDB.Username {
-					if conflictuous, err := d.store.Users.Get("", user.Username); err == nil { //nolint:govet
+					if conflictuous, err := d.store.Users.Get(user.Username); err == nil { //nolint:govet
 						checkErr(usernameConflictError(user.Username, conflictuous.ID, user.ID))
 					}
 				}

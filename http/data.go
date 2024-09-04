@@ -3,12 +3,19 @@ package http
 import (
 	"log"
 	"net/http"
+	neturl "net/url"
+	"os"
 	"strconv"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/spf13/afero"
 	"github.com/tomasen/realip"
 
 	"github.com/versioneer-tech/package-r/v2/rules"
 	"github.com/versioneer-tech/package-r/v2/runner"
+	"github.com/versioneer-tech/package-r/v2/s3fs"
 	"github.com/versioneer-tech/package-r/v2/settings"
 	"github.com/versioneer-tech/package-r/v2/storage"
 	"github.com/versioneer-tech/package-r/v2/users"
@@ -45,6 +52,55 @@ func (d *data) Check(path string) bool {
 	}
 
 	return allow
+}
+
+func (d *data) InitFs(URL string) afero.Fs {
+	if len(URL) == 0 {
+		return nil
+	}
+
+	parsedURL, err := neturl.Parse(URL)
+	if err != nil {
+		return nil
+	}
+
+	contextParam := parsedURL.Query().Get("context")
+	if contextParam == "" {
+		contextParam = "default"
+	}
+
+	context := d.settings.Contexts[contextParam]
+
+	if context == nil {
+		context = map[string]string{}
+		context["BUCKET_NAME"] = contextParam
+	}
+
+	session, errSession := session.NewSession(&aws.Config{
+		Credentials: credentials.NewStaticCredentials(
+			GetStringOrDefault(context, "AWS_ACCESS_KEY_ID", os.Getenv("AWS_ACCESS_KEY_ID")),
+			GetStringOrDefault(context, "AWS_SECRET_ACCESS_KEY", os.Getenv("AWS_SECRET_ACCESS_KEY")),
+			""),
+		Endpoint:         aws.String(GetStringOrDefault(context, "AWS_ENDPOINT_URL", os.Getenv("AWS_ENDPOINT_URL"))),
+		Region:           aws.String(GetStringOrDefault(context, "AWS_REGION", os.Getenv("AWS_REGION"))),
+		S3ForcePathStyle: aws.Bool(true),
+	})
+
+	bucket := GetStringOrDefault(context, "BUCKET_NAME", contextParam)
+
+	if errSession != nil {
+		log.Print("Could not create session:", errSession)
+		return nil
+	}
+
+	return s3fs.NewFs(bucket, session)
+}
+
+func GetStringOrDefault(m map[string]string, key, defaultValue string) string {
+	if val, ok := m[key]; ok {
+		return val
+	}
+	return defaultValue
 }
 
 func handle(fn handleFunc, prefix string, store *storage.Storage, server *settings.Server) http.Handler {

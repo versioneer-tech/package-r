@@ -36,14 +36,14 @@ var findUsers = python(func(_ *cobra.Command, args []string, d pythonData) {
 	if len(args) == 1 {
 		username, id := parseUsernameOrID(args[0])
 		if username != "" {
-			user, err = d.store.Users.Get("", username)
+			user, err = d.store.Users.Get(username)
 		} else {
-			user, err = d.store.Users.Get("", id)
+			user, err = d.store.Users.Get(id)
 		}
 
 		list = []*users.User{user}
 	} else {
-		list, err = d.store.Users.Gets("")
+		list, err = d.store.Users.Gets()
 	}
 
 	checkErr(err)

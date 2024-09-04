@@ -1,6 +1,6 @@
 {
-  "name": "presignR",
-  "short_name": "presignR",
+  "name": "package-r",
+  "short_name": "package-r",
   "icons": [
     {
       "src": "./img/icons/android-chrome-192x192.png",

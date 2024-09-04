@@ -51,7 +51,7 @@ func (a JSONAuth) Auth(r *http.Request, usr users.Store, _ *settings.Settings, s
 		}
 	}
 
-	u, err := usr.Get(srv.Root, cred.Username)
+	u, err := usr.Get(cred.Username)
 	if err != nil || !users.CheckPwd(cred.Password, u.Password) {
 		return nil, os.ErrPermission
 	}

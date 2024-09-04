@@ -344,6 +344,12 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 		Rules:    nil,
 	}
 
+	defaultContext := map[string]string{}
+	defaultContext["BUCKET_NAME"] = os.Getenv("BUCKET_DEFAULT")
+
+	set.Contexts = map[string]map[string]string{}
+	set.Contexts["default"] = defaultContext
+
 	set.Branding.Name = os.Getenv("BRANDING_NAME")
 
 	var err error
