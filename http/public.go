@@ -86,6 +86,18 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
+		if !fileInfo.IsDir {
+			var keys []string
+			file, err := fileInfo.Fs.Open(fileInfo.Path)
+			if err == nil {
+				keys = append(keys, filepath.Join(basePath, file.Name()))
+				presignedURLs, _, err := d.Presign(fileInfo.SourceName, keys)
+				if err == nil {
+					fileInfo.Content = presignedURLs[0]
+				}
+			}
+		}
+
 		d.raw = fileInfo
 		return fn(w, r, d)
 	}
@@ -112,19 +124,8 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 		fileInfo.Listing.Sorting = files.Sorting{By: "name", Asc: false}
 		fileInfo.Listing.ApplySort()
 		return renderJSON(w, r, fileInfo)
-	} else {
-		// populate Content for UI
-		var keys []string
-		file, err := fileInfo.Fs.Open(fileInfo.Path)
-		if err == nil {
-			keys = append(keys, file.Name())
-			presignedURLs, _, err := d.Presign(fileInfo.SourceName, keys)
-			if err == nil {
-				fileInfo.Content = presignedURLs[0]
-			}
-		}
-		return renderJSON(w, r, fileInfo)
 	}
+	return renderJSON(w, r, fileInfo)
 })
 
 var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
