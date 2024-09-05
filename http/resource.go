@@ -19,6 +19,10 @@ import (
 )
 
 var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	if d.user.Fs == nil {
+		return http.StatusNotFound, nil
+	}
+
 	file, err := files.NewFileInfo(&files.FileOptions{
 		Fs:      d.user.Fs,
 		Path:    r.URL.Path,
@@ -326,15 +330,25 @@ func patchAction(ctx context.Context, action, src, dst string, d *data, fileCach
 	}
 }
 
-type DiskUsageResponse struct {
-	Total uint64 `json:"total"`
-	Used  uint64 `json:"used"`
+type InfoResponse struct {
+	Total       uint64   `json:"total"`
+	Used        uint64   `json:"used"`
+	SourceNames []string `json:"sourceNames"`
 }
 
-var diskUsage = withUser(func(w http.ResponseWriter, r *http.Request, _ *data) (int, error) {
-	return renderJSON(w, r, &DiskUsageResponse{
-		Total: 0,
-		Used:  0,
+func keys(m map[string]map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+var infoHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	return renderJSON(w, r, &InfoResponse{
+		Total:       0,
+		Used:        0,
+		SourceNames: []string{"ws-team2-gfr5r-stage", "ws-team2-gfr5r-results"}, //keys(d.settings.Sources),
 	})
 
 	// file, err := files.NewFileInfo(&files.FileOptions{

@@ -5,16 +5,16 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/spf13/afero"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/tomasen/realip"
 
 	"github.com/versioneer-tech/package-r/v2/rules"
 	"github.com/versioneer-tech/package-r/v2/runner"
-	"github.com/versioneer-tech/package-r/v2/s3fs"
 	"github.com/versioneer-tech/package-r/v2/settings"
 	"github.com/versioneer-tech/package-r/v2/storage"
 	"github.com/versioneer-tech/package-r/v2/users"
@@ -53,13 +53,9 @@ func (d *data) Check(path string) bool {
 	return allow
 }
 
-func (d *data) InitFs(path, sourceName string) afero.Fs {
-	if len(path) == 0 {
-		return nil
-	}
-
+func (d *data) Connect(sourceName string) (string, *session.Session) {
 	if len(sourceName) == 0 {
-		sourceName = "default"
+		return "", nil
 	}
 
 	source := d.settings.Sources[sourceName]
@@ -83,10 +79,39 @@ func (d *data) InitFs(path, sourceName string) afero.Fs {
 
 	if errSession != nil {
 		log.Print("Could not create session:", errSession)
-		return nil
+		return "", nil
 	}
 
-	return s3fs.NewFs(bucket, session)
+	return bucket, session
+
+}
+
+func (d *data) Presign(sourceName string, keys []string) (presignedUrls []string, status int, err error) {
+	presignedURLs := []string{}
+	bucket, session := d.Connect(sourceName)
+	if session != nil {
+
+		s3Client := s3.New(session)
+
+		for _, key := range keys {
+			getObjectInput := s3.GetObjectInput{
+				Bucket: aws.String(bucket),
+				Key:    aws.String(key),
+			}
+
+			req, _ := s3Client.GetObjectRequest(&getObjectInput)
+
+			presignedURL, err := req.Presign(7 * 24 * time.Hour) // 7d
+			if err != nil {
+				log.Printf("Could not presign %v: %v", getObjectInput, err)
+				return presignedURLs, http.StatusInternalServerError, err
+			}
+
+			presignedURLs = append(presignedURLs, presignedURL)
+		}
+	}
+
+	return presignedURLs, 0, nil
 }
 
 func GetStringOrDefault(m map[string]string, key, defaultValue string) string {

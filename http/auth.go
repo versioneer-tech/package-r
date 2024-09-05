@@ -13,6 +13,7 @@ import (
 	"github.com/golang-jwt/jwt/v4/request"
 
 	fbErrors "github.com/versioneer-tech/package-r/v2/errors"
+	"github.com/versioneer-tech/package-r/v2/s3fs"
 	"github.com/versioneer-tech/package-r/v2/users"
 )
 
@@ -89,7 +90,10 @@ func withUser(fn handleFunc) handleFunc {
 			return http.StatusInternalServerError, err
 		}
 
-		d.user.Fs = d.InitFs(r.URL.Path, r.URL.Query().Get("sourceName"))
+		bucket, session := d.Connect(r.URL.Query().Get("sourceName"))
+		if session != nil {
+			d.user.Fs = s3fs.NewFs(bucket, session)
+		}
 
 		return fn(w, r, d)
 	}

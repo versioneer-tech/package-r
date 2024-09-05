@@ -4,14 +4,18 @@ import { useAuthStore } from "@/stores/auth";
 import { upload as postTus, useTus } from "./tus";
 
 
-export async function fetch(url: string, sourceName: string="default") {
+export async function fetch(path: string, sourceName: string="") {
   sourceName = encodeURIComponent(sourceName)
-  url = removePrefix(url);
+  path = removePrefix(path);
+  let query = "";
+  if (sourceName !== "") {
+    query = "?sourceName=" + sourceName;
+  }
 
-  const res = await fetchURL(`/api/resources${url}?sourceName=${sourceName}`, {});
+  const res = await fetchURL(`/api/resources${path}${query}`, {});
   
   const data = (await res.json()) as Resource;
-  data.url = `/files${url}`;
+  data.url = `/files${path}`;
 
   if (data.isDir) {
     if (!data.url.endsWith("/")) data.url += "/";
@@ -23,12 +27,12 @@ export async function fetch(url: string, sourceName: string="default") {
       if (item.isDir) {
         item.url += "/";        
       }
-      item.url += `?sourceName=` + sourceName;      
+      item.url += query
 
       return item;
     });
   } else {
-    data.url += `?sourceName=` + sourceName;
+    data.url += query;
   }
   return data;
 }
@@ -212,10 +216,10 @@ export function getSubtitlesURL(file: ResourceItem) {
   return file.subtitles?.map((d) => createURL("api/subtitle" + d, params));
 }
 
-export async function usage(url: string) {
+export async function info(url: string) {
   url = removePrefix(url);
 
-  const res = await fetchURL(`/api/usage${url}`, {});
+  const res = await fetchURL(`/api/info${url}`, {});
 
   return await res.json();
 }

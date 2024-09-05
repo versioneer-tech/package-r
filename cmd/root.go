@@ -344,11 +344,7 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 		Rules:    nil,
 	}
 
-	defaultSource := map[string]string{}
-	defaultSource["BUCKET_NAME"] = os.Getenv("BUCKET_DEFAULT")
-
 	set.Sources = map[string]map[string]string{}
-	set.Sources["default"] = defaultSource
 
 	set.Branding.Name = os.Getenv("BRANDING_NAME")
 

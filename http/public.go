@@ -13,14 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/spf13/afero"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/spf13/afero"
 	"github.com/versioneer-tech/package-r/v2/files"
+	"github.com/versioneer-tech/package-r/v2/s3fs"
 	"github.com/versioneer-tech/package-r/v2/share"
 )
 
@@ -42,15 +39,19 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		d.user.Fs = d.InitFs(link.Path, link.SourceName)
+		bucket, session := d.Connect(link.SourceName)
+		if session != nil {
+			d.user.Fs = s3fs.NewFs(bucket, session)
+		}
 
 		fileInfo, err := files.NewFileInfo(&files.FileOptions{
-			Fs:      d.user.Fs,
-			Path:    link.Path,
-			Modify:  d.user.Perm.Modify,
-			Expand:  false,
-			Checker: d,
-			Token:   link.Token,
+			Fs:         d.user.Fs,
+			Path:       link.Path,
+			SourceName: link.SourceName,
+			Modify:     d.user.Perm.Modify,
+			Expand:     false,
+			Checker:    d,
+			Token:      link.Token,
 		})
 		if err != nil {
 			return errToStatus(err), err
@@ -73,27 +74,16 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		token := link.Token
 
 		fileInfo, err = files.NewFileInfo(&files.FileOptions{
-			Fs:      d.user.Fs,
-			Path:    filePath,
-			Modify:  d.user.Perm.Modify,
-			Expand:  true,
-			Checker: d,
-			Token:   token,
+			Fs:         d.user.Fs,
+			Path:       filePath,
+			SourceName: link.SourceName,
+			Modify:     d.user.Perm.Modify,
+			Expand:     true,
+			Checker:    d,
+			Token:      token,
 		})
 		if err != nil {
 			return errToStatus(err), err
-		}
-
-		if !fileInfo.IsDir {
-			var keys []string
-			file, err := fileInfo.Fs.Open(fileInfo.Path)
-			if err == nil {
-				keys = append(keys, file.Name())
-				presignedURLs, _, err := presign(keys)
-				if err == nil {
-					fileInfo.Content = presignedURLs[0]
-				}
-			}
 		}
 
 		d.raw = fileInfo
@@ -117,54 +107,25 @@ func ifPathWithName(r *http.Request) (id, filePath string) {
 }
 
 var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-	file := d.raw.(*files.FileInfo)
-
-	if file.IsDir {
-		file.Listing.Sorting = files.Sorting{By: "name", Asc: false}
-		file.Listing.ApplySort()
-		return renderJSON(w, r, file)
+	fileInfo := d.raw.(*files.FileInfo)
+	if fileInfo.IsDir {
+		fileInfo.Listing.Sorting = files.Sorting{By: "name", Asc: false}
+		fileInfo.Listing.ApplySort()
+		return renderJSON(w, r, fileInfo)
+	} else {
+		// populate Content for UI
+		var keys []string
+		file, err := fileInfo.Fs.Open(fileInfo.Path)
+		if err == nil {
+			keys = append(keys, file.Name())
+			presignedURLs, _, err := d.Presign(fileInfo.SourceName, keys)
+			if err == nil {
+				fileInfo.Content = presignedURLs[0]
+			}
+		}
+		return renderJSON(w, r, fileInfo)
 	}
-
-	return renderJSON(w, r, file)
 })
-
-//nolint:gocritic
-func presign(keys []string) (presignedUrls []string, status int, err error) {
-	presignedURLs := []string{}
-
-	session, err := session.NewSession(&aws.Config{
-		Credentials:      credentials.NewStaticCredentials(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), ""),
-		Endpoint:         aws.String(os.Getenv("AWS_ENDPOINT_URL")),
-		Region:           aws.String(os.Getenv("AWS_REGION")),
-		S3ForcePathStyle: aws.Bool(true),
-	})
-
-	if err != nil {
-		log.Print("Could not create session:", err)
-		return presignedURLs, 0, nil
-	}
-
-	s3Client := s3.New(session)
-
-	for _, key := range keys {
-		getObjectInput := s3.GetObjectInput{
-			Bucket: aws.String(os.Getenv("BUCKET_DEFAULT")),
-			Key:    aws.String(key),
-		}
-
-		req, _ := s3Client.GetObjectRequest(&getObjectInput)
-
-		presignedURL, err := req.Presign(7 * 24 * time.Hour) // 7d
-		if err != nil {
-			log.Printf("Could not presign %v: %v", getObjectInput, err)
-			return presignedURLs, http.StatusInternalServerError, err
-		}
-
-		presignedURLs = append(presignedURLs, presignedURL)
-	}
-
-	return presignedURLs, 0, nil
-}
 
 var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	fileInfo := d.raw.(*files.FileInfo)
@@ -205,7 +166,7 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 	}
 
 	log.Printf("start presign (total %v)", len(keys))
-	presignedURLs, status, err := presign(keys)
+	presignedURLs, status, err := d.Presign(fileInfo.SourceName, keys)
 
 	if err != nil {
 		return status, err

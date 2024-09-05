@@ -19,30 +19,36 @@ const PermDir = 0755
 // FileInfo describes a file.
 type FileInfo struct {
 	*Listing
-	Fs        afero.Fs          `json:"-"`
-	Path      string            `json:"path"`
-	Name      string            `json:"name"`
-	Size      int64             `json:"size"`
-	Extension string            `json:"extension"`
-	ModTime   time.Time         `json:"modified"`
-	Mode      os.FileMode       `json:"mode"`
-	IsDir     bool              `json:"isDir"`
-	IsSymlink bool              `json:"isSymlink"`
-	Type      string            `json:"type"`
-	Content   string            `json:"content,omitempty"`
-	Checksums map[string]string `json:"checksums,omitempty"`
-	Token     string            `json:"token,omitempty"`
+	Fs         afero.Fs          `json:"-"`
+	Path       string            `json:"path"`
+	SourceName string            `json:"sourceName"`
+	Name       string            `json:"name"`
+	Size       int64             `json:"size"`
+	Extension  string            `json:"extension"`
+	ModTime    time.Time         `json:"modified"`
+	Mode       os.FileMode       `json:"mode"`
+	IsDir      bool              `json:"isDir"`
+	IsSymlink  bool              `json:"isSymlink"`
+	Type       string            `json:"type"`
+	Content    string            `json:"content,omitempty"`
+	Checksums  map[string]string `json:"checksums,omitempty"`
+	Token      string            `json:"token,omitempty"`
 }
 
 // FileOptions are the options when getting a file info.
 type FileOptions struct {
-	Fs      afero.Fs
-	Path    string
-	Modify  bool
-	Expand  bool
-	Token   string
-	Checker rules.Checker
-	Content bool
+	Fs         afero.Fs
+	Path       string
+	SourceName string
+	Modify     bool
+	Expand     bool
+	Token      string
+	Checker    rules.Checker
+	Content    bool
+}
+
+type Presigner interface {
+	Presign(keys []string) (presignedUrls []string, status int, err error)
 }
 
 // NewFileInfo creates a File object from a path and a given user. This File
@@ -84,16 +90,17 @@ func stat(opts *FileOptions) (*FileInfo, error) {
 			return nil, err
 		}
 		file = &FileInfo{
-			Fs:        opts.Fs,
-			Path:      opts.Path,
-			Name:      info.Name(),
-			ModTime:   info.ModTime(),
-			Mode:      info.Mode(),
-			IsDir:     info.IsDir(),
-			IsSymlink: IsSymlink(info.Mode()),
-			Size:      info.Size(),
-			Extension: filepath.Ext(info.Name()),
-			Token:     opts.Token,
+			Fs:         opts.Fs,
+			Path:       opts.Path,
+			SourceName: opts.SourceName,
+			Name:       info.Name(),
+			ModTime:    info.ModTime(),
+			Mode:       info.Mode(),
+			IsDir:      info.IsDir(),
+			IsSymlink:  IsSymlink(info.Mode()),
+			Size:       info.Size(),
+			Extension:  filepath.Ext(info.Name()),
+			Token:      opts.Token,
 		}
 	}
 
@@ -120,15 +127,16 @@ func stat(opts *FileOptions) (*FileInfo, error) {
 	}
 
 	file = &FileInfo{
-		Fs:        opts.Fs,
-		Path:      opts.Path,
-		Name:      info.Name(),
-		ModTime:   info.ModTime(),
-		Mode:      info.Mode(),
-		IsDir:     info.IsDir(),
-		Size:      info.Size(),
-		Extension: filepath.Ext(info.Name()),
-		Token:     opts.Token,
+		Fs:         opts.Fs,
+		Path:       opts.Path,
+		SourceName: opts.SourceName,
+		Name:       info.Name(),
+		ModTime:    info.ModTime(),
+		Mode:       info.Mode(),
+		IsDir:      info.IsDir(),
+		Size:       info.Size(),
+		Extension:  filepath.Ext(info.Name()),
+		Token:      opts.Token,
 	}
 
 	return file, nil
@@ -276,15 +284,16 @@ func (i *FileInfo) readListing(checker rules.Checker) error {
 		}
 
 		file := &FileInfo{
-			Fs:        i.Fs,
-			Name:      name,
-			Size:      f.Size(),
-			ModTime:   f.ModTime(),
-			Mode:      f.Mode(),
-			IsDir:     f.IsDir(),
-			IsSymlink: isSymlink,
-			Extension: filepath.Ext(name),
-			Path:      fPath,
+			Fs:         i.Fs,
+			Name:       name,
+			Size:       f.Size(),
+			ModTime:    f.ModTime(),
+			Mode:       f.Mode(),
+			IsDir:      f.IsDir(),
+			IsSymlink:  isSymlink,
+			Extension:  filepath.Ext(name),
+			Path:       fPath,
+			SourceName: i.SourceName,
 		}
 
 		if file.IsDir {
