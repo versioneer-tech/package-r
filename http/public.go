@@ -42,7 +42,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		d.user.Fs = d.InitFs(link.Path)
+		d.user.Fs = d.InitFs(link.Path, link.SourceName)
 
 		fileInfo, err := files.NewFileInfo(&files.FileOptions{
 			Fs:      d.user.Fs,

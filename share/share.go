@@ -11,6 +11,7 @@ type CreateBody struct {
 type Link struct {
 	Hash         string `json:"hash" storm:"id,index"`
 	Path         string `json:"path" storm:"index"`
+	SourceName   string `json:"sourceName"`
 	UserID       uint   `json:"userID"`
 	Expire       int64  `json:"expire"`
 	PasswordHash string `json:"password_hash,omitempty"`

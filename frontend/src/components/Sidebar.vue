@@ -2,15 +2,17 @@
   <div v-show="active" @click="closeHovers" class="overlay"></div>
   <nav :class="{ active }">
     <template v-if="isLoggedIn">
-      <button
-        class="action"
-        @click="toRoot"
-        :aria-label="$t('sidebar.myFiles')"
-        :title="$t('sidebar.myFiles')"
-      >
-        <i class="material-icons">folder</i>
-        <span>{{ $t("sidebar.myFiles") }}</span>
-      </button>
+      <div v-for="(fileGroup, index) in myFilesGroups" :key="index">
+        <button
+          class="action"
+          @click="() => toRoot(fileGroup.sourceName)"
+          :aria-label="fileGroup.label"
+          :title="fileGroup.label"
+        >
+          <i class="material-icons">folder</i>
+          <span>{{ fileGroup.label }}</span>
+        </button>
+      </div>
 
       <div v-if="user.perm.create">
         <button
@@ -34,7 +36,7 @@
         </button>
       </div>
 
-      <div>
+    <div>
         <button
           class="action"
           @click="toSettings"
@@ -158,6 +160,15 @@ export default {
     disableUsedPercentage: () => disableUsedPercentage,
     canLogout: () => !noAuth && loginPage,
   },
+  data() {
+    return {
+      myFilesGroups: [
+        { sourceName: 'ws-team2-gfr5r-stage', label: this.$t('sidebar.myFiles') },
+        // Add more file groups as needed
+        { sourceName: 'ws-team2-gfr5r-results', label: this.$t('sidebar.myFiles') + "2" },
+      ],
+    };
+  },
   methods: {
     ...mapActions(useLayoutStore, ["closeHovers", "showHover"]),
     async fetchUsage() {
@@ -180,8 +191,8 @@ export default {
       }
       return Object.assign(this.usage, usageStats);
     },
-    toRoot() {
-      this.$router.push({ path: "/files" });
+    toRoot(sourceName) {
+      this.$router.push({ path: "/files", query: { sourceName: sourceName }});
       this.closeHovers();
     },
     toSettings() {

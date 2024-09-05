@@ -57,7 +57,7 @@ var shareListHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 })
 
 var shareGetsHandler = withPermShare(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-	s, err := d.store.Share.Gets(r.URL.Path, d.user.ID)
+	s, err := d.store.Share.Gets(r.URL.Path, r.URL.Query().Get("sourceName"), d.user.ID)
 	if errors.Is(err, fbErrors.ErrNotExist) {
 		return renderJSON(w, r, []*share.Link{})
 	}
@@ -139,6 +139,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 
 	s = &share.Link{
 		Path:         r.URL.Path,
+		SourceName:   r.URL.Query().Get("sourceName"),
 		Hash:         str,
 		Expire:       expire,
 		UserID:       d.user.ID,

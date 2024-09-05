@@ -27,7 +27,7 @@ type Settings struct {
 	Commands         map[string][]string          `json:"commands"`
 	Shell            []string                     `json:"shell"`
 	Rules            []rules.Rule                 `json:"rules"`
-	Contexts         map[string]map[string]string `json:"contexts"`
+	Sources          map[string]map[string]string `json:"sources"`
 }
 
 // GetRules implements rules.Provider.

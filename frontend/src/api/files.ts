@@ -3,11 +3,13 @@ import { baseURL } from "@/utils/constants";
 import { useAuthStore } from "@/stores/auth";
 import { upload as postTus, useTus } from "./tus";
 
-export async function fetch(url: string) {
+
+export async function fetch(url: string, sourceName: string="default") {
+  sourceName = encodeURIComponent(sourceName)
   url = removePrefix(url);
 
-  const res = await fetchURL(`/api/resources${url}`, {});
-
+  const res = await fetchURL(`/api/resources${url}?sourceName=${sourceName}`, {});
+  
   const data = (await res.json()) as Resource;
   data.url = `/files${url}`;
 
@@ -19,13 +21,15 @@ export async function fetch(url: string) {
       item.url = `${data.url}${encodeURIComponent(item.name)}`;
 
       if (item.isDir) {
-        item.url += "/";
+        item.url += "/";        
       }
+      item.url += `?sourceName=` + sourceName;      
 
       return item;
     });
+  } else {
+    data.url += `?sourceName=` + sourceName;
   }
-
   return data;
 }
 

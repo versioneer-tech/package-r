@@ -89,7 +89,7 @@ func withUser(fn handleFunc) handleFunc {
 			return http.StatusInternalServerError, err
 		}
 
-		d.user.Fs = d.InitFs(r.URL.RequestURI())
+		d.user.Fs = d.InitFs(r.URL.Path, r.URL.Query().Get("sourceName"))
 
 		return fn(w, r, d)
 	}

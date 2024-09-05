@@ -154,6 +154,7 @@ export default {
       links: [],
       clip: null,
       password: "",
+      description: "",
       listing: true,
     };
   },

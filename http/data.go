@@ -3,7 +3,6 @@ package http
 import (
 	"log"
 	"net/http"
-	neturl "net/url"
 	"os"
 	"strconv"
 
@@ -54,39 +53,33 @@ func (d *data) Check(path string) bool {
 	return allow
 }
 
-func (d *data) InitFs(URL string) afero.Fs {
-	if len(URL) == 0 {
+func (d *data) InitFs(path, sourceName string) afero.Fs {
+	if len(path) == 0 {
 		return nil
 	}
 
-	parsedURL, err := neturl.Parse(URL)
-	if err != nil {
-		return nil
+	if len(sourceName) == 0 {
+		sourceName = "default"
 	}
 
-	contextParam := parsedURL.Query().Get("context")
-	if contextParam == "" {
-		contextParam = "default"
-	}
+	source := d.settings.Sources[sourceName]
 
-	context := d.settings.Contexts[contextParam]
-
-	if context == nil {
-		context = map[string]string{}
-		context["BUCKET_NAME"] = contextParam
+	if source == nil {
+		source = map[string]string{}
+		source["BUCKET_NAME"] = sourceName
 	}
 
 	session, errSession := session.NewSession(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(
-			GetStringOrDefault(context, "AWS_ACCESS_KEY_ID", os.Getenv("AWS_ACCESS_KEY_ID")),
-			GetStringOrDefault(context, "AWS_SECRET_ACCESS_KEY", os.Getenv("AWS_SECRET_ACCESS_KEY")),
+			GetStringOrDefault(source, "AWS_ACCESS_KEY_ID", os.Getenv("AWS_ACCESS_KEY_ID")),
+			GetStringOrDefault(source, "AWS_SECRET_ACCESS_KEY", os.Getenv("AWS_SECRET_ACCESS_KEY")),
 			""),
-		Endpoint:         aws.String(GetStringOrDefault(context, "AWS_ENDPOINT_URL", os.Getenv("AWS_ENDPOINT_URL"))),
-		Region:           aws.String(GetStringOrDefault(context, "AWS_REGION", os.Getenv("AWS_REGION"))),
+		Endpoint:         aws.String(GetStringOrDefault(source, "AWS_ENDPOINT_URL", os.Getenv("AWS_ENDPOINT_URL"))),
+		Region:           aws.String(GetStringOrDefault(source, "AWS_REGION", os.Getenv("AWS_REGION"))),
 		S3ForcePathStyle: aws.Bool(true),
 	})
 
-	bucket := GetStringOrDefault(context, "BUCKET_NAME", contextParam)
+	bucket := GetStringOrDefault(source, "BUCKET_NAME", sourceName)
 
 	if errSession != nil {
 		log.Print("Could not create session:", errSession)

@@ -270,8 +270,22 @@ const click = (event: Event | KeyboardEvent) => {
   fileStore.selected.push(props.index);
 };
 
+function queryParam(url: string, param: string) { 
+    const str1 = url.split('?')[1];  
+    if (str1) { 
+        const pairs = str1.split('&'); 
+        for (const pair of pairs) { 
+            const [key, value] = pair.split('='); 
+            if (key == param) {
+              return decodeURIComponent(value.replace(/\+/g, ' ')); 
+            }
+        } 
+    }   
+    return ""; 
+} 
+
 const open = () => {
-  router.push({ path: props.url });
+  router.push({ path: props.url, query: {sourceName: queryParam(props.url, "sourceName")}});
 };
 
 const getExtension = (fileName: string): string => {

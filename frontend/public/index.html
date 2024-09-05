@@ -43,9 +43,9 @@
     />
 
     <!-- Add to home screen for Safari on iOS/iPadOS -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="apple-mobile-web-app-title" content="assets" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-status-bar-style" content="black" />
+    <meta name="mobile-web-app-title" content="assets" />
     <link
       rel="apple-touch-icon"
       href="[{[ .StaticURL ]}]/img/icons/apple-touch-icon.png"
@@ -74,12 +74,12 @@
         short_name: window.packageR.Name || "packageR",
         icons: [
           {
-            src: window.__prependStaticUrl("/img/icons/android-chrome-192x192.png"),
+            src: window.__prependStaticUrl("img/icons/android-chrome-192x192.png"),
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: window.__prependStaticUrl("/img/icons/android-chrome-512x512.png"),
+            src: window.__prependStaticUrl("img/icons/android-chrome-512x512.png"),
             sizes: "512x512",
             type: "image/png",
           },
