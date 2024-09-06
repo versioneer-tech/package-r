@@ -9,7 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
+	awsSession "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/tomasen/realip"
 
@@ -53,8 +53,8 @@ func (d *data) Check(path string) bool {
 	return allow
 }
 
-func (d *data) Connect(sourceName string) (string, *session.Session) {
-	if len(sourceName) == 0 {
+func (d *data) Connect(sourceName string) (string, *awsSession.Session) {
+	if sourceName == "" {
 		return "", nil
 	}
 
@@ -65,7 +65,7 @@ func (d *data) Connect(sourceName string) (string, *session.Session) {
 		source["BUCKET_NAME"] = sourceName
 	}
 
-	session, errSession := session.NewSession(&aws.Config{
+	session, errSession := awsSession.NewSession(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(
 			GetStringOrDefault(source, "AWS_ACCESS_KEY_ID", os.Getenv("AWS_ACCESS_KEY_ID")),
 			GetStringOrDefault(source, "AWS_SECRET_ACCESS_KEY", os.Getenv("AWS_SECRET_ACCESS_KEY")),
@@ -83,16 +83,13 @@ func (d *data) Connect(sourceName string) (string, *session.Session) {
 	}
 
 	return bucket, session
-
 }
 
 func (d *data) Presign(sourceName string, keys []string) (presignedUrls []string, status int, err error) {
 	presignedURLs := []string{}
 	bucket, session := d.Connect(sourceName)
 	if session != nil {
-
 		s3Client := s3.New(session)
-
 		for _, key := range keys {
 			getObjectInput := s3.GetObjectInput{
 				Bucket: aws.String(bucket),
