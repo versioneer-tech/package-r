@@ -348,7 +348,7 @@ var infoHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data)
 	return renderJSON(w, r, &InfoResponse{
 		Total:       0,
 		Used:        0,
-		SourceNames: []string{"ws-team2-gfr5r-stage", "ws-team2-gfr5r-results"}, //keys(d.settings.Sources),
+		SourceNames: keys(d.settings.Sources),
 	})
 
 	// file, err := files.NewFileInfo(&files.FileOptions{

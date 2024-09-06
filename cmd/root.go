@@ -346,6 +346,11 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 
 	set.Sources = map[string]map[string]string{}
 
+	defaultBuckets := strings.Split(os.Getenv("BUCKET_DEFAULT"), "|")
+	for _, defaultBucket := range defaultBuckets {
+		set.Sources[defaultBucket] = map[string]string{}
+	}
+
 	set.Branding.Name = os.Getenv("BRANDING_NAME")
 
 	var err error
