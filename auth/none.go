@@ -14,8 +14,8 @@ const MethodNoAuth settings.AuthMethod = "noauth"
 type NoAuth struct{}
 
 // Auth uses authenticates user 1.
-func (a NoAuth) Auth(_ *http.Request, usr users.Store, _ *settings.Settings, srv *settings.Server) (*users.User, error) {
-	return usr.Get(srv.Root, uint(1))
+func (a NoAuth) Auth(_ *http.Request, usr users.Store, _ *settings.Settings, _ *settings.Server) (*users.User, error) {
+	return usr.Get(uint(1))
 }
 
 // LoginPage tells that no auth doesn't require a login page.

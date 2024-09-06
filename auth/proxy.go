@@ -19,9 +19,9 @@ type ProxyAuth struct {
 }
 
 // Auth authenticates the user via an HTTP header.
-func (a ProxyAuth) Auth(r *http.Request, usr users.Store, _ *settings.Settings, srv *settings.Server) (*users.User, error) {
+func (a ProxyAuth) Auth(r *http.Request, usr users.Store, _ *settings.Settings, _ *settings.Server) (*users.User, error) {
 	username := r.Header.Get(a.Header)
-	user, err := usr.Get(srv.Root, username)
+	user, err := usr.Get(username)
 	if errors.Is(err, fbErrors.ErrNotExist) {
 		return nil, os.ErrPermission
 	}

@@ -12,7 +12,7 @@ type StorageBackend interface {
 	FindByUserID(id uint) ([]*Link, error)
 	GetByHash(hash string) (*Link, error)
 	GetPermanent(path string, id uint) (*Link, error)
-	Gets(path string, id uint) ([]*Link, error)
+	Gets(path string, sourceName string, id uint) ([]*Link, error)
 	Save(s *Link) error
 	Delete(hash string) error
 }
@@ -90,8 +90,8 @@ func (s *Storage) GetPermanent(path string, id uint) (*Link, error) {
 }
 
 // Gets wraps a StorageBackend.Gets
-func (s *Storage) Gets(path string, id uint) ([]*Link, error) {
-	links, err := s.back.Gets(path, id)
+func (s *Storage) Gets(path, sourceName string, id uint) ([]*Link, error) {
+	links, err := s.back.Gets(path, sourceName, id)
 
 	if err != nil {
 		return nil, err

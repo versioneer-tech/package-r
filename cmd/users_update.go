@@ -33,9 +33,9 @@ options you want to change.`,
 		)
 
 		if id != 0 {
-			user, err = d.store.Users.Get("", id)
+			user, err = d.store.Users.Get(id)
 		} else {
-			user, err = d.store.Users.Get("", username)
+			user, err = d.store.Users.Get(username)
 		}
 
 		checkErr(err)

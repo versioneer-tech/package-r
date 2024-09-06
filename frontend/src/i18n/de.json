@@ -47,7 +47,7 @@
   "errors": {
     "forbidden": "Sie haben keine Berechtigung dies abzurufen.",
     "internal": "Etwas ist schief gelaufen.",
-    "notFound": "Dieser Ort kann nicht angezeigt werden.",
+    "notFound": "Bitte eine Source selektieren.",
     "connection": "Der Server ist nicht erreichbar."
   },
   "files": {

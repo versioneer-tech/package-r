@@ -1,19 +1,13 @@
 package users
 
 import (
-	"log"
-	"os"
 	"regexp"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/spf13/afero"
 
 	"github.com/versioneer-tech/package-r/v2/errors"
 	"github.com/versioneer-tech/package-r/v2/files"
 	"github.com/versioneer-tech/package-r/v2/rules"
-	"github.com/versioneer-tech/package-r/v2/s3fs"
 )
 
 // ViewMode describes a view mode.
@@ -60,9 +54,7 @@ var checkableFields = []string{
 
 // Clean cleans up a user and verifies if all its fields
 // are alright to be saved.
-//
-//nolint:gocyclo,gocritic
-func (u *User) Clean(_ string, fields ...string) error {
+func (u *User) Clean(fields ...string) error {
 	if len(fields) == 0 {
 		fields = checkableFields
 	}
@@ -95,26 +87,6 @@ func (u *User) Clean(_ string, fields ...string) error {
 			}
 		}
 	}
-
-	if u.Fs == nil {
-		session, errSession := session.NewSession(&aws.Config{
-			Credentials:      credentials.NewStaticCredentials(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), ""),
-			Endpoint:         aws.String(os.Getenv("AWS_ENDPOINT_URL")),
-			Region:           aws.String(os.Getenv("AWS_REGION")),
-			S3ForcePathStyle: aws.Bool(true),
-		})
-
-		bucket := os.Getenv("BUCKET_DEFAULT")
-
-		if errSession != nil {
-			log.Print("Could not create session:", errSession)
-			return nil
-		}
-
-		u.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), "/")
-		return nil
-	}
-
 	return nil
 }
 

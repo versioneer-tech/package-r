@@ -14,7 +14,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
+	awsSession "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/spf13/afero"
@@ -23,7 +23,7 @@ import (
 // Fs is an FS object backed by S3.
 type Fs struct {
 	FileProps *UploadedFileProperties // FileProps define the file properties we want to set for all new files
-	session   *session.Session        // Session config
+	session   *awsSession.Session     // Session config
 	s3API     *s3.S3
 	bucket    string // Bucket name
 }
@@ -37,8 +37,8 @@ type UploadedFileProperties struct {
 
 // NewFs creates a new Fs object writing files to a given S3 bucket.
 //
-//nolint:gocritic
-func NewFs(bucket string, session *session.Session) *Fs {
+
+func NewFs(bucket string, session *awsSession.Session) *Fs {
 	s3Api := s3.New(session)
 	return &Fs{
 		bucket:  bucket,

@@ -16,17 +16,18 @@ type AuthMethod string
 
 // Settings contain the main settings of the application.
 type Settings struct {
-	Key              []byte              `json:"key"`
-	Signup           bool                `json:"signup"`
-	CreateUserDir    bool                `json:"createUserDir"`
-	UserHomeBasePath string              `json:"userHomeBasePath"`
-	Defaults         UserDefaults        `json:"defaults"`
-	AuthMethod       AuthMethod          `json:"authMethod"`
-	Branding         Branding            `json:"branding"`
-	Tus              Tus                 `json:"tus"`
-	Commands         map[string][]string `json:"commands"`
-	Shell            []string            `json:"shell"`
-	Rules            []rules.Rule        `json:"rules"`
+	Key              []byte                       `json:"key"`
+	Signup           bool                         `json:"signup"`
+	CreateUserDir    bool                         `json:"createUserDir"`
+	UserHomeBasePath string                       `json:"userHomeBasePath"`
+	Defaults         UserDefaults                 `json:"defaults"`
+	AuthMethod       AuthMethod                   `json:"authMethod"`
+	Branding         Branding                     `json:"branding"`
+	Tus              Tus                          `json:"tus"`
+	Commands         map[string][]string          `json:"commands"`
+	Shell            []string                     `json:"shell"`
+	Rules            []rules.Rule                 `json:"rules"`
+	Sources          map[string]map[string]string `json:"sources"`
 }
 
 // GetRules implements rules.Provider.

@@ -4,13 +4,24 @@
     <template v-if="isLoggedIn">
       <button
         class="action"
-        @click="toRoot"
-        :aria-label="$t('sidebar.myFiles')"
-        :title="$t('sidebar.myFiles')"
+        @click="() => toRoot('')"
+        :aria-label="Sources"
+        :title="Sources"
       >
         <i class="material-icons">folder</i>
-        <span>{{ $t("sidebar.myFiles") }}</span>
+        <span>Sources</span>
       </button>
+      <div v-for="(sourceName, index) in info.sourceNames" :key="index">
+        <button
+          class="action sub-action"
+          @click="() => toRoot(sourceName)"
+          :aria-label=sourceName
+          :title=sourceName
+          :class="{ active: $route.query.sourceName === sourceName }"
+        >
+          <span>{{ sourceName }}</span>
+        </button>
+      </div>
 
       <div v-if="user.perm.create">
         <button
@@ -34,7 +45,7 @@
         </button>
       </div>
 
-      <div>
+    <div>
         <button
           class="action"
           @click="toSettings"
@@ -86,9 +97,9 @@
       v-if="isFiles && !disableUsedPercentage"
       style="width: 90%; margin: 2em 2.5em 3em 2.5em"
     >
-      <progress-bar :val="usage.usedPercentage" size="small"></progress-bar>
+      <progress-bar :val="info.usedPercentage" size="small"></progress-bar>
       <br />
-      {{ usage.used }} of {{ usage.total }} used
+      {{ info.used }} of {{ info.total }} used
     </div> -->
 
     <p class="credits">
@@ -132,13 +143,13 @@ import { files as api } from "@/api";
 //import ProgressBar from "@/components/ProgressBar.vue";
 import prettyBytes from "pretty-bytes";
 
-const USAGE_DEFAULT = { used: "0 B", total: "0 B", usedPercentage: 0 };
+const INFO_DEFAULT = { used: "0 B", total: "0 B", usedPercentage: 0, sourceNames: []};
 
 export default {
   name: "sidebar",
   setup() {
-    const usage = reactive(USAGE_DEFAULT);
-    return { usage };
+    const info = reactive(INFO_DEFAULT);
+    return { info };
   },
   components: {
 //    ProgressBar,
@@ -160,28 +171,27 @@ export default {
   },
   methods: {
     ...mapActions(useLayoutStore, ["closeHovers", "showHover"]),
-    async fetchUsage() {
+    async fetchInfo() {
       let path = this.$route.path.endsWith("/")
         ? this.$route.path
         : this.$route.path + "/";
-      let usageStats = USAGE_DEFAULT;
-      if (this.disableUsedPercentage) {
-        return Object.assign(this.usage, usageStats);
-      }
       try {
-        let usage = await api.usage(path);
-        usageStats = {
-          used: prettyBytes(usage.used, { binary: true }),
-          total: prettyBytes(usage.total, { binary: true }),
-          usedPercentage: Math.round((usage.used / usage.total) * 100),
-        };
+        let infoResponse = await api.info(path);
+        return Object.assign(this.info, {
+          used: prettyBytes(infoResponse.used, { binary: true }),
+          total: prettyBytes(infoResponse.total, { binary: true }),
+          usedPercentage: Math.round((infoResponse.used / infoResponse.total) * 100),
+          sourceNames: infoResponse.sourceNames,
+        });
       } catch (error) {
         this.$showError(error);
       }
-      return Object.assign(this.usage, usageStats);
     },
-    toRoot() {
-      this.$router.push({ path: "/files" });
+    toRoot(sourceName) {
+      if (sourceName)
+        this.$router.push({ path: "/files", query: { sourceName: sourceName }});
+      else
+        this.$router.push({ path: "/files"});
       this.closeHovers();
     },
     toSettings() {
@@ -195,8 +205,18 @@ export default {
   },
   watch: {
     isFiles(newValue) {
-      newValue && this.fetchUsage();
+      newValue && this.fetchInfo();
     },
   },
 };
 </script>
+
+<style scoped>
+.sub-action {
+  margin-left: 30px; 
+  font-size: 0.8em;  
+}
+.sub-action.active {
+  background-color: lightgray; 
+}
+</style>

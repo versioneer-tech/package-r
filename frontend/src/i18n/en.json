@@ -54,7 +54,7 @@
   "errors": {
     "forbidden": "You don't have permissions to access this.",
     "internal": "Something really went wrong.",
-    "notFound": "This location can't be reached.",
+    "notFound": "Please select a source.",
     "connection": "The server can't be reached."
   },
   "files": {
