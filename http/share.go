@@ -98,7 +98,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	}
 
 	const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyz"
-	b := make([]byte, 8)
+	b := make([]byte, 8) //nolint:gomnd
 	for i := range b {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(letterBytes))))
 		if err != nil {
@@ -111,7 +111,6 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	var expire int64 = 0
 
 	if body.Expires != "" {
-		//nolint:govet
 		num, err := strconv.Atoi(body.Expires)
 		if err != nil {
 			return http.StatusInternalServerError, err
