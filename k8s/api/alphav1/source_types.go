@@ -60,6 +60,7 @@ type SourceList struct {
 	Items           []Source `json:"items"`
 }
 
+//nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&Source{}, &SourceList{})
 }

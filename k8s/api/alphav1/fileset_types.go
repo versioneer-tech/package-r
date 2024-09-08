@@ -56,6 +56,7 @@ type FileSetList struct {
 	Items           []FileSet `json:"items"`
 }
 
+//nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&FileSet{}, &FileSetList{})
 }
