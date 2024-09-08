@@ -56,12 +56,20 @@ func (s shareBackend) GetPermanent(path string, id uint) (*share.Link, error) {
 
 func (s shareBackend) Gets(path, sourceName string, id uint) ([]*share.Link, error) {
 	var v []*share.Link
-	err := s.db.Select(q.Eq("Path", path), q.Eq("SourceName", sourceName), q.Eq("UserID", id)).Find(&v)
+	err := s.db.Select(q.Eq("Path", path), q.Eq("UserID", id)).Find(&v)
 	if errors.Is(err, storm.ErrNotFound) {
 		return v, fbErrors.ErrNotExist
 	}
-
-	return v, err
+	if err != nil {
+		return v, err
+	}
+	var filteredv = make([]*share.Link, 0)
+	for _, s := range v {
+		if s.Source.Name == sourceName {
+			filteredv = append(filteredv, s)
+		}
+	}
+	return filteredv, nil
 }
 
 func (s shareBackend) Save(l *share.Link) error {

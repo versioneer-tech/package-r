@@ -24,9 +24,12 @@ func (s *Source) Connect() (string, *awsSession.Session) {
 		// tbd load
 		values = map[string]string{}
 		bucket = s.SecretName
-	} else {
+	} else if s.Name != "" {
 		values = map[string]string{}
 		bucket = s.Name
+	} else {
+		log.Print("Missing bucket information")
+		return "", nil
 	}
 
 	session, errSession := awsSession.NewSession(&aws.Config{
