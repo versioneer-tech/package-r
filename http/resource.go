@@ -336,19 +336,15 @@ type InfoResponse struct {
 	SourceNames []string `json:"sourceNames"`
 }
 
-func keys(m map[string]map[string]string) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
 var infoHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	sourceNames := make([]string, 0, len(d.sources))
+	for _, source := range d.sources {
+		sourceNames = append(sourceNames, source.Name)
+	}
 	return renderJSON(w, r, &InfoResponse{
 		Total:       0,
 		Used:        0,
-		SourceNames: keys(d.settings.Sources),
+		SourceNames: sourceNames,
 	})
 
 	// file, err := files.NewFileInfo(&files.FileOptions{

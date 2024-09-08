@@ -40,19 +40,19 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		bucket, session := d.Connect(link.SourceName)
+		bucket, session := link.Source.Connect()
 		if session != nil {
-			d.user.Fs = s3fs.NewFs(bucket, session)
+			d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), "/")
 		}
 
 		fileInfo, err := files.NewFileInfo(&files.FileOptions{
-			Fs:         d.user.Fs,
-			Path:       link.Path,
-			SourceName: link.SourceName,
-			Modify:     d.user.Perm.Modify,
-			Expand:     false,
-			Checker:    d,
-			Token:      link.Token,
+			Fs:      d.user.Fs,
+			Path:    link.Path,
+			Source:  link.Source,
+			Modify:  d.user.Perm.Modify,
+			Expand:  false,
+			Checker: d,
+			Token:   link.Token,
 		})
 		if err != nil {
 			return errToStatus(err), err
@@ -75,13 +75,13 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		token := link.Token
 
 		fileInfo, err = files.NewFileInfo(&files.FileOptions{
-			Fs:         d.user.Fs,
-			Path:       filePath,
-			SourceName: link.SourceName,
-			Modify:     d.user.Perm.Modify,
-			Expand:     true,
-			Checker:    d,
-			Token:      token,
+			Fs:      d.user.Fs,
+			Path:    filePath,
+			Source:  link.Source,
+			Modify:  d.user.Perm.Modify,
+			Expand:  true,
+			Checker: d,
+			Token:   token,
 		})
 		if err != nil {
 			return errToStatus(err), err
@@ -91,8 +91,8 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			var keys []string
 			file, err := fileInfo.Fs.Open(fileInfo.Path)
 			if err == nil {
-				keys = append(keys, filepath.Join(basePath, file.Name()))
-				presignedURLs, _, err := d.Presign(fileInfo.SourceName, keys)
+				keys = append(keys, file.Name())
+				presignedURLs, _, err := link.Source.Presign(keys)
 				if err == nil {
 					fileInfo.Content = presignedURLs[0]
 				}
@@ -168,7 +168,7 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 	}
 
 	log.Printf("start presign (total %v)", len(keys))
-	presignedURLs, status, err := d.Presign(fileInfo.SourceName, keys)
+	presignedURLs, status, err := fileInfo.Source.Presign(keys)
 
 	if err != nil {
 		return status, err

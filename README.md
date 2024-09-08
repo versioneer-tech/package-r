@@ -10,22 +10,23 @@
 
 ### v1.x
 
-- Possibility to include metadata to a shared link, shown to authorized users on the share management page as well as to recipients during navigation.
-- Allow share links containing even millions of items (currently sharing is limited to a maximum of 5000 items).
+- [x] Possibility to include metadata in a description field to a shared link.
+- [x] Provide capabilities to browse through multiple buckets.
+- [ ] Make Kubernetes-native and store config and links there
+- [ ] Allow share links containing even millions of items (currently sharing is limited to a maximum of 5000 items) by materializing the indx
 - Extend sharing capabilities to support filtering below a prefix path considering a regex.
-- Make presigned URLs expiration configurable (currently always valid for 7 days on each PRESIGNED_FILE_LIST generation)
+- [ ] Make presigned URLs expiration configurable (currently always valid for 7 days after generation)
 
 ### v2
 
 - Extend sharing capabilities to multiple prefix paths without requiring the generation of multiple HTTP links.
-- Provide capabilities to browse through multiple buckets.
-- Expose and show item checksums from S3 buckets.
+- Expose and show item checksums.
 
 ## Setup
 
 - Pre-configured docker images are published to [`ghcr.io/versioneer-tech/package-r`](https://github.com/versioneer-tech/package-r/pkgs/container/package-r)
 - As the AWS S3 SDK is used for bucket access, common configuration e.g. through environment variables `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` applies.
-- In its initial version (v1), **packageR** supports connection to a single bucket, configured via the `BUCKET_DEFAULT` environment variable.
+- Bucket(s) to be used as Sources are configured via the `BUCKET_DEFAULT` environment variable (separated by |).
 - The name of the instance can be configured via the `BRANDING_NAME` environment variable.
 - A login password can be configured via the `PASSWORD` environment variable, otherwise the `AWS_SECRET_ACCESS_KEY` must be provided for login. 
 

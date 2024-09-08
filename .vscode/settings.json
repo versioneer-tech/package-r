@@ -1,0 +1,5 @@
+{
+    "go.formatTool": "goimports",
+    "go.lintTool": "golangci-lint",
+    "makefile.configureOnOpen": false
+}

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -11,9 +12,18 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/golang-jwt/jwt/v4/request"
+	"github.com/spf13/afero"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	k8sClient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	fbErrors "github.com/versioneer-tech/package-r/v2/errors"
+	"github.com/versioneer-tech/package-r/v2/k8s/api/alphav1"
 	"github.com/versioneer-tech/package-r/v2/s3fs"
+	"github.com/versioneer-tech/package-r/v2/share"
+
 	"github.com/versioneer-tech/package-r/v2/users"
 )
 
@@ -34,7 +44,8 @@ type userInfo struct {
 }
 
 type authToken struct {
-	User userInfo `json:"user"`
+	User    userInfo       `json:"user"`
+	Sources []share.Source `json:"sources"`
 	jwt.RegisteredClaims
 }
 
@@ -90,9 +101,14 @@ func withUser(fn handleFunc) handleFunc {
 			return http.StatusInternalServerError, err
 		}
 
-		bucket, session := d.Connect(r.URL.Query().Get("sourceName"))
-		if session != nil {
-			d.user.Fs = s3fs.NewFs(bucket, session)
+		d.sources = tk.Sources
+
+		source := d.GetSource(r.URL.Query().Get("sourceName"))
+		if source != nil {
+			bucket, session := source.Connect()
+			if session != nil {
+				d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), "/")
+			}
 		}
 
 		return fn(w, r, d)
@@ -126,6 +142,26 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 
 		return printToken(w, r, d, user, tokenExpireTime)
 	}
+}
+
+type Client struct {
+	client k8sClient.Client
+}
+
+func NewClient(client k8sClient.Client) *Client {
+	return &Client{client: client}
+}
+
+func (c *Client) ListSources(ctx context.Context, namespace string) (*alphav1.SourceList, error) {
+	var list alphav1.SourceList
+	err := c.client.List(ctx, &list, &k8sClient.ListOptions{Namespace: namespace})
+	return &list, err
+}
+
+func (c *Client) GetSource(ctx context.Context, namespace, name string) (*alphav1.Source, error) {
+	var obj alphav1.Source
+	err := c.client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, &obj)
+	return &obj, err
 }
 
 type signupBody struct {
@@ -190,7 +226,52 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 	})
 }
 
+//nolint:gocritic
 func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration) (int, error) {
+	sources := make([]share.Source, 0)
+	for _, bucket := range strings.Split(os.Getenv("BUCKET_DEFAULT"), "|") {
+		if bucket != "" {
+			source := share.Source{}
+			source.Name = bucket
+			sources = append(sources, source)
+		}
+	}
+
+	var config *rest.Config
+	var err error
+	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	} else {
+		config, err = rest.InClusterConfig()
+	}
+
+	if config != nil && err == nil {
+		scheme := runtime.NewScheme()
+		err = alphav1.AddToScheme(scheme)
+		if err == nil {
+			controllerClient, err2 := k8sClient.New(config, k8sClient.Options{Scheme: scheme})
+			if err2 != nil {
+				log.Fatal(err)
+			}
+
+			cl := NewClient(controllerClient)
+			ctx := context.Background()
+
+			resp, err3 := cl.ListSources(ctx, "")
+			if err3 != nil {
+				log.Fatal(err)
+			}
+
+			log.Printf("Sources <- %+v", resp.Items)
+
+			for _, item := range resp.Items {
+				source := share.Source{}
+				source.Name = item.ObjectMeta.Name
+				sources = append(sources, source)
+			}
+		}
+	}
+
 	claims := &authToken{
 		User: userInfo{
 			ID:           user.ID,
@@ -203,6 +284,7 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 			HideDotfiles: user.HideDotfiles,
 			DateFormat:   user.DateFormat,
 		},
+		Sources: sources,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpirationTime)),
