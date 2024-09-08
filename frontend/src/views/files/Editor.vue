@@ -124,6 +124,6 @@ const close = () => {
   fileStore.updateRequest(null);
 
   let uri = url.removeLastDir(route.path) + "/";
-  router.push({ path: uri , query: {context: route.query.sourceName ? String(route.query.sourceName) : ""}});
+  router.push({ path: uri , query: {sourceName: route.query.sourceName ? String(route.query.sourceName) : ""}});
 };
 </script>

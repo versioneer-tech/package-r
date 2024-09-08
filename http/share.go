@@ -91,6 +91,11 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		defer r.Body.Close()
 	}
 
+	source := d.GetSource(r.URL.Query().Get("sourceName"))
+	if source == nil {
+		return http.StatusBadRequest, fmt.Errorf("unknown source")
+	}
+
 	bytes := make([]byte, 6) //nolint:gomnd
 	_, err := rand.Read(bytes)
 	if err != nil {
@@ -139,7 +144,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 
 	s = &share.Link{
 		Path:         r.URL.Path,
-		SourceName:   r.URL.Query().Get("sourceName"),
+		Source:       *source,
 		Hash:         str,
 		Expire:       expire,
 		UserID:       d.user.ID,

@@ -25,7 +25,7 @@ export async function create(
   url = removePrefix(url);
   url = `/api/share${url}`;
   if (expires !== "") {
-    url += `?expires=${expires}&unit=${unit}`;
+    url += `&expires=${expires}&unit=${unit}`;
   }
   let body = "{}";
   if (password != "" || expires !== "" || unit !== "hours" || description !== "") {

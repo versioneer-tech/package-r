@@ -11,15 +11,15 @@
         <i class="material-icons">folder</i>
         <span>Sources</span>
       </button>
-      <div v-for="(sourceName, index) in info.sourceNames" :key="index">
+      <div v-for="(source, index) in info.sources" :key="index">
         <button
           class="action sub-action"
-          @click="() => toRoot(sourceName)"
-          :aria-label=sourceName
-          :title=sourceName
-          :class="{ active: $route.query.sourceName === sourceName }"
+          @click="() => toRoot(source.name)"
+          :aria-label=source.name
+          :title=source.name
+          :class="{ active: $route.query.sourceName === source.name }"
         >
-          <span>{{ sourceName }}</span>
+          <span>{{ source.friendlyName || source.name }}</span>
         </button>
       </div>
 
@@ -143,7 +143,7 @@ import { files as api } from "@/api";
 //import ProgressBar from "@/components/ProgressBar.vue";
 import prettyBytes from "pretty-bytes";
 
-const INFO_DEFAULT = { used: "0 B", total: "0 B", usedPercentage: 0, sourceNames: []};
+const INFO_DEFAULT = { used: "0 B", total: "0 B", usedPercentage: 0, sources: []};
 
 export default {
   name: "sidebar",
@@ -181,7 +181,7 @@ export default {
           used: prettyBytes(infoResponse.used, { binary: true }),
           total: prettyBytes(infoResponse.total, { binary: true }),
           usedPercentage: Math.round((infoResponse.used / infoResponse.total) * 100),
-          sourceNames: infoResponse.sourceNames,
+          sources: infoResponse.sources,
         });
       } catch (error) {
         this.$showError(error);
