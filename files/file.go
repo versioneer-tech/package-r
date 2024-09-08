@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/versioneer-tech/package-r/v2/rules"
-	"github.com/versioneer-tech/package-r/v2/share"
 )
 
 const PermFile = 0644
@@ -22,14 +21,13 @@ type FileInfo struct {
 	*Listing
 	Fs        afero.Fs          `json:"-"`
 	Path      string            `json:"path"`
-	Source    share.Source      `json:"source"`
 	Name      string            `json:"name"`
 	Size      int64             `json:"size"`
-	Extension string            `json:"extension"`
 	ModTime   time.Time         `json:"modified"`
 	Mode      os.FileMode       `json:"mode"`
 	IsDir     bool              `json:"isDir"`
 	IsSymlink bool              `json:"isSymlink"`
+	Extension string            `json:"extension"`
 	Type      string            `json:"type"`
 	Content   string            `json:"content,omitempty"`
 	Checksums map[string]string `json:"checksums,omitempty"`
@@ -40,7 +38,6 @@ type FileInfo struct {
 type FileOptions struct {
 	Fs      afero.Fs
 	Path    string
-	Source  share.Source
 	Modify  bool
 	Expand  bool
 	Token   string
@@ -93,13 +90,12 @@ func stat(opts *FileOptions) (*FileInfo, error) {
 		file = &FileInfo{
 			Fs:        opts.Fs,
 			Path:      opts.Path,
-			Source:    opts.Source,
 			Name:      info.Name(),
+			Size:      info.Size(),
 			ModTime:   info.ModTime(),
 			Mode:      info.Mode(),
 			IsDir:     info.IsDir(),
 			IsSymlink: IsSymlink(info.Mode()),
-			Size:      info.Size(),
 			Extension: filepath.Ext(info.Name()),
 			Token:     opts.Token,
 		}
@@ -130,12 +126,12 @@ func stat(opts *FileOptions) (*FileInfo, error) {
 	file = &FileInfo{
 		Fs:        opts.Fs,
 		Path:      opts.Path,
-		Source:    opts.Source,
 		Name:      info.Name(),
+		Size:      info.Size(),
 		ModTime:   info.ModTime(),
 		Mode:      info.Mode(),
 		IsDir:     info.IsDir(),
-		Size:      info.Size(),
+		IsSymlink: false,
 		Extension: filepath.Ext(info.Name()),
 		Token:     opts.Token,
 	}
@@ -286,6 +282,7 @@ func (i *FileInfo) readListing(checker rules.Checker) error {
 
 		file := &FileInfo{
 			Fs:        i.Fs,
+			Path:      fPath,
 			Name:      name,
 			Size:      f.Size(),
 			ModTime:   f.ModTime(),
@@ -293,8 +290,6 @@ func (i *FileInfo) readListing(checker rules.Checker) error {
 			IsDir:     f.IsDir(),
 			IsSymlink: isSymlink,
 			Extension: filepath.Ext(name),
-			Path:      fPath,
-			Source:    i.Source,
 		}
 
 		if file.IsDir {

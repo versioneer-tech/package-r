@@ -338,10 +338,11 @@ type InfoResponse struct {
 }
 
 var infoHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	sources := d.raw.([]share.Source)
 	return renderJSON(w, r, &InfoResponse{
 		Total:   0,
 		Used:    0,
-		Sources: d.sources,
+		Sources: sources,
 	})
 
 	// file, err := files.NewFileInfo(&files.FileOptions{

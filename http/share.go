@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/http"
 	"sort"
 	"strconv"
@@ -82,6 +83,11 @@ var shareDeleteHandler = withPermShare(func(_ http.ResponseWriter, r *http.Reque
 })
 
 var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	source := share.GetSource(d.raw.([]share.Source), r.URL.Query().Get("sourceName"))
+	if source == nil {
+		return http.StatusBadRequest, fmt.Errorf("unknown source")
+	}
+
 	var s *share.Link
 	var body share.CreateBody
 	if r.Body != nil {
@@ -91,23 +97,20 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		defer r.Body.Close()
 	}
 
-	source := d.GetSource(r.URL.Query().Get("sourceName"))
-	if source == nil {
-		return http.StatusBadRequest, fmt.Errorf("unknown source")
+	const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyz"
+	b := make([]byte, 8) //nolint:gomnd
+	for i := range b {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(letterBytes))))
+		if err != nil {
+			return http.StatusInternalServerError, err
+		}
+		b[i] = letterBytes[n.Int64()]
 	}
-
-	bytes := make([]byte, 6) //nolint:gomnd
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-
-	str := base64.URLEncoding.EncodeToString(bytes)
+	str := string(b)
 
 	var expire int64 = 0
 
 	if body.Expires != "" {
-		//nolint:govet
 		num, err := strconv.Atoi(body.Expires)
 		if err != nil {
 			return http.StatusInternalServerError, err

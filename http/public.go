@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"log"
@@ -22,6 +23,12 @@ import (
 	"github.com/versioneer-tech/package-r/v2/share"
 )
 
+type LinkData struct {
+	FileInfo   files.FileInfo
+	Source     share.Source
+	SecretName string
+}
+
 var withHashFile = func(fn handleFunc) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		id, ifPath := ifPathWithName(r)
@@ -40,15 +47,16 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		bucket, session := link.Source.Connect()
+		secretName := link.Source.Name + "---" + link.Hash
+
+		bucket, prefix, session := link.Source.Connect(secretName)
 		if session != nil {
-			d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), "/")
+			d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), prefix+"/")
 		}
 
 		fileInfo, err := files.NewFileInfo(&files.FileOptions{
 			Fs:      d.user.Fs,
 			Path:    link.Path,
-			Source:  link.Source,
 			Modify:  d.user.Perm.Modify,
 			Expand:  false,
 			Checker: d,
@@ -77,7 +85,6 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		fileInfo, err = files.NewFileInfo(&files.FileOptions{
 			Fs:      d.user.Fs,
 			Path:    filePath,
-			Source:  link.Source,
 			Modify:  d.user.Perm.Modify,
 			Expand:  true,
 			Checker: d,
@@ -87,19 +94,13 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		if !fileInfo.IsDir {
-			var keys []string
-			file, err := fileInfo.Fs.Open(fileInfo.Path)
-			if err == nil {
-				keys = append(keys, file.Name())
-				presignedURLs, _, err := link.Source.Presign(keys)
-				if err == nil {
-					fileInfo.Content = presignedURLs[0]
-				}
-			}
+		linkData := LinkData{
+			FileInfo:   *fileInfo,
+			Source:     link.Source,
+			SecretName: secretName,
 		}
 
-		d.raw = fileInfo
+		d.raw = linkData
 		return fn(w, r, d)
 	}
 }
@@ -120,17 +121,32 @@ func ifPathWithName(r *http.Request) (id, filePath string) {
 }
 
 var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-	fileInfo := d.raw.(*files.FileInfo)
+	linkData := d.raw.(LinkData)
+	fileInfo := linkData.FileInfo
+
 	if fileInfo.IsDir {
 		fileInfo.Listing.Sorting = files.Sorting{By: "name", Asc: false}
 		fileInfo.Listing.ApplySort()
 		return renderJSON(w, r, fileInfo)
 	}
+
+	var keys []string
+	file, err := fileInfo.Fs.Open(fileInfo.Path)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	keys = append(keys, file.Name())
+	presignedURLs, _, err := linkData.Source.Presign(linkData.SecretName, keys)
+	if err == nil {
+		fileInfo.Content = presignedURLs[0]
+	}
 	return renderJSON(w, r, fileInfo)
 })
 
 var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-	fileInfo := d.raw.(*files.FileInfo)
+	linkData := d.raw.(LinkData)
+	fileInfo := linkData.FileInfo
+
 	file, err := fileInfo.Fs.Open(fileInfo.Path)
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -168,7 +184,7 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 	}
 
 	log.Printf("start presign (total %v)", len(keys))
-	presignedURLs, status, err := fileInfo.Source.Presign(keys)
+	presignedURLs, status, err := linkData.Source.Presign(linkData.SecretName, keys)
 
 	if err != nil {
 		return status, err
@@ -186,7 +202,14 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 		return 0, nil
 	}
 
-	return renderJSON(w, r, presignedURLs)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	encoder := json.NewEncoder(w)
+	encoder.SetEscapeHTML(false)
+	err = encoder.Encode(presignedURLs)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	return 0, nil
 })
 
 func authenticateShareRequest(r *http.Request, l *share.Link) (int, error) {
