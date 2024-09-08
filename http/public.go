@@ -40,19 +40,22 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		bucket, session := link.Source.Connect()
+		secretName := link.Source.Name + "---" + link.Hash
+
+		bucket, prefix, session := link.Source.Connect(secretName)
 		if session != nil {
-			d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), "/")
+			d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), prefix+"/")
 		}
 
 		fileInfo, err := files.NewFileInfo(&files.FileOptions{
-			Fs:      d.user.Fs,
-			Path:    link.Path,
-			Source:  link.Source,
-			Modify:  d.user.Perm.Modify,
-			Expand:  false,
-			Checker: d,
-			Token:   link.Token,
+			Fs:         d.user.Fs,
+			Path:       link.Path,
+			Source:     link.Source,
+			SecretName: secretName,
+			Modify:     d.user.Perm.Modify,
+			Expand:     false,
+			Checker:    d,
+			Token:      link.Token,
 		})
 		if err != nil {
 			return errToStatus(err), err
@@ -75,13 +78,14 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		token := link.Token
 
 		fileInfo, err = files.NewFileInfo(&files.FileOptions{
-			Fs:      d.user.Fs,
-			Path:    filePath,
-			Source:  link.Source,
-			Modify:  d.user.Perm.Modify,
-			Expand:  true,
-			Checker: d,
-			Token:   token,
+			Fs:         d.user.Fs,
+			Path:       filePath,
+			Source:     link.Source,
+			SecretName: secretName,
+			Modify:     d.user.Perm.Modify,
+			Expand:     true,
+			Checker:    d,
+			Token:      token,
 		})
 		if err != nil {
 			return errToStatus(err), err
@@ -92,7 +96,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			file, err := fileInfo.Fs.Open(fileInfo.Path)
 			if err == nil {
 				keys = append(keys, file.Name())
-				presignedURLs, _, err := link.Source.Presign(keys)
+				presignedURLs, _, err := link.Source.Presign(secretName, keys)
 				if err == nil {
 					fileInfo.Content = presignedURLs[0]
 				}
@@ -168,7 +172,7 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 	}
 
 	log.Printf("start presign (total %v)", len(keys))
-	presignedURLs, status, err := fileInfo.Source.Presign(keys)
+	presignedURLs, status, err := fileInfo.Source.Presign(fileInfo.SecretName, keys)
 
 	if err != nil {
 		return status, err

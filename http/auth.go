@@ -100,9 +100,9 @@ func withUser(fn handleFunc) handleFunc {
 
 		source := d.GetSource(r.URL.Query().Get("sourceName"))
 		if source != nil {
-			bucket, session := source.Connect()
+			bucket, prefix, session := source.Connect("")
 			if session != nil {
-				d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), "/")
+				d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), prefix+"/")
 			}
 		}
 

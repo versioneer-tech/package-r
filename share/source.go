@@ -21,20 +21,35 @@ type Source struct {
 	SecretName   string `json:"secretName,omitempty"`
 }
 
-func (s *Source) Connect() (string, *awsSession.Session) {
+func (s *Source) Connect(secretName string) (bucket, prefix string, session *awsSession.Session) {
 	if s.Name == "" {
-		return "Source information missing", nil
+		log.Print("Source information missing")
+		return "", "", nil
 	}
 
 	values := map[string]string{}
-	if s.SecretName != "" {
+
+	if s.SecretName != "" || secretName != "" {
 		nsc := k8s.NewDefaultClient()
 		ctx := context.Background()
-		resp, err := nsc.GetSecret(ctx, s.SecretName)
-		if err == nil && resp != nil {
-			log.Printf("Secret <- %+v", resp)
-			for k, v := range resp.Data {
-				values[k] = string(v)
+
+		if s.SecretName != "" {
+			resp, err := nsc.GetSecret(ctx, s.SecretName)
+			if err == nil && resp != nil {
+				log.Printf("Secret <- %+v", resp)
+				for k, v := range resp.Data {
+					values[k] = string(v)
+				}
+			}
+		}
+
+		if secretName != "" {
+			resp, err := nsc.GetSecret(ctx, secretName)
+			if err == nil && resp != nil {
+				log.Printf("Secret <- %+v", resp)
+				for k, v := range resp.Data {
+					values[k] = string(v)
+				}
 			}
 		}
 	}
@@ -49,25 +64,26 @@ func (s *Source) Connect() (string, *awsSession.Session) {
 		S3ForcePathStyle: aws.Bool(true),
 	})
 
-	bucket := GetStringOrDefault(values, "BUCKET_NAME", s.Name)
+	bucket = GetStringOrDefault(values, "BUCKET_NAME", s.Name)
+	prefix = GetStringOrDefault(values, "BUCKET_PREFIX", "")
 
 	if errSession != nil {
-		log.Print("Could not create session:", errSession)
-		return "", nil
+		log.Printf("Could not create session: %s", errSession)
+		return "", "", nil
 	}
 
-	return bucket, session
+	return bucket, prefix, session
 }
 
-func (s *Source) Presign(keys []string) (presignedUrls []string, status int, err error) {
+func (s *Source) Presign(secretName string, keys []string) (presignedUrls []string, status int, err error) {
 	presignedURLs := []string{}
-	bucket, session := s.Connect()
+	bucket, prefix, session := s.Connect(secretName)
 	if session != nil {
 		s3Client := s3.New(session)
 		for _, key := range keys {
 			getObjectInput := s3.GetObjectInput{
 				Bucket: aws.String(bucket),
-				Key:    aws.String(key),
+				Key:    aws.String(prefix + key),
 			}
 
 			req, _ := s3Client.GetObjectRequest(&getObjectInput)

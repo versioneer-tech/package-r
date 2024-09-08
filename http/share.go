@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/http"
 	"sort"
 	"strconv"
@@ -96,13 +97,16 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		return http.StatusBadRequest, fmt.Errorf("unknown source")
 	}
 
-	bytes := make([]byte, 6) //nolint:gomnd
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return http.StatusInternalServerError, err
+	const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyz"
+	b := make([]byte, 8)
+	for i := range b {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(letterBytes))))
+		if err != nil {
+			return http.StatusInternalServerError, err
+		}
+		b[i] = letterBytes[n.Int64()]
 	}
-
-	str := base64.URLEncoding.EncodeToString(bytes)
+	str := string(b)
 
 	var expire int64 = 0
 
