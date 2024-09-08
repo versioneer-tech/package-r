@@ -39,16 +39,14 @@ spec:
           spec:
             description: SourceSpec defines the desired state of Source
             properties:
-              secretName:
+              friendlyName:
                 type: string
             type: object
           status:
             description: SourceStatus defines the observed state of Source
             properties:
-              success:
-                type: boolean
-            required:
-            - success
+              secretName:
+                type: string
             type: object
         type: object
     served: true

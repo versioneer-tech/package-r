@@ -13,17 +13,17 @@ import (
 )
 
 type Source struct {
-	Name       string `json:"name"`
-	SecretName string `json:"secretName,omitempty"`
+	Name         string `json:"name"`
+	FriendlyName string `json:"friendlyName,omitempty"`
+	SecretName   string `json:"secretName,omitempty"`
 }
 
 func (s *Source) Connect() (string, *awsSession.Session) {
 	var values map[string]string
 	var bucket string
 	if s.SecretName != "" {
-		// tbd load
 		values = map[string]string{}
-		bucket = s.SecretName
+		bucket = s.SecretName // use values of secret
 	} else if s.Name != "" {
 		values = map[string]string{}
 		bucket = s.Name

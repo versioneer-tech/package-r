@@ -267,6 +267,8 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 			for _, item := range resp.Items {
 				source := share.Source{}
 				source.Name = item.ObjectMeta.Name
+				source.FriendlyName = item.Spec.FriendlyName
+				source.SecretName = item.Status.SecretName
 				sources = append(sources, source)
 			}
 		}

@@ -27,23 +27,12 @@ import (
 type FileSetSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	Hash         string `json:"hash"`
-	Path         string `json:"path"`
-	Source       Source `json:"source"`
-	UserID       uint   `json:"userID"`
-	Expire       int64  `json:"expire"`
-	PasswordHash string `json:"password_hash,omitempty"`
-	Token        string `json:"token,omitempty"`
-	Description  string `json:"description,omitempty"`
 }
 
 // FileSetStatus defines the observed state of FileSet
 type FileSetStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	ProxySource Source `json:"source"`
 }
 
 // +kubebuilder:object:root=true
@@ -67,7 +56,6 @@ type FileSetList struct {
 	Items           []FileSet `json:"items"`
 }
 
-//nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&FileSet{}, &FileSetList{})
 }

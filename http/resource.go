@@ -16,6 +16,7 @@ import (
 	fbErrors "github.com/versioneer-tech/package-r/v2/errors"
 	"github.com/versioneer-tech/package-r/v2/files"
 	"github.com/versioneer-tech/package-r/v2/fileutils"
+	"github.com/versioneer-tech/package-r/v2/share"
 )
 
 var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
@@ -331,20 +332,16 @@ func patchAction(ctx context.Context, action, src, dst string, d *data, fileCach
 }
 
 type InfoResponse struct {
-	Total       uint64   `json:"total"`
-	Used        uint64   `json:"used"`
-	SourceNames []string `json:"sourceNames"`
+	Total   uint64         `json:"total"`
+	Used    uint64         `json:"used"`
+	Sources []share.Source `json:"sources"`
 }
 
 var infoHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-	sourceNames := make([]string, 0, len(d.sources))
-	for _, source := range d.sources {
-		sourceNames = append(sourceNames, source.Name)
-	}
 	return renderJSON(w, r, &InfoResponse{
-		Total:       0,
-		Used:        0,
-		SourceNames: sourceNames,
+		Total:   0,
+		Used:    0,
+		Sources: d.sources,
 	})
 
 	// file, err := files.NewFileInfo(&files.FileOptions{

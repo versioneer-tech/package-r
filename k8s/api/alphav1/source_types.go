@@ -28,7 +28,7 @@ type SourceSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	SecretName string `json:"secretName,omitempty"`
+	FriendlyName string `json:"friendlyName,omitempty"`
 }
 
 // SourceStatus defines the observed state of Source
@@ -36,7 +36,7 @@ type SourceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Success bool `json:"success"`
+	SecretName string `json:"secretName,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -60,7 +60,6 @@ type SourceList struct {
 	Items           []Source `json:"items"`
 }
 
-//nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&Source{}, &SourceList{})
 }
