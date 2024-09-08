@@ -1,6 +1,7 @@
 package share
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	awsSession "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+
+	"github.com/versioneer-tech/package-r/v2/k8s"
 )
 
 type Source struct {
@@ -19,17 +22,21 @@ type Source struct {
 }
 
 func (s *Source) Connect() (string, *awsSession.Session) {
-	var values map[string]string
-	var bucket string
+	if s.Name == "" {
+		return "Source information missing", nil
+	}
+
+	values := map[string]string{}
 	if s.SecretName != "" {
-		values = map[string]string{}
-		bucket = s.SecretName // use values of secret
-	} else if s.Name != "" {
-		values = map[string]string{}
-		bucket = s.Name
-	} else {
-		log.Print("Missing bucket information")
-		return "", nil
+		nsc := k8s.NewDefaultClient()
+		ctx := context.Background()
+		resp, err := nsc.GetSecret(ctx, s.SecretName)
+		if err == nil && resp != nil {
+			log.Printf("Secret <- %+v", resp)
+			for k, v := range resp.Data {
+				values[k] = string(v)
+			}
+		}
 	}
 
 	session, errSession := awsSession.NewSession(&aws.Config{
@@ -41,6 +48,8 @@ func (s *Source) Connect() (string, *awsSession.Session) {
 		Region:           aws.String(GetStringOrDefault(values, "AWS_REGION", os.Getenv("AWS_REGION"))),
 		S3ForcePathStyle: aws.Bool(true),
 	})
+
+	bucket := GetStringOrDefault(values, "BUCKET_NAME", s.Name)
 
 	if errSession != nil {
 		log.Print("Could not create session:", errSession)

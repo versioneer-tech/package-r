@@ -253,9 +253,13 @@ func (fs Fs) Stat(name string) (os.FileInfo, error) {
 	if err != nil {
 		var errRequestFailure awserr.RequestFailure
 		if errors.As(err, &errRequestFailure) {
-			if errRequestFailure.StatusCode() == 404 {
+			statuscode := errRequestFailure.StatusCode()
+			if statuscode == 404 {
 				statDir, errStat := fs.statDirectory(name)
 				return statDir, errStat
+			}
+			if statuscode == 403 {
+				return nil, os.ErrPermission
 			}
 		}
 		return FileInfo{}, &os.PathError{

@@ -13,14 +13,9 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/golang-jwt/jwt/v4/request"
 	"github.com/spf13/afero"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	k8sClient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	fbErrors "github.com/versioneer-tech/package-r/v2/errors"
-	"github.com/versioneer-tech/package-r/v2/k8s/api/alphav1"
+	"github.com/versioneer-tech/package-r/v2/k8s"
 	"github.com/versioneer-tech/package-r/v2/s3fs"
 	"github.com/versioneer-tech/package-r/v2/share"
 
@@ -144,26 +139,6 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 	}
 }
 
-type Client struct {
-	client k8sClient.Client
-}
-
-func NewClient(client k8sClient.Client) *Client {
-	return &Client{client: client}
-}
-
-func (c *Client) ListSources(ctx context.Context, namespace string) (*alphav1.SourceList, error) {
-	var list alphav1.SourceList
-	err := c.client.List(ctx, &list, &k8sClient.ListOptions{Namespace: namespace})
-	return &list, err
-}
-
-func (c *Client) GetSource(ctx context.Context, namespace, name string) (*alphav1.Source, error) {
-	var obj alphav1.Source
-	err := c.client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, &obj)
-	return &obj, err
-}
-
 type signupBody struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -237,40 +212,22 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 		}
 	}
 
-	var config *rest.Config
-	var err error
-	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-	} else {
-		config, err = rest.InClusterConfig()
-	}
+	nsc := k8s.NewDefaultClient()
+	if nsc != nil {
+		ctx := context.Background()
+		resp, err := nsc.ListSources(ctx)
+		if err != nil {
+			log.Printf("Sources couldn't be retrieved: %s", err)
+		}
 
-	if config != nil && err == nil {
-		scheme := runtime.NewScheme()
-		err = alphav1.AddToScheme(scheme)
-		if err == nil {
-			controllerClient, err2 := k8sClient.New(config, k8sClient.Options{Scheme: scheme})
-			if err2 != nil {
-				log.Fatal(err)
-			}
+		log.Printf("Sources <- %+v", resp.Items)
 
-			cl := NewClient(controllerClient)
-			ctx := context.Background()
-
-			resp, err3 := cl.ListSources(ctx, "")
-			if err3 != nil {
-				log.Fatal(err)
-			}
-
-			log.Printf("Sources <- %+v", resp.Items)
-
-			for _, item := range resp.Items {
-				source := share.Source{}
-				source.Name = item.ObjectMeta.Name
-				source.FriendlyName = item.Spec.FriendlyName
-				source.SecretName = item.Status.SecretName
-				sources = append(sources, source)
-			}
+		for _, item := range resp.Items {
+			source := share.Source{}
+			source.Name = item.ObjectMeta.Name
+			source.FriendlyName = item.Spec.FriendlyName
+			source.SecretName = item.Status.SecretName
+			sources = append(sources, source)
 		}
 	}
 
