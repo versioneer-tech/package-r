@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/versioneer-tech/package-r/v2/rules"
-	"github.com/versioneer-tech/package-r/v2/share"
 )
 
 const PermFile = 0644
@@ -20,34 +19,30 @@ const PermDir = 0755
 // FileInfo describes a file.
 type FileInfo struct {
 	*Listing
-	Fs         afero.Fs          `json:"-"`
-	Path       string            `json:"path"`
-	Source     share.Source      `json:"source"`
-	SecretName string            `json:"secretName,omitempty"`
-	Name       string            `json:"name"`
-	Size       int64             `json:"size"`
-	ModTime    time.Time         `json:"modified"`
-	Mode       os.FileMode       `json:"mode"`
-	IsDir      bool              `json:"isDir"`
-	IsSymlink  bool              `json:"isSymlink"`
-	Extension  string            `json:"extension"`
-	Type       string            `json:"type"`
-	Content    string            `json:"content,omitempty"`
-	Checksums  map[string]string `json:"checksums,omitempty"`
-	Token      string            `json:"token,omitempty"`
+	Fs        afero.Fs          `json:"-"`
+	Path      string            `json:"path"`
+	Name      string            `json:"name"`
+	Size      int64             `json:"size"`
+	ModTime   time.Time         `json:"modified"`
+	Mode      os.FileMode       `json:"mode"`
+	IsDir     bool              `json:"isDir"`
+	IsSymlink bool              `json:"isSymlink"`
+	Extension string            `json:"extension"`
+	Type      string            `json:"type"`
+	Content   string            `json:"content,omitempty"`
+	Checksums map[string]string `json:"checksums,omitempty"`
+	Token     string            `json:"token,omitempty"`
 }
 
 // FileOptions are the options when getting a file info.
 type FileOptions struct {
-	Fs         afero.Fs
-	Path       string
-	Source     share.Source
-	SecretName string
-	Modify     bool
-	Expand     bool
-	Token      string
-	Checker    rules.Checker
-	Content    bool
+	Fs      afero.Fs
+	Path    string
+	Modify  bool
+	Expand  bool
+	Token   string
+	Checker rules.Checker
+	Content bool
 }
 
 type Presigner interface {
@@ -93,18 +88,16 @@ func stat(opts *FileOptions) (*FileInfo, error) {
 			return nil, err
 		}
 		file = &FileInfo{
-			Fs:         opts.Fs,
-			Path:       opts.Path,
-			Source:     opts.Source,
-			SecretName: opts.SecretName,
-			Name:       info.Name(),
-			Size:       info.Size(),
-			ModTime:    info.ModTime(),
-			Mode:       info.Mode(),
-			IsDir:      info.IsDir(),
-			IsSymlink:  IsSymlink(info.Mode()),
-			Extension:  filepath.Ext(info.Name()),
-			Token:      opts.Token,
+			Fs:        opts.Fs,
+			Path:      opts.Path,
+			Name:      info.Name(),
+			Size:      info.Size(),
+			ModTime:   info.ModTime(),
+			Mode:      info.Mode(),
+			IsDir:     info.IsDir(),
+			IsSymlink: IsSymlink(info.Mode()),
+			Extension: filepath.Ext(info.Name()),
+			Token:     opts.Token,
 		}
 	}
 
@@ -131,18 +124,16 @@ func stat(opts *FileOptions) (*FileInfo, error) {
 	}
 
 	file = &FileInfo{
-		Fs:         opts.Fs,
-		Path:       opts.Path,
-		Source:     opts.Source,
-		SecretName: opts.SecretName,
-		Name:       info.Name(),
-		Size:       info.Size(),
-		ModTime:    info.ModTime(),
-		Mode:       info.Mode(),
-		IsDir:      info.IsDir(),
-		IsSymlink:  false,
-		Extension:  filepath.Ext(info.Name()),
-		Token:      opts.Token,
+		Fs:        opts.Fs,
+		Path:      opts.Path,
+		Name:      info.Name(),
+		Size:      info.Size(),
+		ModTime:   info.ModTime(),
+		Mode:      info.Mode(),
+		IsDir:     info.IsDir(),
+		IsSymlink: false,
+		Extension: filepath.Ext(info.Name()),
+		Token:     opts.Token,
 	}
 
 	return file, nil
@@ -290,17 +281,15 @@ func (i *FileInfo) readListing(checker rules.Checker) error {
 		}
 
 		file := &FileInfo{
-			Fs:         i.Fs,
-			Path:       fPath,
-			Source:     i.Source,
-			SecretName: i.SecretName,
-			Name:       name,
-			Size:       f.Size(),
-			ModTime:    f.ModTime(),
-			Mode:       f.Mode(),
-			IsDir:      f.IsDir(),
-			IsSymlink:  isSymlink,
-			Extension:  filepath.Ext(name),
+			Fs:        i.Fs,
+			Path:      fPath,
+			Name:      name,
+			Size:      f.Size(),
+			ModTime:   f.ModTime(),
+			Mode:      f.Mode(),
+			IsDir:     f.IsDir(),
+			IsSymlink: isSymlink,
+			Extension: filepath.Ext(name),
 		}
 
 		if file.IsDir {

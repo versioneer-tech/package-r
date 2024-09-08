@@ -83,6 +83,11 @@ var shareDeleteHandler = withPermShare(func(_ http.ResponseWriter, r *http.Reque
 })
 
 var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	source := share.GetSource(d.raw.([]share.Source), r.URL.Query().Get("sourceName"))
+	if source == nil {
+		return http.StatusBadRequest, fmt.Errorf("unknown source")
+	}
+
 	var s *share.Link
 	var body share.CreateBody
 	if r.Body != nil {
@@ -90,11 +95,6 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 			return http.StatusBadRequest, fmt.Errorf("failed to decode body: %w", err)
 		}
 		defer r.Body.Close()
-	}
-
-	source := d.GetSource(r.URL.Query().Get("sourceName"))
-	if source == nil {
-		return http.StatusBadRequest, fmt.Errorf("unknown source")
 	}
 
 	const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyz"

@@ -96,15 +96,15 @@ func withUser(fn handleFunc) handleFunc {
 			return http.StatusInternalServerError, err
 		}
 
-		d.sources = tk.Sources
-
-		source := d.GetSource(r.URL.Query().Get("sourceName"))
+		source := share.GetSource(tk.Sources, r.URL.Query().Get("sourceName"))
 		if source != nil {
 			bucket, prefix, session := source.Connect("")
 			if session != nil {
 				d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), prefix+"/")
 			}
 		}
+
+		d.raw = tk.Sources
 
 		return fn(w, r, d)
 	}

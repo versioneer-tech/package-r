@@ -10,7 +10,6 @@ import (
 	"github.com/versioneer-tech/package-r/v2/rules"
 	"github.com/versioneer-tech/package-r/v2/runner"
 	"github.com/versioneer-tech/package-r/v2/settings"
-	"github.com/versioneer-tech/package-r/v2/share"
 
 	"github.com/versioneer-tech/package-r/v2/storage"
 	"github.com/versioneer-tech/package-r/v2/users"
@@ -24,7 +23,6 @@ type data struct {
 	server   *settings.Server
 	store    *storage.Storage
 	user     *users.User
-	sources  []share.Source
 	raw      interface{}
 }
 
@@ -48,17 +46,6 @@ func (d *data) Check(path string) bool {
 	}
 
 	return allow
-}
-
-func (d *data) GetSource(sourceName string) *share.Source {
-	if sourceName != "" && d.sources != nil {
-		for _, source := range d.sources {
-			if source.Name == sourceName {
-				return &source
-			}
-		}
-	}
-	return nil
 }
 
 func handle(fn handleFunc, prefix string, store *storage.Storage, server *settings.Server) http.Handler {

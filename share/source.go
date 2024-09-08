@@ -107,3 +107,14 @@ func GetStringOrDefault(values map[string]string, key, defaultValue string) stri
 	}
 	return defaultValue
 }
+
+func GetSource(sources []Source, sourceName string) *Source {
+	if sources != nil && sourceName != "" {
+		for _, source := range sources {
+			if source.Name == sourceName {
+				return &source
+			}
+		}
+	}
+	return nil
+}
