@@ -51,11 +51,34 @@ const router = useRouter();
 
 const editor = ref<Ace.Editor | null>(null);
 
-onMounted(() => {
+onMounted(async () => {
+  let fileContent = "";
+  try {
+    if (fileStore.req?.presignedURL === undefined) {
+      throw new Error(`missing presignedURL on ${fileStore.req}`);
+    }
+    const response = await fetch(fileStore.req.presignedURL);
+    if (!response.ok) {
+      throw new Error(
+        `invalid presignedURL ${fileStore.req}: ${response.status}`
+      );
+    }
+    fileContent = await response.text();
+  } catch (e) {
+    console.log(e);
+    let uri = url.removeLastDir(route.path) + "/";
+    router.push({
+      path: uri,
+      query: {
+        sourceName: route.query.sourceName
+          ? String(route.query.sourceName)
+          : "",
+      },
+    });
+    return;
+  }
+
   window.addEventListener("keydown", keyEvent);
-
-  const fileContent = fileStore.req?.content || "";
-
   ace.config.set(
     "basePath",
     `https://cdn.jsdelivr.net/npm/ace-builds@${ace_version}/src-min-noconflict/`
@@ -124,6 +147,11 @@ const close = () => {
   fileStore.updateRequest(null);
 
   let uri = url.removeLastDir(route.path) + "/";
-  router.push({ path: uri , query: {sourceName: route.query.sourceName ? String(route.query.sourceName) : ""}});
+  router.push({
+    path: uri,
+    query: {
+      sourceName: route.query.sourceName ? String(route.query.sourceName) : "",
+    },
+  });
 };
 </script>

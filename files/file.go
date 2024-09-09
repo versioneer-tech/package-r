@@ -19,19 +19,19 @@ const PermDir = 0755
 // FileInfo describes a file.
 type FileInfo struct {
 	*Listing
-	Fs        afero.Fs          `json:"-"`
-	Path      string            `json:"path"`
-	Name      string            `json:"name"`
-	Size      int64             `json:"size"`
-	ModTime   time.Time         `json:"modified"`
-	Mode      os.FileMode       `json:"mode"`
-	IsDir     bool              `json:"isDir"`
-	IsSymlink bool              `json:"isSymlink"`
-	Extension string            `json:"extension"`
-	Type      string            `json:"type"`
-	Content   string            `json:"content,omitempty"`
-	Checksums map[string]string `json:"checksums,omitempty"`
-	Token     string            `json:"token,omitempty"`
+	Fs           afero.Fs          `json:"-"`
+	Path         string            `json:"path"`
+	Name         string            `json:"name"`
+	Size         int64             `json:"size"`
+	ModTime      time.Time         `json:"modified"`
+	Mode         os.FileMode       `json:"mode"`
+	IsDir        bool              `json:"isDir"`
+	IsSymlink    bool              `json:"isSymlink"`
+	Extension    string            `json:"extension"`
+	Type         string            `json:"type"`
+	Checksums    map[string]string `json:"checksums,omitempty"`
+	Token        string            `json:"token,omitempty"`
+	PresignedURL string            `json:"presignedURL,omitempty"`
 }
 
 // FileOptions are the options when getting a file info.
@@ -42,11 +42,6 @@ type FileOptions struct {
 	Expand  bool
 	Token   string
 	Checker rules.Checker
-	Content bool
-}
-
-type Presigner interface {
-	Presign(keys []string) (presignedUrls []string, status int, err error)
 }
 
 // NewFileInfo creates a File object from a path and a given user. This File
@@ -70,7 +65,7 @@ func NewFileInfo(opts *FileOptions) (*FileInfo, error) {
 			return file, nil
 		}
 
-		err = file.detectType(opts.Modify, opts.Content)
+		err = file.detectType(opts.Modify)
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +190,7 @@ func (i *FileInfo) RealPath() string {
 }
 
 //nolint:goconst
-func (i *FileInfo) detectType(modify, saveContent bool) error {
+func (i *FileInfo) detectType(modify bool) error {
 	if IsNamedPipe(i.Mode) {
 		i.Type = "blob"
 		return nil
@@ -229,15 +224,15 @@ func (i *FileInfo) detectType(modify, saveContent bool) error {
 			i.Type = "textImmutable"
 		}
 
-		if saveContent {
-			afs := &afero.Afero{Fs: i.Fs}
-			content, err := afs.ReadFile(i.Path)
-			if err != nil {
-				return err
-			}
+		// if saveContent {
+		// 	afs := &afero.Afero{Fs: i.Fs}
+		// 	content, err := afs.ReadFile(i.Path)
+		// 	if err != nil {
+		// 		return err
+		// 	}
 
-			i.Content = string(content)
-		}
+		// 	i.Content = string(content)
+		// }
 		return nil
 	default:
 		i.Type = "blob"
@@ -300,7 +295,7 @@ func (i *FileInfo) readListing(checker rules.Checker) error {
 			if isInvalidLink {
 				file.Type = "invalid_link"
 			} else {
-				err := file.detectType(true, false)
+				err := file.detectType(true)
 				if err != nil {
 					return err
 				}

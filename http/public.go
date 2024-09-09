@@ -138,7 +138,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 	keys = append(keys, file.Name())
 	presignedURLs, _, err := linkData.Source.Presign(linkData.SecretName, keys)
 	if err == nil {
-		fileInfo.Content = presignedURLs[0]
+		fileInfo.PresignedURL = presignedURLs[0]
 	}
 	return renderJSON(w, r, fileInfo)
 })

@@ -2,7 +2,7 @@
   <div>
     <header-bar showMenu showLogo>
       {{ name }}
-      <!-- <search /> -->      
+      <!-- <search /> -->
       <title />
       <!-- <action
         class="search-button"
@@ -58,13 +58,6 @@
           :icon="viewIcon"
           :label="t('buttons.switchView')"
           @action="switchView"
-        />
-        <action
-          v-if="headerButtons.download"
-          icon="file_download"
-          :label="t('buttons.download')"
-          @action="download"
-          :counter="fileStore.selectedCount"
         />
         <action
           v-if="headerButtons.upload"
@@ -407,7 +400,6 @@ const viewIcon = computed(() => {
 const headerButtons = computed(() => {
   return {
     upload: authStore.user?.perm.create,
-    download: authStore.user?.perm.download,
     shell: authStore.user?.perm.execute && enableExec,
     delete: fileStore.selectedCount > 0 && authStore.user?.perm.delete,
     rename: fileStore.selectedCount === 1 && authStore.user?.perm.rename,
@@ -860,37 +852,6 @@ const windowsResize = throttle(() => {
   // Fill but not fit the window
   fillWindow();
 }, 100);
-
-const download = () => {
-  if (fileStore.req === null) return;
-
-  if (
-    fileStore.selectedCount === 1 &&
-    !fileStore.req.items[fileStore.selected[0]].isDir
-  ) {
-    api.download(null, fileStore.req.items[fileStore.selected[0]].url);
-    return;
-  }
-
-  layoutStore.showHover({
-    prompt: "download",
-    confirm: (format: any) => {
-      layoutStore.closeHovers();
-
-      let files = [];
-
-      if (fileStore.selectedCount > 0 && fileStore.req !== null) {
-        for (let i of fileStore.selected) {
-          files.push(fileStore.req.items[i].url);
-        }
-      } else {
-        files.push(route.path);
-      }
-
-      api.download(format, ...files);
-    },
-  });
-};
 
 const switchView = async () => {
   layoutStore.closeHovers();

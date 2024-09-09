@@ -212,7 +212,13 @@ export default {
         if (!this.time) {
           res = await api.create(this.url, this.password, this.description);
         } else {
-          res = await api.create(this.url, this.password, this.description, this.time, this.unit);
+          res = await api.create(
+            this.url,
+            this.password,
+            this.description,
+            this.time,
+            this.unit
+          );
         }
 
         this.links.push(res);
@@ -241,7 +247,9 @@ export default {
       }
     },
     humanTime(time) {
-      return dayjs(time * 1000).isAfter("1.1.2000") ? dayjs(time * 1000).fromNow() : "";
+      return dayjs(time * 1000).isAfter("1.1.2000")
+        ? dayjs(time * 1000).fromNow()
+        : "";
     },
     buildLink(share) {
       return api.getShareURL(share);

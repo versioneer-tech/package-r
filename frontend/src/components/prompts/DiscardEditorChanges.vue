@@ -44,7 +44,12 @@ export default {
       this.updateRequest(null);
 
       let uri = url.removeLastDir(this.$route.path) + "/";
-      this.$router.push({ path: uri });
+      let rlr = {
+        path: uri,
+        query: this.$route.query,
+      };
+
+      this.$router.push(rlr);
     },
   },
 };

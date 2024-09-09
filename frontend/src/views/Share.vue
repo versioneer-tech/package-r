@@ -69,7 +69,11 @@
           <div v-if="!req.isDir" class="share__box__element" :title="modTime">
             <strong>{{ $t("prompts.lastModified") }}:</strong> {{ humanTime }}
           </div>
-          <div v-if="!req.isDir" class="share__box__element" style="height: 3em">
+          <div
+            v-if="!req.isDir"
+            class="share__box__element"
+            style="height: 3em"
+          >
             <strong>{{ $t("prompts.size") }}:</strong> {{ humanSize }}
           </div>
           <div class="share__box__element share__box__center">
@@ -81,21 +85,19 @@
             >
               <div>
                 <i class="material-icons">file_download</i>
-                {{ req.isDir && req.items.length ? "URLS" : "URL"}}
+                {{ req.isDir && req.items.length ? "URLS" : "URL" }}
               </div>
             </a>
-            <a v-if="!req.isDir"
+            <a
+              v-if="!req.isDir"
               target="_blank"
-              :href="req.content"
+              :href="req.presignedURL"
               class="button button--flat"
               style="height: 4em"
             >
-              <div>
-                <i class="material-icons">open_in_new</i
-                >CONTENT
-              </div>
+              <div><i class="material-icons">open_in_new</i>CONTENT</div>
             </a>
-          </div>  
+          </div>
         </div>
         <div
           id="shareList"
@@ -203,7 +205,9 @@ watch(route, () => {
 const req = computed(() => fileStore.req);
 
 // Define computes
-const link = computed(() => (req.value ? pub_api.getDownloadURL(req.value, true) : ""));
+const link = computed(() =>
+  req.value ? pub_api.getDownloadURL(req.value, true) : ""
+);
 const humanSize = computed(() => {
   if (req.value) {
     return req.value.isDir
@@ -214,7 +218,11 @@ const humanSize = computed(() => {
   }
 });
 
-const humanTime = computed(() => dayjs(req.value?.modified).isAfter("1.1.2000") ? dayjs(req.value?.modified).fromNow() : "");
+const humanTime = computed(() =>
+  dayjs(req.value?.modified).isAfter("1.1.2000")
+    ? dayjs(req.value?.modified).fromNow()
+    : ""
+);
 
 const modTime = computed(() =>
   req.value

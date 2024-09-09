@@ -9,12 +9,6 @@
     <header-bar v-if="isPdf || showNav">
       <action icon="close" :label="$t('buttons.close')" @action="close()" />
       <title>{{ name }}</title>
-      <action
-        :disabled="layoutStore.loading"
-        v-if="isResizeEnabled && fileStore.req?.type === 'image'"
-        :icon="fullSize ? 'photo_size_select_large' : 'hd'"
-        @action="toggleSize"
-      />
 
       <template #actions>
         <action
@@ -134,7 +128,6 @@ import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 
 import { files as api } from "@/api";
-import { resizePreview } from "@/utils/constants";
 import url from "@/utils/url";
 import throttle from "lodash/throttle";
 import HeaderBar from "@/components/header/HeaderBar.vue";
@@ -150,7 +143,6 @@ const previousLink = ref<string>("");
 const nextLink = ref<string>("");
 const listing = ref<ResourceItem[] | null>(null);
 const name = ref<string>("");
-const fullSize = ref<boolean>(false);
 const showNav = ref<boolean>(true);
 const navTimeout = ref<null | number>(null);
 const hoverNav = ref<boolean>(false);
@@ -173,21 +165,13 @@ const hasPrevious = computed(() => previousLink.value !== "");
 
 const hasNext = computed(() => nextLink.value !== "");
 
-const downloadUrl = computed(() =>
-  fileStore.req ? api.getDownloadURL(fileStore.req, true) : ""
-);
+const downloadUrl = computed(() => fileStore.req?.presignedURL ?? "");
 
 const raw = computed(() => {
-  if (fileStore.req?.type === "image" && !fullSize.value) {
-    return api.getPreviewURL(fileStore.req, "big");
-  }
-
   return downloadUrl.value;
 });
 
 const isPdf = computed(() => fileStore.req?.extension.toLowerCase() == ".pdf");
-
-const isResizeEnabled = computed(() => resizePreview);
 
 const subtitles = computed(() => {
   if (fileStore.req?.subtitles) {
@@ -313,12 +297,8 @@ const prefetchUrl = (item: ResourceItem) => {
     return "";
   }
 
-  return fullSize.value
-    ? api.getDownloadURL(item, true)
-    : api.getPreviewURL(item, "big");
+  return item?.presignedURL ?? "";
 };
-
-const toggleSize = () => (fullSize.value = !fullSize.value);
 
 const toggleNavigation = throttle(function () {
   showNav.value = true;
@@ -337,7 +317,11 @@ const close = () => {
   fileStore.updateRequest(null);
 
   let uri = url.removeLastDir(route.path) + "/";
-  router.push({ path: uri });
+  let rlr = {
+    path: uri,
+    query: route.query,
+  };
+  router.push(rlr);
 };
 
 const download = () => window.open(downloadUrl.value);

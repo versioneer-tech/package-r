@@ -13,7 +13,9 @@
       <span class="chevron"
         ><i class="material-icons">keyboard_arrow_right</i></span
       >
-      <component :is="element" :to="link.url">{{ link.name }}</component>
+      <component :is="element" :to="link.url + '?sourceName=' + sourceName">{{
+        link.name
+      }}</component>
     </span>
   </div>
 </template>
@@ -31,6 +33,8 @@ const props = defineProps<{
   base: string;
   noLink?: boolean;
 }>();
+
+const sourceName = computed(() => route.query.sourceName);
 
 const items = computed(() => {
   const relativePath = route.path.replace(props.base, "");
@@ -67,7 +71,6 @@ const items = computed(() => {
 
     breadcrumbs[0].name = "...";
   }
-
   return breadcrumbs;
 });
 
