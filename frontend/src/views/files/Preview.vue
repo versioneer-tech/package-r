@@ -9,7 +9,7 @@
     <header-bar v-if="isPdf || showNav">
       <action icon="close" :label="$t('buttons.close')" @action="close()" />
       <title>{{ name }}</title>
-      
+
       <template #actions>
         <action
           :disabled="layoutStore.loading"

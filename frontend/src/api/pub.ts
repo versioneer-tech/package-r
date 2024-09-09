@@ -32,8 +32,6 @@ export async function fetch(url: string, password: string = "") {
 }
 
 export function getDownloadURL(res: Resource, file = false) {
-  console.log(res);
-
   const params = {
     ...(file && { file: "true" }),
     ...(res.token && { token: res.token }),

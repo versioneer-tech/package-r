@@ -58,9 +58,7 @@ onMounted(async () => {
       throw new Error(`missing presignedURL on ${fileStore.req}`);
     }
     const response = await fetch(fileStore.req.presignedURL);
-    console.log(response);
     if (!response.ok) {
-      console.log("invalid presignedURL");
       throw new Error(
         `invalid presignedURL ${fileStore.req}: ${response.status}`
       );

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,14 +13,17 @@ import (
 )
 
 func renderJSON(w http.ResponseWriter, _ *http.Request, data interface{}) (int, error) {
-	marsh, err := json.Marshal(data)
+	buf := &bytes.Buffer{} // or &strings.Builder{} as from the example of @mkopriva
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	err := enc.Encode(data)
 
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if _, err := w.Write(marsh); err != nil {
+	if _, err := w.Write(buf.Bytes()); err != nil {
 		return http.StatusInternalServerError, err
 	}
 
