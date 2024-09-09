@@ -35,8 +35,23 @@ export function encodePath(str: string) {
     .join("/");
 }
 
+export function queryParam(url: string, param: string) {
+  const str1 = url.split("?")[1];
+  if (str1) {
+    const pairs = str1.split("&");
+    for (const pair of pairs) {
+      const [key, value] = pair.split("=");
+      if (key == param) {
+        return decodeURIComponent(value.replace(/\+/g, " "));
+      }
+    }
+  }
+  return "";
+}
+
 export default {
   encodeRFC5987ValueChars,
   removeLastDir,
   encodePath,
+  queryParam,
 };

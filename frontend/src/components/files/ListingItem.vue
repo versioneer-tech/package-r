@@ -15,6 +15,9 @@
     :data-ext="getExtension(name).toLowerCase()"
   >
     <div>
+      <i class="material-icons" />
+    </div>
+    <div>
       <p class="name">{{ name }}</p>
 
       <p v-if="isDir" class="size" data-order="-1">&mdash;</p>
@@ -33,6 +36,7 @@ import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 
 import { filesize } from "@/utils";
+import { queryParam } from "@/utils/url";
 import dayjs from "dayjs";
 import { files as api } from "@/api";
 import * as upload from "@/utils/upload";
@@ -252,25 +256,12 @@ const click = (event: Event | KeyboardEvent) => {
   fileStore.selected.push(props.index);
 };
 
-function queryParam(url: string, param: string) {
-  const str1 = url.split("?")[1];
-  if (str1) {
-    const pairs = str1.split("&");
-    for (const pair of pairs) {
-      const [key, value] = pair.split("=");
-      if (key == param) {
-        return decodeURIComponent(value.replace(/\+/g, " "));
-      }
-    }
-  }
-  return "";
-}
-
 const open = () => {
-  router.push({
+  let rlr = {
     path: props.url,
     query: { sourceName: queryParam(props.url, "sourceName") },
-  });
+  };
+  router.push(rlr);
 };
 
 const getExtension = (fileName: string): string => {

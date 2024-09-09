@@ -5,8 +5,8 @@
       <button
         class="action"
         @click="() => toRoot('')"
-        :aria-label="Sources"
-        :title="Sources"
+        :aria-label="info.sources"
+        :title="info.sources"
       >
         <i class="material-icons">folder</i>
         <span>Sources</span>

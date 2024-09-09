@@ -9,7 +9,7 @@
     <header-bar v-if="isPdf || showNav">
       <action icon="close" :label="$t('buttons.close')" @action="close()" />
       <title>{{ name }}</title>
-
+      
       <template #actions>
         <action
           :disabled="layoutStore.loading"
@@ -165,16 +165,10 @@ const hasPrevious = computed(() => previousLink.value !== "");
 
 const hasNext = computed(() => nextLink.value !== "");
 
-const downloadUrl = computed(() =>
-  fileStore.req ? "" /*api.getDownloadURL(fileStore.req, true)*/ : ""
-);
+const downloadUrl = computed(() => fileStore.req?.presignedURL ?? "");
 
 const raw = computed(() => {
-  if (fileStore.req?.type !== "image") {
-    return "";
-  }
-
-  return fileStore.req?.presignedURL ?? "";
+  return downloadUrl.value;
 });
 
 const isPdf = computed(() => fileStore.req?.extension.toLowerCase() == ".pdf");
@@ -303,7 +297,7 @@ const prefetchUrl = (item: ResourceItem) => {
     return "";
   }
 
-  return item.presignedURL ?? "";
+  return item?.presignedURL ?? "";
 };
 
 const toggleNavigation = throttle(function () {
@@ -323,7 +317,11 @@ const close = () => {
   fileStore.updateRequest(null);
 
   let uri = url.removeLastDir(route.path) + "/";
-  router.push({ path: uri });
+  let rlr = {
+    path: uri,
+    query: route.query,
+  };
+  router.push(rlr);
 };
 
 const download = () => window.open(downloadUrl.value);
