@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/versioneer-tech/package-r/compare/v1.1.0...v1.2.0) (2024-09-09)
+
+
+### Features
+
+* remove /raw /preview /image endpoints and corresponding logic ([#6](https://github.com/versioneer-tech/package-r/issues/6)) ([888ae30](https://github.com/versioneer-tech/package-r/commit/888ae30f4b9cb2831e2f13cb61f6fa7fe465e0c6))
+
 ## [1.1.0](https://github.com/versioneer-tech/package-r/compare/v1.0.8...v1.1.0) (2024-09-08)
 
 
