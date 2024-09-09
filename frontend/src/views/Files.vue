@@ -143,7 +143,10 @@ const fetchData = async () => {
   if (url === "") url = "/";
   if (url[0] !== "/") url = "/" + url;
   try {
-    const res = await api.fetch(url, route.query.sourceName ? String(route.query.sourceName) : "");
+    const res = await api.fetch(
+      url,
+      route.query.sourceName ? String(route.query.sourceName) : ""
+    );
 
     if (clean(res.path) !== clean(`/${[...route.params.path].join("/")}`)) {
       throw new Error("Data Mismatch!");

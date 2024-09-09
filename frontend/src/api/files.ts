@@ -3,9 +3,8 @@ import { baseURL } from "@/utils/constants";
 import { useAuthStore } from "@/stores/auth";
 import { upload as postTus, useTus } from "./tus";
 
-
-export async function fetch(path: string, sourceName: string="") {
-  sourceName = encodeURIComponent(sourceName)
+export async function fetch(path: string, sourceName: string = "") {
+  sourceName = encodeURIComponent(sourceName);
   path = removePrefix(path);
   let query = "";
   if (sourceName !== "") {
@@ -13,7 +12,7 @@ export async function fetch(path: string, sourceName: string="") {
   }
 
   const res = await fetchURL(`/api/resources${path}${query}`, {});
-  
+
   const data = (await res.json()) as Resource;
   data.url = `/files${path}`;
 
@@ -25,9 +24,9 @@ export async function fetch(path: string, sourceName: string="") {
       item.url = `${data.url}${encodeURIComponent(item.name)}`;
 
       if (item.isDir) {
-        item.url += "/";        
+        item.url += "/";
       }
-      item.url += query
+      item.url += query;
 
       return item;
     });
@@ -59,35 +58,6 @@ export async function remove(url: string) {
 
 export async function put(url: string, content = "") {
   return resourceAction(url, "PUT", content);
-}
-
-export function download(format: any, ...files: string[]) {
-  let url = `${baseURL}/api/raw`;
-
-  if (files.length === 1) {
-    url += removePrefix(files[0]) + "?";
-  } else {
-    let arg = "";
-
-    for (const file of files) {
-      arg += removePrefix(file) + ",";
-    }
-
-    arg = arg.substring(0, arg.length - 1);
-    arg = encodeURIComponent(arg);
-    url += `/?files=${arg}&`;
-  }
-
-  if (format) {
-    url += `algo=${format}&`;
-  }
-
-  const authStore = useAuthStore();
-  if (authStore.jwt) {
-    url += `auth=${authStore.jwt}&`;
-  }
-
-  window.open(url);
 }
 
 export async function post(
@@ -189,23 +159,6 @@ export function copy(items: any[], overwrite = false, rename = false) {
 export async function checksum(url: string, algo: ChecksumAlg) {
   const data = await resourceAction(`${url}?checksum=${algo}`, "GET");
   return (await data.json()).checksums[algo];
-}
-
-export function getDownloadURL(file: ResourceItem, inline: any) {
-  const params = {
-    ...(inline && { inline: "true" }),
-  };
-
-  return createURL("api/raw" + file.path, params);
-}
-
-export function getPreviewURL(file: ResourceItem, size: string) {
-  const params = {
-    inline: "true",
-    key: Date.parse(file.modified),
-  };
-
-  return createURL("api/preview/" + size + file.path, params);
 }
 
 export function getSubtitlesURL(file: ResourceItem) {

@@ -15,17 +15,14 @@ import (
 	"syscall"
 
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	v "github.com/spf13/viper"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/versioneer-tech/package-r/v2/auth"
-	"github.com/versioneer-tech/package-r/v2/diskcache"
 	"github.com/versioneer-tech/package-r/v2/frontend"
 	fbhttp "github.com/versioneer-tech/package-r/v2/http"
-	"github.com/versioneer-tech/package-r/v2/img"
 	"github.com/versioneer-tech/package-r/v2/settings"
 	"github.com/versioneer-tech/package-r/v2/storage"
 	"github.com/versioneer-tech/package-r/v2/users"
@@ -63,11 +60,7 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.String("socket", "", "socket to listen to (cannot be used with address, port, cert nor key flags)")
 	flags.Uint32("socket-perm", 0666, "unix socket file permissions") //nolint:gomnd
 	flags.StringP("baseurl", "b", "", "base url")
-	flags.String("cache-dir", "", "file cache directory (disabled if empty)")
 	flags.String("token-expiration-time", "2h", "user session timeout")
-	flags.Int("img-processors", 4, "image processors count") //nolint:gomnd
-	flags.Bool("disable-thumbnails", false, "disable image thumbnails")
-	flags.Bool("disable-preview-resize", false, "disable resize of image previews")
 	flags.Bool("disable-exec", false, "disables Command Runner feature")
 }
 
@@ -116,24 +109,6 @@ user created with the credentials from options "username" and "password".`,
 			quickSetup(cmd.Flags(), d)
 		}
 
-		// build img service
-		workersCount, err := cmd.Flags().GetInt("img-processors")
-		checkErr(err)
-		if workersCount < 1 {
-			log.Fatal("Image resize workers count could not be < 1")
-		}
-		imgSvc := img.New(workersCount)
-
-		var fileCache diskcache.Interface = diskcache.NewNoOp()
-		cacheDir, err := cmd.Flags().GetString("cache-dir")
-		checkErr(err)
-		if cacheDir != "" {
-			if err := os.MkdirAll(cacheDir, 0700); err != nil { //nolint:govet,gomnd
-				log.Fatalf("can't make directory %s: %s", cacheDir, err)
-			}
-			fileCache = diskcache.New(afero.NewOsFs(), cacheDir)
-		}
-
 		server := getRunParams(cmd.Flags(), d.store)
 		setupLog(server.Log)
 
@@ -175,7 +150,7 @@ user created with the credentials from options "username" and "password".`,
 			panic(err)
 		}
 
-		handler, err := fbhttp.NewHandler(imgSvc, fileCache, d.store, server, assetsFs)
+		handler, err := fbhttp.NewHandler(d.store, server, assetsFs)
 		checkErr(err)
 
 		defer listener.Close()
@@ -248,12 +223,6 @@ func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
 	if isAddrSet && server.Socket != "" {
 		server.Socket = ""
 	}
-
-	_, disableThumbnails := getParamB(flags, "disable-thumbnails")
-	server.EnableThumbnails = !disableThumbnails
-
-	_, disablePreviewResize := getParamB(flags, "disable-preview-resize")
-	server.ResizePreview = !disablePreviewResize
 
 	_, disableExec := getParamB(flags, "disable-exec")
 	server.EnableExec = !disableExec

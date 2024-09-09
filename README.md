@@ -48,3 +48,4 @@ The following capabilities have been suspended within the forked codebase:
 - No editing support; all items are treated as read-only
 - No shell command execution on trigger events
 - No custom styling
+- No image resizing and no file caching

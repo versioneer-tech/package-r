@@ -42,8 +42,6 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 		"CSS":                   false,
 		"ReCaptcha":             false,
 		"Theme":                 d.settings.Branding.Theme,
-		"EnableThumbs":          d.server.EnableThumbnails,
-		"ResizePreview":         d.server.ResizePreview,
 		"EnableExec":            d.server.EnableExec,
 		"TusSettings":           d.settings.Tus,
 	}

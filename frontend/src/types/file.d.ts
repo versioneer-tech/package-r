@@ -9,6 +9,7 @@ interface ResourceBase {
   isSymlink: boolean;
   type: ResourceType;
   url: string;
+  presignedURL?: string;
 }
 
 interface Resource extends ResourceBase {
@@ -37,16 +38,6 @@ type ResourceType =
   | "text"
   | "blob"
   | "textImmutable";
-
-type DownloadFormat =
-  | "zip"
-  | "tar"
-  | "targz"
-  | "tarbz2"
-  | "tarxz"
-  | "tarlz4"
-  | "tarsz"
-  | null;
 
 interface ClipItem {
   from: string;

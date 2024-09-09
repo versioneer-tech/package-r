@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,13 +23,14 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 		return http.StatusNotFound, nil
 	}
 
+	sources := d.raw.([]share.Source)
+
 	file, err := files.NewFileInfo(&files.FileOptions{
 		Fs:      d.user.Fs,
 		Path:    r.URL.Path,
 		Modify:  d.user.Perm.Modify,
 		Expand:  true,
 		Checker: d,
-		Content: true,
 	})
 	if err != nil {
 		return errToStatus(err), err
@@ -54,28 +54,33 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 	// 	file.Content = ""
 	// }
 
+	source := share.GetSource(sources, r.URL.Query().Get("sourceName"))
+	if source != nil {
+		var keys []string
+		keys = append(keys, file.Path)
+
+		presignedURLs, _, err := source.Presign("", keys)
+		if err == nil {
+			file.PresignedURL = presignedURLs[0]
+		}
+	}
+
 	return renderJSON(w, r, file)
 })
 
-func resourceDeleteHandler(fileCache FileCache) handleFunc {
+func resourceDeleteHandler() handleFunc {
 	return withUser(func(_ http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if r.URL.Path == "/" || !d.user.Perm.Delete {
 			return http.StatusForbidden, nil
 		}
 
-		file, err := files.NewFileInfo(&files.FileOptions{
+		_, err := files.NewFileInfo(&files.FileOptions{
 			Fs:      d.user.Fs,
 			Path:    r.URL.Path,
 			Modify:  d.user.Perm.Modify,
 			Expand:  false,
 			Checker: d,
 		})
-		if err != nil {
-			return errToStatus(err), err
-		}
-
-		// delete thumbnails
-		err = delThumbs(r.Context(), fileCache, file)
 		if err != nil {
 			return errToStatus(err), err
 		}
@@ -92,7 +97,7 @@ func resourceDeleteHandler(fileCache FileCache) handleFunc {
 	})
 }
 
-func resourcePostHandler(fileCache FileCache) handleFunc {
+func resourcePostHandler() handleFunc {
 	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if !d.user.Perm.Create || !d.Check(r.URL.Path) {
 			return http.StatusForbidden, nil
@@ -104,7 +109,7 @@ func resourcePostHandler(fileCache FileCache) handleFunc {
 			return errToStatus(err), err
 		}
 
-		file, err := files.NewFileInfo(&files.FileOptions{
+		_, err := files.NewFileInfo(&files.FileOptions{
 			Fs:      d.user.Fs,
 			Path:    r.URL.Path,
 			Modify:  d.user.Perm.Modify,
@@ -119,11 +124,6 @@ func resourcePostHandler(fileCache FileCache) handleFunc {
 			// Permission for overwriting the file
 			if !d.user.Perm.Modify {
 				return http.StatusForbidden, nil
-			}
-
-			err = delThumbs(r.Context(), fileCache, file)
-			if err != nil {
-				return errToStatus(err), err
 			}
 		}
 
@@ -178,7 +178,7 @@ var resourcePutHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 	return errToStatus(err), err
 })
 
-func resourcePatchHandler(fileCache FileCache) handleFunc {
+func resourcePatchHandler() handleFunc {
 	return withUser(func(_ http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		src := r.URL.Path
 		dst := r.URL.Query().Get("destination")
@@ -216,7 +216,7 @@ func resourcePatchHandler(fileCache FileCache) handleFunc {
 		}
 
 		err = d.RunHook(func() error {
-			return patchAction(r.Context(), action, src, dst, d, fileCache)
+			return patchAction(action, src, dst, d)
 		}, action, src, dst, d.user)
 
 		return errToStatus(err), err
@@ -282,18 +282,7 @@ func writeFile(fs afero.Fs, dst string, in io.Reader) (os.FileInfo, error) {
 	return info, nil
 }
 
-func delThumbs(ctx context.Context, fileCache FileCache, file *files.FileInfo) error {
-	for _, previewSizeName := range PreviewSizeNames() {
-		size, _ := ParsePreviewSize(previewSizeName)
-		if err := fileCache.Delete(ctx, previewCacheKey(file, size)); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func patchAction(ctx context.Context, action, src, dst string, d *data, fileCache FileCache) error {
+func patchAction(action, src, dst string, d *data) error {
 	switch action {
 	case "copy":
 		if !d.user.Perm.Create {
@@ -308,19 +297,13 @@ func patchAction(ctx context.Context, action, src, dst string, d *data, fileCach
 		src = path.Clean("/" + src)
 		dst = path.Clean("/" + dst)
 
-		file, err := files.NewFileInfo(&files.FileOptions{
+		_, err := files.NewFileInfo(&files.FileOptions{
 			Fs:      d.user.Fs,
 			Path:    src,
 			Modify:  d.user.Perm.Modify,
 			Expand:  false,
 			Checker: d,
 		})
-		if err != nil {
-			return err
-		}
-
-		// delete thumbnails
-		err = delThumbs(ctx, fileCache, file)
 		if err != nil {
 			return err
 		}

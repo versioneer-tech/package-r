@@ -15,8 +15,8 @@
         <button
           class="action sub-action"
           @click="() => toRoot(source.name)"
-          :aria-label=source.name
-          :title=source.name
+          :aria-label="source.name"
+          :title="source.name"
           :class="{ active: $route.query.sourceName === source.name }"
         >
           <span>{{ source.friendlyName || source.name }}</span>
@@ -45,7 +45,7 @@
         </button>
       </div>
 
-    <div>
+      <div>
         <button
           class="action"
           @click="toSettings"
@@ -103,7 +103,7 @@
     </div> -->
 
     <p class="credits">
-      powered by 
+      powered by
       <span>
         <span v-if="disableExternal">packageR</span>
         <a
@@ -111,8 +111,8 @@
           rel="noopener noreferrer"
           target="_blank"
           href="https://github.com/versioneer-tech/package-r"
-          >packageR </a
-        >
+          >packageR
+        </a>
         <span> {{ version }}</span>
       </span>
       <!-- <span>
@@ -143,7 +143,12 @@ import { files as api } from "@/api";
 //import ProgressBar from "@/components/ProgressBar.vue";
 import prettyBytes from "pretty-bytes";
 
-const INFO_DEFAULT = { used: "0 B", total: "0 B", usedPercentage: 0, sources: []};
+const INFO_DEFAULT = {
+  used: "0 B",
+  total: "0 B",
+  usedPercentage: 0,
+  sources: [],
+};
 
 export default {
   name: "sidebar",
@@ -152,7 +157,7 @@ export default {
     return { info };
   },
   components: {
-//    ProgressBar,
+    //    ProgressBar,
   },
   inject: ["$showError"],
   computed: {
@@ -180,7 +185,9 @@ export default {
         return Object.assign(this.info, {
           used: prettyBytes(infoResponse.used, { binary: true }),
           total: prettyBytes(infoResponse.total, { binary: true }),
-          usedPercentage: Math.round((infoResponse.used / infoResponse.total) * 100),
+          usedPercentage: Math.round(
+            (infoResponse.used / infoResponse.total) * 100
+          ),
           sources: infoResponse.sources,
         });
       } catch (error) {
@@ -189,9 +196,11 @@ export default {
     },
     toRoot(sourceName) {
       if (sourceName)
-        this.$router.push({ path: "/files", query: { sourceName: sourceName }});
-      else
-        this.$router.push({ path: "/files"});
+        this.$router.push({
+          path: "/files",
+          query: { sourceName: sourceName },
+        });
+      else this.$router.push({ path: "/files" });
       this.closeHovers();
     },
     toSettings() {
@@ -213,10 +222,10 @@ export default {
 
 <style scoped>
 .sub-action {
-  margin-left: 30px; 
-  font-size: 0.8em;  
+  margin-left: 30px;
+  font-size: 0.8em;
 }
 .sub-action.active {
-  background-color: lightgray; 
+  background-color: lightgray;
 }
 </style>

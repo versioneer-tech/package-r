@@ -15,14 +15,6 @@
     :data-ext="getExtension(name).toLowerCase()"
   >
     <div>
-      <img
-        v-if="!readOnly && type === 'image' && isThumbsEnabled"
-        v-lazy="thumbnailUrl"
-      />
-      <i v-else class="material-icons"></i>
-    </div>
-
-    <div>
       <p class="name">{{ name }}</p>
 
       <p v-if="isDir" class="size" data-order="-1">&mdash;</p>
@@ -40,7 +32,6 @@ import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 
-import { enableThumbs } from "@/utils/constants";
 import { filesize } from "@/utils";
 import dayjs from "dayjs";
 import { files as api } from "@/api";
@@ -91,28 +82,19 @@ const canDrop = computed(() => {
   return true;
 });
 
-const thumbnailUrl = computed(() => {
-  const file = {
-    path: props.path,
-    modified: props.modified,
-  };
-
-  return api.getPreviewURL(file as Resource, "thumb");
-});
-
-const isThumbsEnabled = computed(() => {
-  return enableThumbs;
-});
-
 const humanSize = () => {
   return props.type == "invalid_link" ? "invalid link" : filesize(props.size);
 };
 
 const humanTime = () => {
   if (!props.readOnly && authStore.user?.dateFormat) {
-    return dayjs(props.modified).isAfter("1.1.2000") ? dayjs(props.modified).format("L LT") : "";
+    return dayjs(props.modified).isAfter("1.1.2000")
+      ? dayjs(props.modified).format("L LT")
+      : "";
   }
-  return dayjs(props.modified).isAfter("1.1.2000") ? dayjs(props.modified).fromNow() : "";
+  return dayjs(props.modified).isAfter("1.1.2000")
+    ? dayjs(props.modified).fromNow()
+    : "";
 };
 
 const dragStart = () => {
@@ -270,22 +252,25 @@ const click = (event: Event | KeyboardEvent) => {
   fileStore.selected.push(props.index);
 };
 
-function queryParam(url: string, param: string) { 
-    const str1 = url.split('?')[1];  
-    if (str1) { 
-        const pairs = str1.split('&'); 
-        for (const pair of pairs) { 
-            const [key, value] = pair.split('='); 
-            if (key == param) {
-              return decodeURIComponent(value.replace(/\+/g, ' ')); 
-            }
-        } 
-    }   
-    return ""; 
-} 
+function queryParam(url: string, param: string) {
+  const str1 = url.split("?")[1];
+  if (str1) {
+    const pairs = str1.split("&");
+    for (const pair of pairs) {
+      const [key, value] = pair.split("=");
+      if (key == param) {
+        return decodeURIComponent(value.replace(/\+/g, " "));
+      }
+    }
+  }
+  return "";
+}
 
 const open = () => {
-  router.push({ path: props.url, query: {sourceName: queryParam(props.url, "sourceName")}});
+  router.push({
+    path: props.url,
+    query: { sourceName: queryParam(props.url, "sourceName") },
+  });
 };
 
 const getExtension = (fileName: string): string => {

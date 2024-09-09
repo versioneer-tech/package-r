@@ -12,8 +12,6 @@ const noAuth: boolean = window.packageR.NoAuth;
 const authMethod = window.packageR.AuthMethod;
 const loginPage: boolean = window.packageR.LoginPage;
 const theme: UserTheme = window.packageR.Theme;
-const enableThumbs: boolean = window.packageR.EnableThumbs;
-const resizePreview: boolean = window.packageR.ResizePreview;
 const enableExec: boolean = window.packageR.EnableExec;
 const tusSettings = window.packageR.TusSettings;
 const origin = window.location.origin;
@@ -33,8 +31,6 @@ export {
   authMethod,
   loginPage,
   theme,
-  enableThumbs,
-  resizePreview,
   enableExec,
   tusSettings,
   origin,
