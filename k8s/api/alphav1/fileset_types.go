@@ -27,12 +27,18 @@ import (
 type FileSetSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	FriendlyName string `json:"friendlyName,omitempty"`
+	SourceName   string `json:"sourceName"`
+	Filter       string `json:"filter"`
 }
 
 // FileSetStatus defines the observed state of FileSet
 type FileSetStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	SecretName string `json:"secretName,omitempty"`
 }
 
 // +kubebuilder:object:root=true

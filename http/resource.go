@@ -59,7 +59,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 		var keys []string
 		keys = append(keys, file.Path)
 
-		presignedURLs, _, err := source.Presign("", keys)
+		presignedURLs, _, err := source.Presign(keys)
 		if err == nil {
 			file.PresignedURL = presignedURLs[0]
 		}

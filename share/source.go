@@ -21,7 +21,7 @@ type Source struct {
 	SecretName   string `json:"secretName,omitempty"`
 }
 
-func (s *Source) Connect(secretName string) (bucket, prefix string, session *awsSession.Session) {
+func (s *Source) Connect() (bucket, prefix string, session *awsSession.Session) {
 	if s.Name == "" {
 		log.Print("Source information missing")
 		return "", "", nil
@@ -29,22 +29,12 @@ func (s *Source) Connect(secretName string) (bucket, prefix string, session *aws
 
 	values := map[string]string{}
 
-	if s.SecretName != "" || secretName != "" {
+	if s.SecretName != "" {
 		nsc := k8s.NewDefaultClient()
 		ctx := context.Background()
 
 		if s.SecretName != "" {
 			resp, err := nsc.GetSecret(ctx, s.SecretName)
-			if err == nil && resp != nil {
-				log.Printf("Secret <- %+v", resp)
-				for k, v := range resp.Data {
-					values[k] = string(v)
-				}
-			}
-		}
-
-		if secretName != "" {
-			resp, err := nsc.GetSecret(ctx, secretName)
 			if err == nil && resp != nil {
 				log.Printf("Secret <- %+v", resp)
 				for k, v := range resp.Data {
@@ -62,6 +52,7 @@ func (s *Source) Connect(secretName string) (bucket, prefix string, session *aws
 		Endpoint:         aws.String(GetStringOrDefault(values, "AWS_ENDPOINT_URL", os.Getenv("AWS_ENDPOINT_URL"))),
 		Region:           aws.String(GetStringOrDefault(values, "AWS_REGION", os.Getenv("AWS_REGION"))),
 		S3ForcePathStyle: aws.Bool(true),
+		//LogLevel:         aws.LogLevel(aws.LogDebugWithHTTPBody),
 	})
 
 	bucket = GetStringOrDefault(values, "BUCKET_NAME", s.Name)
@@ -75,9 +66,9 @@ func (s *Source) Connect(secretName string) (bucket, prefix string, session *aws
 	return bucket, prefix, session
 }
 
-func (s *Source) Presign(secretName string, keys []string) (presignedUrls []string, status int, err error) {
+func (s *Source) Presign(keys []string) (presignedUrls []string, status int, err error) {
 	presignedURLs := []string{}
-	bucket, prefix, session := s.Connect(secretName)
+	bucket, prefix, session := s.Connect()
 	if session != nil {
 		s3Client := s3.New(session)
 		for _, key := range keys {
