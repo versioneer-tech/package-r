@@ -24,9 +24,8 @@ import (
 )
 
 type LinkData struct {
-	FileInfo   files.FileInfo
-	Source     share.Source
-	SecretName string
+	FileInfo files.FileInfo
+	Source   share.Source
 }
 
 var withHashFile = func(fn handleFunc) handleFunc {
@@ -47,9 +46,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		secretName := link.Source.Name + "---" + link.Hash
-
-		bucket, prefix, session := link.Source.Connect(secretName)
+		bucket, prefix, session := link.Source.Connect()
 		if session != nil {
 			d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), prefix+"/")
 		}
@@ -95,9 +92,8 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		}
 
 		linkData := LinkData{
-			FileInfo:   *fileInfo,
-			Source:     link.Source,
-			SecretName: secretName,
+			FileInfo: *fileInfo,
+			Source:   link.Source,
 		}
 
 		d.raw = linkData
@@ -136,7 +132,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 		return http.StatusInternalServerError, err
 	}
 	keys = append(keys, file.Name())
-	presignedURLs, _, err := linkData.Source.Presign(linkData.SecretName, keys)
+	presignedURLs, _, err := linkData.Source.Presign(keys)
 	if err == nil {
 		fileInfo.PresignedURL = presignedURLs[0]
 	}
@@ -184,7 +180,7 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 	}
 
 	log.Printf("start presign (total %v)", len(keys))
-	presignedURLs, status, err := linkData.Source.Presign(linkData.SecretName, keys)
+	presignedURLs, status, err := linkData.Source.Presign(keys)
 
 	if err != nil {
 		return status, err

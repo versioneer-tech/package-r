@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -98,7 +99,7 @@ func withUser(fn handleFunc) handleFunc {
 
 		source := share.GetSource(tk.Sources, r.URL.Query().Get("sourceName"))
 		if source != nil {
-			bucket, prefix, session := source.Connect("")
+			bucket, prefix, session := source.Connect()
 			if session != nil {
 				d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), prefix+"/")
 			}
@@ -203,33 +204,51 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 
 //nolint:gocritic
 func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration) (int, error) {
-	sources := make([]share.Source, 0)
+	sources := map[string]share.Source{}
+
 	for _, bucket := range strings.Split(os.Getenv("BUCKET_DEFAULT"), "|") {
 		if bucket != "" {
 			source := share.Source{}
 			source.Name = bucket
-			sources = append(sources, source)
+			sources[source.Name] = source
 		}
 	}
 
 	nsc := k8s.NewDefaultClient()
 	if nsc != nil {
 		ctx := context.Background()
-		resp, err := nsc.ListSources(ctx)
+		resp1, err := nsc.ListSources(ctx)
 		if err != nil {
 			log.Printf("Sources couldn't be retrieved: %s", err)
+		} else {
+			for _, item := range resp1.Items {
+				source := share.Source{}
+				source.Name = item.ObjectMeta.Name
+				source.FriendlyName = item.Spec.FriendlyName
+				source.SecretName = item.Status.SecretName
+				sources[source.Name] = source
+			}
 		}
-
-		log.Printf("Sources <- %+v", resp.Items)
-
-		for _, item := range resp.Items {
-			source := share.Source{}
-			source.Name = item.ObjectMeta.Name
-			source.FriendlyName = item.Spec.FriendlyName
-			source.SecretName = item.Status.SecretName
-			sources = append(sources, source)
+		resp2, err := nsc.ListFileSets(ctx)
+		if err != nil {
+			log.Printf("FileSets couldn't be retrieved: %s", err)
+		} else {
+			for _, item := range resp2.Items {
+				source := share.Source{}
+				source.Name = item.Spec.SourceName + "---" + item.ObjectMeta.Name
+				source.FriendlyName = item.Spec.FriendlyName
+				source.SecretName = item.Status.SecretName
+				sources[source.Name] = source
+			}
 		}
 	}
+	sortedSources := make([]share.Source, 0, len(sources))
+	for _, source := range sources {
+		sortedSources = append(sortedSources, source)
+	}
+	sort.Slice(sortedSources, func(i, j int) bool {
+		return sortedSources[i].Name < sortedSources[j].Name
+	})
 
 	claims := &authToken{
 		User: userInfo{
@@ -243,7 +262,7 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 			HideDotfiles: user.HideDotfiles,
 			DateFormat:   user.DateFormat,
 		},
-		Sources: sources,
+		Sources: sortedSources,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpirationTime)),

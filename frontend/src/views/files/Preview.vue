@@ -51,7 +51,13 @@
     </div>
     <template v-else>
       <div class="preview">
-        <ExtendedImage v-if="fileStore.req?.type == 'image'" :src="raw" />
+        <ExtendedImage
+          v-if="
+            fileStore.req?.type == 'image' &&
+            fileStore.req?.size < 10 * 1024 * 1024
+          "
+          :src="raw"
+        />
         <audio
           v-else-if="fileStore.req?.type == 'audio'"
           ref="player"
