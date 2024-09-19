@@ -28,7 +28,9 @@ type SourceSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	FriendlyName string `json:"friendlyName,omitempty"`
+	FriendlyName string   `json:"friendlyName,omitempty"`
+	AllowedRoles []string `json:"allowedRoles,omitempty"`
+	BucketName   string   `json:"bucketName,omitempty"`
 }
 
 // SourceStatus defines the observed state of Source

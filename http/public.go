@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -19,7 +20,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/versioneer-tech/package-r/v2/files"
-	"github.com/versioneer-tech/package-r/v2/s3fs"
+	"github.com/versioneer-tech/package-r/v2/objects"
 	"github.com/versioneer-tech/package-r/v2/share"
 )
 
@@ -46,9 +47,9 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		bucket, prefix, session := link.Source.Connect()
+		bucket, prefix, session := link.Source.Connect(*d.store.K8sCache)
 		if session != nil {
-			d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), prefix+"/")
+			d.user.Fs = afero.NewBasePathFs(objects.NewObjectFs(bucket, session), "/"+prefix)
 		}
 
 		fileInfo, err := files.NewFileInfo(&files.FileOptions{
@@ -126,13 +127,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 		return renderJSON(w, r, fileInfo)
 	}
 
-	var keys []string
-	file, err := fileInfo.Fs.Open(fileInfo.Path)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-	keys = append(keys, file.Name())
-	presignedURLs, _, err := linkData.Source.Presign(keys)
+	presignedURLs, _, err := share.Presign(&linkData.Source, *d.store.K8sCache, fileInfo.RealPath())
 	if err == nil {
 		fileInfo.PresignedURL = presignedURLs[0]
 	}
@@ -143,67 +138,99 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 	linkData := d.raw.(LinkData)
 	fileInfo := linkData.FileInfo
 
-	file, err := fileInfo.Fs.Open(fileInfo.Path)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-
-	maxObs, err := strconv.Atoi(os.Getenv("MAX_OBJECTS"))
-	if err != nil {
-		maxObs = 5000
-	}
-
-	var keys []string
+	var paths []string
 	if fileInfo.IsDir {
-		for {
-			obs, err2 := file.Readdir(-1000)
-			if err2 != nil {
-				if errors.Is(err2, io.EOF) {
-					break
-				}
-				return http.StatusInternalServerError, err
-			}
-			if len(obs) == 0 {
-				break
-			}
-			for _, obj := range obs {
-				keys = append(keys, obj.Name())
-			}
-			log.Printf("prepare presign (current %v)", len(keys))
-			if len(keys) >= maxObs {
-				break
+		var wg sync.WaitGroup
+		pathChan := make(chan string)
+		for _, subFileInfo := range fileInfo.Listing.Items {
+			wg.Add(1)
+			if subFileInfo.IsDir {
+				go func() {
+					defer (&wg).Done()
+
+					subFile, err := fileInfo.Fs.Open(subFileInfo.Path)
+					if err != nil {
+						log.Printf("error opening %s preparing presign: %s", subFileInfo.Path, err)
+						return
+					}
+					defer subFile.Close()
+
+					maxObjects, err := strconv.Atoi(os.Getenv("MAX_OBJECTS"))
+					if err != nil || maxObjects < 0 {
+						maxObjects = 5000
+					}
+					batch := 1000
+					steps := (maxObjects / batch) + 1
+					for step := range steps {
+						fileInfos, err2 := subFile.Readdir(-batch)
+						if err2 != nil {
+							if errors.Is(err2, io.EOF) {
+								break
+							}
+							log.Printf("error reading dir at %s preparing presign: %s", subFileInfo.Path, err2)
+							return
+						}
+						if len(fileInfos) == 0 {
+							break
+						}
+						log.Printf("Prepare presign in %s for %v items (%d/%d)", subFile.Name(), len(fileInfos), step, steps)
+						for _, fileInfo := range fileInfos {
+							objectInfo, ok := fileInfo.(objects.ObjectInfo)
+							if ok {
+								chan<- string(pathChan) <- objectInfo.Path()
+							}
+						}
+					}
+				}()
+			} else {
+				go func() {
+					defer wg.Done()
+					pathChan <- subFileInfo.RealPath()
+				}()
 			}
 		}
 
+		go func() {
+			wg.Wait()
+			close(pathChan)
+		}()
+		for path := range pathChan {
+			paths = append(paths, path)
+		}
+
 	} else {
-		keys = append(keys, file.Name())
+		paths = append(paths, fileInfo.RealPath())
 	}
 
-	log.Printf("start presign (total %v)", len(keys))
-	presignedURLs, status, err := linkData.Source.Presign(keys)
+	log.Printf("Start presign (total %v)", len(paths))
+	presignedURLs, status, err := share.Presign(&linkData.Source, *d.store.K8sCache, paths...)
 
 	if err != nil {
 		return status, err
 	}
 
-	//nolint:goconst
-	if r.URL.Query().Get("file") == "true" {
+	if len(presignedURLs) == 0 {
+		return http.StatusNotFound, nil
+	}
+
+	if r.Header.Get("Accept") == "application/json" {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		encoder := json.NewEncoder(w)
+		encoder.SetEscapeHTML(false)
+		err = encoder.Encode(presignedURLs)
+		if err != nil {
+			return http.StatusInternalServerError, err
+		}
+	} else if len(presignedURLs) == 1 {
+		http.Redirect(w, r, presignedURLs[0], http.StatusFound)
+	} else {
 		reader := strings.NewReader(strings.Join(presignedURLs, "\n"))
-		filename := url.PathEscape(strings.ReplaceAll(os.Getenv("BRANDING_NAME")+"/"+file.Name()+".txt", "/", "__"))
+		filename := url.PathEscape(strings.ReplaceAll(d.settings.Branding.Name+"/"+fileInfo.Path+".txt", "/", "__"))
 		log.Printf("return presign file '%s'", filename)
 		w.Header().Set("Content-Disposition", "attachment; filename*=utf-8''"+filename)
 		w.Header().Add("Content-Security-Policy", `script-src 'none';`)
 		w.Header().Set("Cache-Control", "private")
 		http.ServeContent(w, r, filename, time.Now(), reader)
-		return 0, nil
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	encoder := json.NewEncoder(w)
-	encoder.SetEscapeHTML(false)
-	err = encoder.Encode(presignedURLs)
-	if err != nil {
-		return http.StatusInternalServerError, err
 	}
 	return 0, nil
 })

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"github.com/versioneer-tech/package-r/v2/auth"
+	"github.com/versioneer-tech/package-r/v2/k8s"
 	"github.com/versioneer-tech/package-r/v2/settings"
 	"github.com/versioneer-tech/package-r/v2/share"
 	"github.com/versioneer-tech/package-r/v2/users"
@@ -14,4 +15,5 @@ type Storage struct {
 	Share    *share.Storage
 	Auth     *auth.Storage
 	Settings *settings.Storage
+	K8sCache *k8s.Cache
 }

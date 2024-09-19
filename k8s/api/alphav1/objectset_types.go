@@ -23,8 +23,8 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// FileSetSpec defines the desired state of FileSet
-type FileSetSpec struct {
+// ObjectSetSpec defines the desired state of ObjectSet
+type ObjectSetSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -34,8 +34,8 @@ type FileSetSpec struct {
 	Filter       string   `json:"filter"`
 }
 
-// FileSetStatus defines the observed state of FileSet
-type FileSetStatus struct {
+// ObjectSetStatus defines the observed state of ObjectSet
+type ObjectSetStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -45,25 +45,25 @@ type FileSetStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// FileSet is the Schema for the filesets API
-type FileSet struct {
+// ObjectSet is the Schema for the filesets API
+type ObjectSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   FileSetSpec   `json:"spec,omitempty"`
-	Status FileSetStatus `json:"status,omitempty"`
+	Spec   ObjectSetSpec   `json:"spec,omitempty"`
+	Status ObjectSetStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// FileSetList contains a list of FileSet
-type FileSetList struct {
+// ObjectSetList contains a list of ObjectSet
+type ObjectSetList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []FileSet `json:"items"`
+	Items           []ObjectSet `json:"items"`
 }
 
 //nolint:gochecknoinits
 func init() {
-	SchemeBuilder.Register(&FileSet{}, &FileSetList{})
+	SchemeBuilder.Register(&ObjectSet{}, &ObjectSetList{})
 }

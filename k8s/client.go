@@ -78,6 +78,12 @@ func (nsc *NamespacedClient) ListFileSets(ctx context.Context) (*alphav1.FileSet
 	return &list, err
 }
 
+func (nsc *NamespacedClient) ListObjectSets(ctx context.Context) (*alphav1.ObjectSetList, error) {
+	var list alphav1.ObjectSetList
+	err := nsc.client.List(ctx, &list, &client.ListOptions{Namespace: nsc.namespace})
+	return &list, err
+}
+
 func (nsc *NamespacedClient) GetSecret(ctx context.Context, name string) (*v1.Secret, error) {
 	var secret v1.Secret
 	err := nsc.client.Get(ctx, types.NamespacedName{Namespace: nsc.namespace, Name: name}, &secret)

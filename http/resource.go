@@ -25,7 +25,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 
 	sources := d.raw.([]share.Source)
 
-	file, err := files.NewFileInfo(&files.FileOptions{
+	fileInfo, err := files.NewFileInfo(&files.FileOptions{
 		Fs:      d.user.Fs,
 		Path:    r.URL.Path,
 		Modify:  d.user.Perm.Modify,
@@ -36,10 +36,10 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 		return errToStatus(err), err
 	}
 
-	if file.IsDir {
-		file.Listing.Sorting = d.user.Sorting
-		file.Listing.ApplySort()
-		return renderJSON(w, r, file)
+	if fileInfo.IsDir {
+		fileInfo.Listing.Sorting = d.user.Sorting
+		fileInfo.Listing.ApplySort()
+		return renderJSON(w, r, fileInfo)
 	}
 
 	// if checksum := r.URL.Query().Get("checksum"); checksum != "" {
@@ -56,16 +56,13 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 
 	source := share.GetSource(sources, r.URL.Query().Get("sourceName"))
 	if source != nil {
-		var keys []string
-		keys = append(keys, file.Path)
-
-		presignedURLs, _, err := source.Presign(keys)
+		presignedURLs, _, err := share.Presign(source, *d.store.K8sCache, fileInfo.RealPath())
 		if err == nil {
-			file.PresignedURL = presignedURLs[0]
+			fileInfo.PresignedURL = presignedURLs[0]
 		}
 	}
 
-	return renderJSON(w, r, file)
+	return renderJSON(w, r, fileInfo)
 })
 
 func resourceDeleteHandler() handleFunc {
