@@ -4,20 +4,20 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.1
-  name: sources.package.r
+  name: objectsets.package.r
 spec:
   group: package.r
   names:
-    kind: Source
-    listKind: SourceList
-    plural: sources
-    singular: source
+    kind: ObjectSet
+    listKind: ObjectSetList
+    plural: objectsets
+    singular: objectset
   scope: Namespaced
   versions:
   - name: alphav1
     schema:
       openAPIV3Schema:
-        description: Source is the Schema for the sources API
+        description: ObjectSet is the Schema for the filesets API
         properties:
           apiVersion:
             description: |-
@@ -37,19 +37,24 @@ spec:
           metadata:
             type: object
           spec:
-            description: SourceSpec defines the desired state of Source
+            description: ObjectSetSpec defines the desired state of ObjectSet
             properties:
               allowedRoles:
                 items:
                   type: string
                 type: array
-              bucketName:
+              filter:
                 type: string
               friendlyName:
                 type: string
+              sourceName:
+                type: string
+            required:
+            - filter
+            - sourceName
             type: object
           status:
-            description: SourceStatus defines the observed state of Source
+            description: ObjectSetStatus defines the observed state of ObjectSet
             properties:
               secretName:
                 type: string

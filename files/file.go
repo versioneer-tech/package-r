@@ -52,26 +52,26 @@ func NewFileInfo(opts *FileOptions) (*FileInfo, error) {
 		return nil, os.ErrPermission
 	}
 
-	file, err := stat(opts)
+	fileInfo, err := stat(opts)
 	if err != nil {
 		return nil, err
 	}
 
 	if opts.Expand {
-		if file.IsDir {
-			if err := file.readListing(opts.Checker); err != nil { //nolint:govet
+		if fileInfo.IsDir {
+			if err := fileInfo.readListing(opts.Checker); err != nil { //nolint:govet
 				return nil, err
 			}
-			return file, nil
+			return fileInfo, nil
 		}
 
-		err = file.detectType(opts.Modify)
+		err = fileInfo.detectType(opts.Modify)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return file, err
+	return fileInfo, err
 }
 
 func stat(opts *FileOptions) (*FileInfo, error) {

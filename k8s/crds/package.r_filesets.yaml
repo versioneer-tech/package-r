@@ -39,6 +39,10 @@ spec:
           spec:
             description: FileSetSpec defines the desired state of FileSet
             properties:
+              allowedRoles:
+                items:
+                  type: string
+                type: array
               filter:
                 type: string
               friendlyName:

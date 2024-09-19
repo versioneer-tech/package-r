@@ -6,6 +6,7 @@ toolchain go1.22.4
 
 require (
 	github.com/asdine/storm/v3 v3.2.1
+	github.com/bluele/gcache v0.0.2
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/gorilla/mux v1.8.1

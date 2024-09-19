@@ -17,7 +17,8 @@ import (
 
 	fbErrors "github.com/versioneer-tech/package-r/v2/errors"
 	"github.com/versioneer-tech/package-r/v2/k8s"
-	"github.com/versioneer-tech/package-r/v2/s3fs"
+	"github.com/versioneer-tech/package-r/v2/objects"
+
 	"github.com/versioneer-tech/package-r/v2/share"
 
 	"github.com/versioneer-tech/package-r/v2/users"
@@ -99,9 +100,9 @@ func withUser(fn handleFunc) handleFunc {
 
 		source := share.GetSource(tk.Sources, r.URL.Query().Get("sourceName"))
 		if source != nil {
-			bucket, prefix, session := source.Connect()
+			bucket, prefix, session := source.Connect(*d.store.K8sCache)
 			if session != nil {
-				d.user.Fs = afero.NewBasePathFs(s3fs.NewFs(bucket, session), prefix+"/")
+				d.user.Fs = afero.NewBasePathFs(objects.NewObjectFs(bucket, session), "/"+prefix)
 			}
 		}
 
@@ -202,7 +203,7 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 	})
 }
 
-//nolint:gocritic
+//nolint:funlen,gocritic,gocyclo,dupl
 func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration) (int, error) {
 	sources := map[string]share.Source{}
 
@@ -222,22 +223,60 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 			log.Printf("Sources couldn't be retrieved: %s", err)
 		} else {
 			for _, item := range resp1.Items {
+				if item.Spec.AllowedRoles != nil {
+					continue // to be implemented with RBAC
+				}
 				source := share.Source{}
 				source.Name = item.ObjectMeta.Name
 				source.FriendlyName = item.Spec.FriendlyName
 				source.SecretName = item.Status.SecretName
+				source.PresignSecretName = item.Status.SecretName
 				sources[source.Name] = source
 			}
 		}
-		resp2, err := nsc.ListFileSets(ctx)
-		if err != nil {
-			log.Printf("FileSets couldn't be retrieved: %s", err)
+		resp2, err2 := nsc.ListFileSets(ctx)
+		if err2 != nil {
+			log.Printf("FileSets couldn't be retrieved: %s", err2)
 		} else {
 			for _, item := range resp2.Items {
+				if item.Spec.AllowedRoles != nil {
+					continue // to be implemented with RBAC
+				}
+				ownerSource, exists := sources[item.Spec.SourceName]
+				if !exists {
+					continue
+				}
 				source := share.Source{}
-				source.Name = item.Spec.SourceName + "---" + item.ObjectMeta.Name
+				source.Name = item.ObjectMeta.Name
 				source.FriendlyName = item.Spec.FriendlyName
 				source.SecretName = item.Status.SecretName
+				source.PresignSecretName = ownerSource.SecretName
+				if strings.HasPrefix(item.Spec.Filter, "/") {
+					source.SubPath = item.Spec.Filter
+				}
+				sources[source.Name] = source
+			}
+		}
+		resp3, err3 := nsc.ListObjectSets(ctx)
+		if err3 != nil {
+			log.Printf("ObjectSets couldn't be retrieved: %s", err3)
+		} else {
+			for _, item := range resp3.Items {
+				if item.Spec.AllowedRoles != nil {
+					continue // to be implemented with RBAC
+				}
+				ownerSource, exists := sources[item.Spec.SourceName]
+				if !exists {
+					continue
+				}
+				source := share.Source{}
+				source.Name = item.ObjectMeta.Name
+				source.FriendlyName = item.Spec.FriendlyName
+				source.SecretName = item.Status.SecretName
+				source.PresignSecretName = ownerSource.SecretName
+				if strings.HasPrefix(item.Spec.Filter, "/") {
+					source.SubPath = item.Spec.Filter
+				}
 				sources[source.Name] = source
 			}
 		}
