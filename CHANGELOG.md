@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.3](https://github.com/versioneer-tech/package-r/compare/v1.2.2...v1.2.3) (2024-09-19)
+
 ### [1.2.2](https://github.com/versioneer-tech/package-r/compare/v1.2.1...v1.2.2) (2024-09-19)
 
 - optimize single object API presigning by introducing cache (esp. for k8s objects)
