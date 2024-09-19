@@ -4,9 +4,13 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [1.2.2](https://github.com/versioneer-tech/package-r/compare/v1.2.1...v1.2.2) (2024-09-19)
 
+- optimize single object API presigning by introducing cache (esp. for k8s objects)
+
+- parallelize direct (1 level down) subpath presigning (but still keeping max. 5000 objects limit below each individual subpath)
+
 ### [1.2.1](https://github.com/versioneer-tech/package-r/compare/v1.2.0...v1.2.1) (2024-09-11)
 
-- concept of filesets which are treated like regular sources from package-r perspective but expose additional metadata and can be customized for presigning
+- concept of FileSets/ObjectSet providing a view on top of the owning Source, may be backed e.g. by different infrastructure or only expose a subset but presigning of the items still works against owning Source
 
 ## [1.2.0](https://github.com/versioneer-tech/package-r/compare/v1.1.0...v1.2.0) (2024-09-09)
 

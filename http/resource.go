@@ -94,6 +94,7 @@ func resourceDeleteHandler() handleFunc {
 	})
 }
 
+//nolint:goconst
 func resourcePostHandler() handleFunc {
 	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if !d.user.Perm.Create || !d.Check(r.URL.Path) {

@@ -38,17 +38,16 @@ func connect(sourceName, secretName string, k8sCache k8s.Cache) (bucket, prefix 
 	values := map[string]string{}
 
 	if secretName != "" {
-		resp, err := k8sCache.GetSecret(secretName, func(s string) (*v1.Secret, error) {
+		resp, err := k8sCache.GetSecret(secretName, func(name string) (*v1.Secret, error) {
 			nsc := k8s.NewDefaultClient()
 			ctx := context.Background()
-			log.Printf("GetSecret for %s -> %s", sourceName, secretName)
-			return nsc.GetSecret(ctx, secretName)
+			log.Printf("GetSecret for %s -> %s", sourceName, name)
+			return nsc.GetSecret(ctx, name)
 		})
 		if err == nil && resp != nil {
 			for k, v := range resp.Data {
 				values[k] = string(v)
 			}
-
 		} else {
 			log.Printf("Could not get secret: %s", secretName)
 		}
