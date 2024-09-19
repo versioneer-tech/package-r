@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.2](https://github.com/versioneer-tech/package-r/compare/v1.2.1...v1.2.2) (2024-09-19)
+
 ### [1.2.1](https://github.com/versioneer-tech/package-r/compare/v1.2.0...v1.2.1) (2024-09-11)
 
 - concept of filesets which are treated like regular sources from package-r perspective but expose additional metadata and can be customized for presigning
