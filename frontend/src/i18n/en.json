@@ -250,7 +250,8 @@
     "preview": "Preview",
     "settings": "Settings",
     "signup": "Signup",
-    "siteSettings": "Site Settings"
+    "siteSettings": "Site Settings",
+    "sources": "Sources"
   },
   "success": {
     "linkCopied": "Link copied!"

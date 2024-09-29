@@ -236,7 +236,8 @@
     "preview": "Vorschau",
     "settings": "Einstellungen",
     "signup": "Registrieren",
-    "siteSettings": "Seiteneinstellungen"
+    "siteSettings": "Seiteneinstellungen",
+    "sources": "Sources"
   },
   "success": {
     "linkCopied": "Verweis wurde kopiert!"

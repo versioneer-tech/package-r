@@ -9,7 +9,7 @@
         :title="info.sources"
       >
         <i class="material-icons">folder</i>
-        <span>Sources</span>
+        <span>{{ $t("sidebar.sources") }}</span>
       </button>
       <div v-for="(source, index) in info.sources" :key="index">
         <button
