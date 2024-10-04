@@ -2,17 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.2.5](https://github.com/versioneer-tech/package-r/compare/v1.2.4...v1.2.5) (2024-10-04)
-
-### [1.2.4](https://github.com/versioneer-tech/package-r/compare/v1.2.1...v1.2.4) (2024-09-19)
+### [1.2.5](https://github.com/versioneer-tech/package-r/compare/v1.2.0...v1.2.5) (2024-10-04)
 
 - optimize single object API presigning by introducing cache (esp. for k8s objects)
 
 - parallelize direct (1 level down) subpath presigning (but still keeping max. 5000 objects limit below each individual subpath)
 
-### [1.2.1](https://github.com/versioneer-tech/package-r/compare/v1.2.0...v1.2.1) (2024-09-11)
-
-- concept of FileSets/ObjectSet providing a view on top of the owning Source, may be backed e.g. by different infrastructure or only expose a subset but presigning of the items still works against owning Source
+- concept of views on top of the owning Source, may be backed e.g. by different infrastructure or only expose a subset but presigning of the items still works against owning Source
 
 ## [1.2.0](https://github.com/versioneer-tech/package-r/compare/v1.1.0...v1.2.0) (2024-09-09)
 
