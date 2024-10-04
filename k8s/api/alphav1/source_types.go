@@ -23,6 +23,18 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// Access provides details to access the items of the source
+type Access struct {
+	BucketName string `json:"bucketName,omitempty"`
+	SecretName string `json:"secretName,omitempty"`
+}
+
+// Share provides details to share the items of the source
+type Share struct {
+	BucketName string `json:"bucketName,omitempty"`
+	SecretName string `json:"secretName,omitempty"`
+}
+
 // SourceSpec defines the desired state of Source
 type SourceSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -30,7 +42,10 @@ type SourceSpec struct {
 
 	FriendlyName string   `json:"friendlyName,omitempty"`
 	AllowedRoles []string `json:"allowedRoles,omitempty"`
-	BucketName   string   `json:"bucketName,omitempty"`
+	SubPath      string   `json:"subPath,omitempty"`
+	Mount        string   `json:"mount,omitempty"`
+	Access       Access   `json:"access,omitempty"`
+	Share        Share    `json:"share,omitempty"`
 }
 
 // SourceStatus defines the observed state of Source
@@ -38,7 +53,7 @@ type SourceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	SecretName string `json:"secretName,omitempty"`
+	Error string `json:"error,omitempty"`
 }
 
 // +kubebuilder:object:root=true

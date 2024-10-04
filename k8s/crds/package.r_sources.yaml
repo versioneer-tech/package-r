@@ -39,19 +39,37 @@ spec:
           spec:
             description: SourceSpec defines the desired state of Source
             properties:
+              access:
+                description: Access provides details to access the items of the source
+                properties:
+                  bucketName:
+                    type: string
+                  secretName:
+                    type: string
+                type: object
               allowedRoles:
                 items:
                   type: string
                 type: array
-              bucketName:
-                type: string
               friendlyName:
+                type: string
+              mount:
+                type: string
+              share:
+                description: Share provides details to share the items of the source
+                properties:
+                  bucketName:
+                    type: string
+                  secretName:
+                    type: string
+                type: object
+              subPath:
                 type: string
             type: object
           status:
             description: SourceStatus defines the observed state of Source
             properties:
-              secretName:
+              error:
                 type: string
             type: object
         type: object

@@ -20,18 +20,20 @@ import (
 type Source struct {
 	Name              string `json:"name"`
 	FriendlyName      string `json:"friendlyName,omitempty"`
-	SecretName        string `json:"secretName,omitempty"`
-	PresignSecretName string `json:"presignSecretName,omitempty"`
+	SecretName        string `json:"secretName"`
+	BucketName        string `json:"bucketName"`
+	PresignSecretName string `json:"presignSecretName"`
+	PresignBucketName string `json:"presignBucketName"`
 	SubPath           string `json:"subPath,omitempty"`
 }
 
 func (s *Source) Connect(k8sCache k8s.Cache) (bucket, prefix string, session *awsSession.Session) {
-	return connect(s.Name, s.SecretName, k8sCache)
+	return connect(s.BucketName, s.SecretName, k8sCache)
 }
 
-func connect(sourceName, secretName string, k8sCache k8s.Cache) (bucket, prefix string, session *awsSession.Session) {
-	if sourceName == "" {
-		log.Print("Source information missing")
+func connect(bucketName, secretName string, k8sCache k8s.Cache) (bucket, prefix string, session *awsSession.Session) {
+	if bucketName == "" {
+		log.Print("bucket information missing")
 		return "", "", nil
 	}
 
@@ -41,7 +43,7 @@ func connect(sourceName, secretName string, k8sCache k8s.Cache) (bucket, prefix 
 		resp, err := k8sCache.GetSecret(secretName, func(name string) (*v1.Secret, error) {
 			nsc := k8s.NewDefaultClient()
 			ctx := context.Background()
-			log.Printf("GetSecret for %s -> %s", sourceName, name)
+			log.Printf("GetSecret for bucket %s -> %s", bucketName, name)
 			return nsc.GetSecret(ctx, name)
 		})
 		if err == nil && resp != nil {
@@ -64,7 +66,7 @@ func connect(sourceName, secretName string, k8sCache k8s.Cache) (bucket, prefix 
 		//LogLevel:         aws.LogLevel(aws.LogDebugWithHTTPBody),
 	})
 
-	bucket = GetStringOrDefault(values, "BUCKET_NAME", sourceName)
+	bucket = GetStringOrDefault(values, "BUCKET_NAME", bucketName)
 	prefix = GetStringOrDefault(values, "BUCKET_PREFIX", "")
 
 	if errSession != nil {
@@ -77,8 +79,8 @@ func connect(sourceName, secretName string, k8sCache k8s.Cache) (bucket, prefix 
 
 func Presign(source *Source, k8sCache k8s.Cache, paths ...string) (presignedUrls []string, status int, err error) {
 	presignedURLs := []string{}
-	_, prefix, _ := connect(source.Name, source.SecretName, k8sCache)
-	bucket, _, session := connect(source.Name, source.PresignSecretName, k8sCache)
+	_, prefix, _ := connect(source.BucketName, source.SecretName, k8sCache)
+	bucket, _, session := connect(source.PresignBucketName, source.PresignSecretName, k8sCache)
 	if session != nil {
 		s3Client := s3.New(session)
 		for _, path := range paths {

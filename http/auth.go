@@ -203,7 +203,7 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 	})
 }
 
-//nolint:funlen,gocritic,gocyclo,dupl
+//nolint:gocritic
 func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration) (int, error) {
 	sources := map[string]share.Source{}
 
@@ -211,6 +211,10 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 		if bucket != "" {
 			source := share.Source{}
 			source.Name = bucket
+			source.SecretName = bucket
+			source.BucketName = bucket
+			source.PresignSecretName = bucket
+			source.PresignBucketName = bucket
 			sources[source.Name] = source
 		}
 	}
@@ -218,64 +222,36 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 	nsc := k8s.NewDefaultClient()
 	if nsc != nil {
 		ctx := context.Background()
-		resp1, err := nsc.ListSources(ctx)
+		resp, err := nsc.ListSources(ctx)
 		if err != nil {
 			log.Printf("Sources couldn't be retrieved: %s", err)
 		} else {
-			for _, item := range resp1.Items {
+			for _, item := range resp.Items {
 				if item.Spec.AllowedRoles != nil {
 					continue // to be implemented with RBAC
 				}
 				source := share.Source{}
 				source.Name = item.ObjectMeta.Name
 				source.FriendlyName = item.Spec.FriendlyName
-				source.SecretName = item.Status.SecretName
-				source.PresignSecretName = item.Status.SecretName
-				sources[source.Name] = source
-			}
-		}
-		resp2, err2 := nsc.ListFileSets(ctx)
-		if err2 != nil {
-			log.Printf("FileSets couldn't be retrieved: %s", err2)
-		} else {
-			for _, item := range resp2.Items {
-				if item.Spec.AllowedRoles != nil {
-					continue // to be implemented with RBAC
+				if item.Spec.Access.SecretName != "" {
+					source.SecretName = item.Spec.Access.SecretName
+				} else {
+					source.SecretName = item.ObjectMeta.Name // convention to use name as default
 				}
-				ownerSource, exists := sources[item.Spec.SourceName]
-				if !exists {
-					continue
+				if item.Spec.Share.SecretName != "" {
+					source.PresignSecretName = item.Spec.Share.SecretName
+				} else {
+					source.PresignSecretName = source.SecretName // use same as for access if not provided
 				}
-				source := share.Source{}
-				source.Name = item.ObjectMeta.Name
-				source.FriendlyName = item.Spec.FriendlyName
-				source.SecretName = item.Status.SecretName
-				source.PresignSecretName = ownerSource.SecretName
-				if strings.HasPrefix(item.Spec.Filter, "/") {
-					source.SubPath = item.Spec.Filter
+				if item.Spec.Access.BucketName != "" {
+					source.BucketName = item.Spec.Access.BucketName
+				} else {
+					source.BucketName = item.ObjectMeta.Name // convention to use name as default
 				}
-				sources[source.Name] = source
-			}
-		}
-		resp3, err3 := nsc.ListObjectSets(ctx)
-		if err3 != nil {
-			log.Printf("ObjectSets couldn't be retrieved: %s", err3)
-		} else {
-			for _, item := range resp3.Items {
-				if item.Spec.AllowedRoles != nil {
-					continue // to be implemented with RBAC
-				}
-				ownerSource, exists := sources[item.Spec.SourceName]
-				if !exists {
-					continue
-				}
-				source := share.Source{}
-				source.Name = item.ObjectMeta.Name
-				source.FriendlyName = item.Spec.FriendlyName
-				source.SecretName = item.Status.SecretName
-				source.PresignSecretName = ownerSource.SecretName
-				if strings.HasPrefix(item.Spec.Filter, "/") {
-					source.SubPath = item.Spec.Filter
+				if item.Spec.Share.BucketName != "" {
+					source.PresignBucketName = item.Spec.Share.BucketName
+				} else {
+					source.PresignBucketName = source.BucketName // use same as for access if not provided
 				}
 				sources[source.Name] = source
 			}
