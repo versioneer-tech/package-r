@@ -26,22 +26,22 @@
       </div>
       -->
       <q-tree
-          class="tree"
-          :nodes="info.sources"
-          node-key="name"
-          children-key="sets"
-          v-model:selected="selected"
-          no-connectors
+        class="tree"
+        :nodes="info.sources"
+        node-key="name"
+        children-key="sets"
+        v-model:selected="selected"
+        no-connectors
       >
         <!-- Custom slot for rendering node label -->
         <template v-slot:default-header="props">
           <div @click="selectSource(props.node)">
-            {{ props.node.friendlyName || props.node.name  }}
+            {{ props.node.friendlyName || props.node.name }}
           </div>
         </template>
       </q-tree>
 
-        <div v-if="user.perm.create">
+      <div v-if="user.perm.create">
         <button
           @click="showHover('newDir')"
           class="action"
@@ -140,8 +140,8 @@
   </nav>
 </template>
 
-<script lang="ts">
-import {reactive, ref} from "vue";
+<script>
+import { reactive, ref } from "vue";
 import { mapActions, mapState } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
@@ -160,28 +160,27 @@ import {
 import { files as api } from "@/api";
 //import ProgressBar from "@/components/ProgressBar.vue";
 import prettyBytes from "pretty-bytes";
-import { Source } from "@/types/types";
 
-import {QTree} from "quasar";
+import { QTree } from "quasar";
 
 const INFO_DEFAULT = {
   used: "0 B",
   total: "0 B",
   usedPercentage: 0,
-  sources: [] as Source[],
+  sources: [],
 };
 
-function groupSources(sources: Source[]): Source[] {
+function groupSources(sources) {
   // Create a map to hold parent sources by their secretName
-  const sourceMap: Map<string, Source> = new Map();
+  const sourceMap = new Map();
 
   // First loop: add all parent sources (those without subPath) to the map
   sources.forEach((source) => {
-    const name = source.secretName || source.name
+    const name = source.secretName || source.name;
     const parentSource = sourceMap.get(name);
     // take the first element with the name as parent element
     if (!parentSource) {
-      source.sets = []
+      source.sets = [];
       sourceMap.set(source.secretName, source);
     } else {
       parentSource.sets.push(source);
@@ -199,12 +198,12 @@ export default {
     const selected = ref(null);
     return {
       info,
-      selected
+      selected,
     };
   },
   components: {
     //    ProgressBar,
-    QTree
+    QTree,
   },
   inject: ["$showError"],
   computed: {
@@ -247,7 +246,7 @@ export default {
     selectSource(node) {
       // console.log('clicked ' + node)
       if (node) {
-        this.toRoot(node.name)
+        this.toRoot(node.name);
       }
     },
     toRoot(sourceName) {
