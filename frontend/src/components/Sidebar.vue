@@ -26,11 +26,13 @@
       </div>
       -->
       <q-tree
+        v-if="info.sources && info.sources.length"
         class="tree"
         :nodes="info.sources"
         node-key="name"
         children-key="sets"
         v-model:selected="selected"
+        :no-nodes-label="$t('sidebar.no_sources')"
         no-connectors
       >
         <!-- Custom slot for rendering node label -->
@@ -283,13 +285,7 @@ export default {
 .sub-action.active {
   background-color: lightgray;
 }
-.xtree {
-  color: var(--action);
-  margin-left: 10px;
-  font-size: 0.8em;
-}
-.fileset {
-  color: blue;
-  padding-left: 20px;
+.tree {
+/*  margin-left: 5px; */
 }
 </style>

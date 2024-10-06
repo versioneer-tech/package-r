@@ -237,7 +237,8 @@
     "settings": "Einstellungen",
     "signup": "Registrieren",
     "siteSettings": "Seiteneinstellungen",
-    "sources": "Sources"
+    "sources": "Sources",
+    "no_sources": "Keine Sourcen"
   },
   "success": {
     "linkCopied": "Verweis wurde kopiert!"
