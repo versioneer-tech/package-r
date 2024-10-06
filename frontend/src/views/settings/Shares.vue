@@ -10,17 +10,21 @@
         <div class="card-content full" v-if="links.length > 0">
           <table>
             <tr>
-              <th>{{ t("settings.path") }}</th>
-              <th>{{ t("settings.shareDuration") }}</th>
-              <th v-if="authStore.user?.perm.admin">
+              <th class="padded">{{ t("settings.source") }}</th>
+              <th class="padded">{{ t("settings.path") }}</th>
+              <th class="padded">{{ t("settings.shareDuration") }}</th>
+              <th class="padded" v-if="authStore.user?.perm.admin">
                 {{ t("settings.username") }}
               </th>
-              <th>{{ t("settings.shareDescription") }}</th>
-              <th></th>
-              <th></th>
+              <th class="padded">{{ t("settings.shareDescription") }}</th>
+              <th class="padded"></th>
+              <th class="padded"></th>
             </tr>
 
             <tr v-for="link in links" :key="link.hash">
+              <td>
+                {{ link.source.friendlyName || link.source.name }}
+              </td>
               <td>
                 <a :href="buildLink(link)" target="_blank">{{ link.path }}</a>
               </td>
@@ -154,3 +158,9 @@ const buildLink = (share: Share) => {
   return api.getShareURL(share);
 };
 </script>
+
+<style scoped>
+.padded {
+  margin-right: 30px;
+}
+</style>
