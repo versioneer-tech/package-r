@@ -9,19 +9,39 @@
         :title="info.sources"
       >
         <i class="material-icons">folder</i>
-        <span>Sources</span>
+        <span>{{ $t("sidebar.sources") }}</span>
       </button>
+
+      <!--
       <div v-for="(source, index) in info.sources" :key="index">
         <button
           class="action sub-action"
           @click="() => toRoot(source.name)"
           :aria-label="source.name"
           :title="source.name"
-          :class="{ active: $route.query.sourceName === source.name }"
+          :class="{ active: $route.query.sourceName === source.name, fileset: source.subPath }"
         >
           <span>{{ source.friendlyName || source.name }}</span>
         </button>
       </div>
+      -->
+      <q-tree
+        v-if="info.sources && info.sources.length"
+        class="tree"
+        :nodes="info.sources"
+        node-key="name"
+        children-key="sets"
+        v-model:selected="selected"
+        :no-nodes-label="$t('sidebar.no_sources')"
+        no-connectors
+      >
+        <!-- Custom slot for rendering node label -->
+        <template v-slot:default-header="props">
+          <div @click="selectSource(props.node)">
+            {{ props.node.friendlyName || props.node.name }}
+          </div>
+        </template>
+      </q-tree>
 
       <div v-if="user.perm.create">
         <button
@@ -123,7 +143,7 @@
 </template>
 
 <script>
-import { reactive } from "vue";
+import { reactive, ref } from "vue";
 import { mapActions, mapState } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
@@ -143,6 +163,8 @@ import { files as api } from "@/api";
 //import ProgressBar from "@/components/ProgressBar.vue";
 import prettyBytes from "pretty-bytes";
 
+import { QTree } from "quasar";
+
 const INFO_DEFAULT = {
   used: "0 B",
   total: "0 B",
@@ -150,14 +172,40 @@ const INFO_DEFAULT = {
   sources: [],
 };
 
+function groupSources(sources) {
+  // Create a map to hold parent sources by their secretName
+  const sourceMap = new Map();
+
+  // First loop: add all parent sources (those without subPath) to the map
+  sources.forEach((source) => {
+    const name = source.secretName || source.name;
+    const parentSource = sourceMap.get(name);
+    // take the first element with the name as parent element
+    if (!parentSource) {
+      source.sets = [];
+      sourceMap.set(source.secretName, source);
+    } else {
+      parentSource.sets.push(source);
+    }
+  });
+
+  // Return the array of parent sources (with their sets populated)
+  return Array.from(sourceMap.values());
+}
+
 export default {
   name: "sidebar",
   setup() {
     const info = reactive(INFO_DEFAULT);
-    return { info };
+    const selected = ref(null);
+    return {
+      info,
+      selected,
+    };
   },
   components: {
     //    ProgressBar,
+    QTree,
   },
   inject: ["$showError"],
   computed: {
@@ -188,10 +236,19 @@ export default {
           usedPercentage: Math.round(
             (infoResponse.used / infoResponse.total) * 100
           ),
-          sources: infoResponse.sources,
+          sources: groupSources(infoResponse.sources),
         });
       } catch (error) {
         this.$showError(error);
+      }
+    },
+    label(source) {
+      return source.friendlyName || source.name;
+    },
+    selectSource(node) {
+      // console.log('clicked ' + node)
+      if (node) {
+        this.toRoot(node.name);
       }
     },
     toRoot(sourceName) {
@@ -227,5 +284,8 @@ export default {
 }
 .sub-action.active {
   background-color: lightgray;
+}
+.tree {
+/*  margin-left: 5px; */
 }
 </style>
