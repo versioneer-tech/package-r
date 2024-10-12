@@ -246,7 +246,6 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 				} else {
 					source.SecretName = item.ObjectMeta.Name // convention to use name as default
 				}
-
 				if item.Spec.Share.BucketName != "" {
 					source.PresignBucketName = item.Spec.Share.BucketName
 				} else {
@@ -259,6 +258,9 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 					source.PresignSecretName = item.Spec.Share.SecretName
 				} else {
 					source.PresignSecretName = source.SecretName // use same as for access if not provided
+				}
+				if item.Spec.SubPath != "" {
+					source.SubPath = item.Spec.SubPath
 				}
 
 				sources[source.Name] = source
