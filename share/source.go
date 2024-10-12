@@ -109,6 +109,7 @@ func GetStringOrDefault(values map[string]string, key, defaultValue string) stri
 	return defaultValue
 }
 
+//nolint:gocritic
 func GetSource(sources []Source, sourceName string) *Source {
 	if sources != nil && sourceName != "" {
 		for _, source := range sources {

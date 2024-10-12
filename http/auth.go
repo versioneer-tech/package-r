@@ -203,7 +203,7 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 	})
 }
 
-//nolint:gocritic
+//nolint:gocritic,gocyclo
 func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration) (int, error) {
 	sources := map[string]share.Source{}
 

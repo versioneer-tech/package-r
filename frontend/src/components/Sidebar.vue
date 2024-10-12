@@ -186,9 +186,9 @@ function groupSources(sources) {
       parentSource.sets.push(source);
     }
   });
-  const groupedSources=  Array.from(sourceMap.values());
+  const groupedSources = Array.from(sourceMap.values());
   //console.log(groupedSources)
-  return groupedSources
+  return groupedSources;
 }
 
 export default {
@@ -284,6 +284,6 @@ export default {
   background-color: lightgray;
 }
 .tree {
-/*  margin-left: 5px; */
+  /*  margin-left: 5px; */
 }
 </style>
