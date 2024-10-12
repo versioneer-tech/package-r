@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/versioneer-tech/package-r/compare/v1.2.5...v1.3.0) (2024-10-12)
+
+
+### Features
+
+* i9 ([#13](https://github.com/versioneer-tech/package-r/issues/13)) ([6015fd2](https://github.com/versioneer-tech/package-r/commit/6015fd2dea4f0c0646057baf50fd882b9917e0f2)), closes [#9](https://github.com/versioneer-tech/package-r/issues/9)
+* Source information is not shown in Share Management ([#8](https://github.com/versioneer-tech/package-r/issues/8)) ([#14](https://github.com/versioneer-tech/package-r/issues/14)) ([233d7b4](https://github.com/versioneer-tech/package-r/commit/233d7b449680890ca0ebd7142ff9c74ac3fa8456))
+
 ### [1.2.5](https://github.com/versioneer-tech/package-r/compare/v1.2.0...v1.2.5) (2024-10-04)
 
 - optimize single object API presigning by introducing cache (esp. for k8s objects)
