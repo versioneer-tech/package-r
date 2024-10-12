@@ -44,6 +44,8 @@ spec:
                 properties:
                   bucketName:
                     type: string
+                  bucketPrefix:
+                    type: string
                   secretName:
                     type: string
                 type: object
@@ -59,6 +61,8 @@ spec:
                 description: Share provides details to share the items of the source
                 properties:
                   bucketName:
+                    type: string
+                  bucketPrefix:
                     type: string
                   secretName:
                     type: string

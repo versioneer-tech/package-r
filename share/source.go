@@ -18,32 +18,29 @@ import (
 )
 
 type Source struct {
-	Name              string `json:"name"`
-	FriendlyName      string `json:"friendlyName,omitempty"`
-	SecretName        string `json:"secretName"`
-	BucketName        string `json:"bucketName"`
-	PresignSecretName string `json:"presignSecretName"`
-	PresignBucketName string `json:"presignBucketName"`
-	SubPath           string `json:"subPath,omitempty"`
+	Name                string `json:"name"`
+	FriendlyName        string `json:"friendlyName,omitempty"`
+	SecretName          string `json:"secretName"`
+	BucketName          string `json:"bucketName"`
+	BucketPrefix        string `json:"bucketPrefix,omitempty"`
+	PresignSecretName   string `json:"presignSecretName"`
+	PresignBucketName   string `json:"presignBucketName"`
+	PresignBucketPrefix string `json:"presignBucketPrefix,omitempty"`
+	SubPath             string `json:"subPath,omitempty"`
 }
 
-func (s *Source) Connect(k8sCache k8s.Cache) (bucket, prefix string, session *awsSession.Session) {
-	return connect(s.BucketName, s.SecretName, k8sCache)
+func (s *Source) Connect(k8sCache k8s.Cache) (session *awsSession.Session) {
+	return connect(s.SecretName, k8sCache)
 }
 
-func connect(bucketName, secretName string, k8sCache k8s.Cache) (bucket, prefix string, session *awsSession.Session) {
-	if bucketName == "" {
-		log.Print("bucket information missing")
-		return "", "", nil
-	}
-
+func connect(secretName string, k8sCache k8s.Cache) (session *awsSession.Session) {
 	values := map[string]string{}
 
 	if secretName != "" {
 		resp, err := k8sCache.GetSecret(secretName, func(name string) (*v1.Secret, error) {
 			nsc := k8s.NewDefaultClient()
 			ctx := context.Background()
-			log.Printf("GetSecret for bucket %s -> %s", bucketName, name)
+			log.Printf("GetSecret -> %s", name)
 			return nsc.GetSecret(ctx, name)
 		})
 		if err == nil && resp != nil {
@@ -66,31 +63,27 @@ func connect(bucketName, secretName string, k8sCache k8s.Cache) (bucket, prefix 
 		//LogLevel:         aws.LogLevel(aws.LogDebugWithHTTPBody),
 	})
 
-	bucket = GetStringOrDefault(values, "BUCKET_NAME", bucketName)
-	prefix = GetStringOrDefault(values, "BUCKET_PREFIX", "")
-
 	if errSession != nil {
 		log.Printf("Could not create session: %s", errSession)
-		return "", "", nil
+		return nil
 	}
 
-	return bucket, prefix, session
+	return session
 }
 
 func Presign(source *Source, k8sCache k8s.Cache, paths ...string) (presignedUrls []string, status int, err error) {
 	presignedURLs := []string{}
-	_, prefix, _ := connect(source.BucketName, source.SecretName, k8sCache)
-	bucket, _, session := connect(source.PresignBucketName, source.PresignSecretName, k8sCache)
+	session := connect(source.PresignSecretName, k8sCache)
 	if session != nil {
 		s3Client := s3.New(session)
 		for _, path := range paths {
 			path = strings.TrimPrefix(path, "/")
-			path = strings.TrimPrefix(path, prefix)
+			path = strings.TrimPrefix(path, source.PresignBucketPrefix)
 			if source.SubPath != "" {
 				path = source.SubPath + "/" + path
 			}
 			getObjectInput := s3.GetObjectInput{
-				Bucket: aws.String(bucket),
+				Bucket: aws.String(source.PresignBucketName),
 				Key:    aws.String(path),
 			}
 
@@ -116,6 +109,7 @@ func GetStringOrDefault(values map[string]string, key, defaultValue string) stri
 	return defaultValue
 }
 
+//nolint:gocritic
 func GetSource(sources []Source, sourceName string) *Source {
 	if sources != nil && sourceName != "" {
 		for _, source := range sources {

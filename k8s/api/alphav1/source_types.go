@@ -25,14 +25,16 @@ import (
 
 // Access provides details to access the items of the source
 type Access struct {
-	BucketName string `json:"bucketName,omitempty"`
-	SecretName string `json:"secretName,omitempty"`
+	BucketName   string `json:"bucketName,omitempty"`
+	BucketPrefix string `json:"bucketPrefix,omitempty"`
+	SecretName   string `json:"secretName,omitempty"`
 }
 
 // Share provides details to share the items of the source
 type Share struct {
-	BucketName string `json:"bucketName,omitempty"`
-	SecretName string `json:"secretName,omitempty"`
+	BucketName   string `json:"bucketName,omitempty"`
+	BucketPrefix string `json:"bucketPrefix,omitempty"`
+	SecretName   string `json:"secretName,omitempty"`
 }
 
 // SourceSpec defines the desired state of Source

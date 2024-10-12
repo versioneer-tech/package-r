@@ -251,7 +251,9 @@
     "preview": "Preview",
     "settings": "Settings",
     "signup": "Signup",
-    "siteSettings": "Site Settings"
+    "siteSettings": "Site Settings",
+    "sources": "Sources",
+    "no_sources": "No sources"
   },
   "success": {
     "linkCopied": "Link copied!"

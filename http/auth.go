@@ -100,9 +100,9 @@ func withUser(fn handleFunc) handleFunc {
 
 		source := share.GetSource(tk.Sources, r.URL.Query().Get("sourceName"))
 		if source != nil {
-			bucket, prefix, session := source.Connect(*d.store.K8sCache)
+			session := source.Connect(*d.store.K8sCache)
 			if session != nil {
-				d.user.Fs = afero.NewBasePathFs(objects.NewObjectFs(bucket, session), "/"+prefix)
+				d.user.Fs = afero.NewBasePathFs(objects.NewObjectFs(source.BucketName, session), "/"+source.BucketPrefix)
 			}
 		}
 
@@ -203,7 +203,7 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 	})
 }
 
-//nolint:gocritic
+//nolint:gocritic,gocyclo
 func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration) (int, error) {
 	sources := map[string]share.Source{}
 
@@ -233,26 +233,34 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 				source := share.Source{}
 				source.Name = item.ObjectMeta.Name
 				source.FriendlyName = item.Spec.FriendlyName
+				if item.Spec.Access.BucketName != "" {
+					source.BucketName = item.Spec.Access.BucketName
+				} else {
+					source.BucketName = item.ObjectMeta.Name // convention to use name as default
+				}
+				if item.Spec.Access.BucketPrefix != "" {
+					source.BucketPrefix = item.Spec.Access.BucketPrefix
+				}
 				if item.Spec.Access.SecretName != "" {
 					source.SecretName = item.Spec.Access.SecretName
 				} else {
 					source.SecretName = item.ObjectMeta.Name // convention to use name as default
+				}
+
+				if item.Spec.Share.BucketName != "" {
+					source.PresignBucketName = item.Spec.Share.BucketName
+				} else {
+					source.PresignBucketName = source.BucketName // use same as for access if not provided
+				}
+				if item.Spec.Share.BucketPrefix != "" {
+					source.PresignBucketPrefix = item.Spec.Share.BucketPrefix
 				}
 				if item.Spec.Share.SecretName != "" {
 					source.PresignSecretName = item.Spec.Share.SecretName
 				} else {
 					source.PresignSecretName = source.SecretName // use same as for access if not provided
 				}
-				if item.Spec.Access.BucketName != "" {
-					source.BucketName = item.Spec.Access.BucketName
-				} else {
-					source.BucketName = item.ObjectMeta.Name // convention to use name as default
-				}
-				if item.Spec.Share.BucketName != "" {
-					source.PresignBucketName = item.Spec.Share.BucketName
-				} else {
-					source.PresignBucketName = source.BucketName // use same as for access if not provided
-				}
+
 				sources[source.Name] = source
 			}
 		}

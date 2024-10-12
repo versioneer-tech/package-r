@@ -47,9 +47,9 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return errToStatus(err), err
 		}
 
-		bucket, prefix, session := link.Source.Connect(*d.store.K8sCache)
+		session := link.Source.Connect(*d.store.K8sCache)
 		if session != nil {
-			d.user.Fs = afero.NewBasePathFs(objects.NewObjectFs(bucket, session), "/"+prefix)
+			d.user.Fs = afero.NewBasePathFs(objects.NewObjectFs(link.Source.BucketName, session), "/"+link.Source.BucketPrefix)
 		}
 
 		fileInfo, err := files.NewFileInfo(&files.FileOptions{
