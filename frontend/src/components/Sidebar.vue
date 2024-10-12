@@ -19,7 +19,7 @@
           @click="() => toRoot(source.name)"
           :aria-label="source.name"
           :title="source.name"
-          :class="{ active: $route.query.sourceName === source.name, fileset: source.subPath }"
+          :class="{ active: $route.query.sourceName === source.name }"
         >
           <span>{{ source.friendlyName || source.name }}</span>
         </button>
@@ -173,24 +173,22 @@ const INFO_DEFAULT = {
 };
 
 function groupSources(sources) {
-  // Create a map to hold parent sources by their secretName
+  //console.log(sources)
   const sourceMap = new Map();
-
-  // First loop: add all parent sources (those without subPath) to the map
+  // sources are already ordered by name to match naming convention <sourceName---indexName>
   sources.forEach((source) => {
-    const name = source.secretName || source.name;
-    const parentSource = sourceMap.get(name);
-    // take the first element with the name as parent element
+    const sourceName = source.name.split("---")[0];
+    const parentSource = sourceMap.get(sourceName);
     if (!parentSource) {
       source.sets = [];
-      sourceMap.set(source.secretName, source);
+      sourceMap.set(sourceName, source);
     } else {
       parentSource.sets.push(source);
     }
   });
-
-  // Return the array of parent sources (with their sets populated)
-  return Array.from(sourceMap.values());
+  const groupedSources=  Array.from(sourceMap.values());
+  //console.log(groupedSources)
+  return groupedSources
 }
 
 export default {
