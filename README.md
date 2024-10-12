@@ -8,14 +8,18 @@
 
 ## Roadmap
 
-- [x] Provide capabilities to browse through multiple buckets via configurable Sources.
+- Provide capabilities to browse through multiple buckets via configurable Sources.
+  - [x] Leverage Kubernetes for management of Sources.
+  - [x] Support statically configured Sources
+  - [ ] Allow to dynamically connect additional Sources.
 - [x] Allow to include additional metadata to Links.
-- [x] Leverage Kubernetes for management of Sources.
-- [ ] Extend sharing capabilities beyond dynamic prefix paths filtering.
-- [ ] Introduce the concept of FileSets allowing links to contain a static set with even millions of items (note: currently sharing is limited to a maximum of 5000 items).
-- [ ] Make presigned URLs expiration configurable (currently links are always valid for 7 days after generation).
-- [ ] Extend the UI to dynamically connect additional Sources.
+- Introduce the concept of FileSets representing a logical grouping of files (a "package") within a Source
+  - [x] Proper visualization in Menu to differente Sources from FileSets
+  - [ ] Allow to dynamically create FileSets from Sources via Index
 - [ ] Expose and show item checksums.
+- [ ] Extend sharing capabilities beyond dynamic prefix paths filtering.
+- [ ] Support sharing of even millions of items (note: currently presigned URLs generation is limited to a maximum of 5000 items).
+- [ ] Make presigned URLs expiration configurable (currently links are always valid for 7 days after generation).
 
 ## Setup
 
