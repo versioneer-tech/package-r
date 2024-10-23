@@ -1,4 +1,4 @@
-<img src="frontend/public/img/logo.png" height="40"/> 
+<img src="https://raw.githubusercontent.com/versioneer-tech/package-r-design/main/logo.png" height="15"/>
 
 # packageR 
 
@@ -57,3 +57,7 @@ The following capabilities have been suspended within the forked codebase:
 - No editing support; all items are currently treated as read-only.
 - No shell command execution on trigger events; sandboxed execution may be reintroduced.
 - No custom styling;
+
+## License
+
+[Apache 2.0](LICENSE) (Apache License Version 2.0, January 2004) from https://www.apache.org/licenses/LICENSE-2.0
