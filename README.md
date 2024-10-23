@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/versioneer-tech/package-r-design/main/logo.png" height="15"/>
+<img src="https://raw.githubusercontent.com/versioneer-tech/package-r-design/main/logo.png" height="40"/>
 
 # packageR 
 
