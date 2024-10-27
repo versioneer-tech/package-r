@@ -143,6 +143,7 @@
     "video": "Video"
   },
   "settings": {
+    "addSources": "Source hinzufügen",
     "admin": "Admin",
     "administrator": "Administrator",
     "allowCommands": "Befehle ausführen",
@@ -240,6 +241,13 @@
     "siteSettings": "Seiteneinstellungen",
     "sources": "Sources",
     "no_sources": "Keine Sourcen"
+  },
+  "source" : {
+    "name": "Name",
+    "bucketName": "Bucketname",
+    "credentials": "Credentials",
+    "endpoint": "Endpunkt",
+    "region": "Region",
   },
   "success": {
     "linkCopied": "Verweis wurde kopiert!"

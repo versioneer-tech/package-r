@@ -153,6 +153,7 @@
     "video": "Video"
   },
   "settings": {
+    "addSources": "Add Source",
     "admin": "Admin",
     "administrator": "Administrator",
     "allowCommands": "Execute commands",
@@ -255,6 +256,14 @@
     "sources": "Sources",
     "no_sources": "No sources"
   },
+  "source" : {
+    "name": "Name",
+    "bucketName": "Bucket name",
+    "credentials": "Credentials",
+    "endpoint": "Endpoint",
+    "region": "Region",
+  },
+
   "success": {
     "linkCopied": "Link copied!"
   },

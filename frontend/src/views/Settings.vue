@@ -12,6 +12,11 @@
               {{ t("settings.profileSettings") }}
             </li></router-link
           >
+          <router-link to="/settings/addsources"
+            ><li :class="{ active: $route.path === '/settings/addsources' }">
+              {{ t("settings.addSources") }}
+            </li></router-link
+          >
           <router-link to="/settings/shares" v-if="user?.perm.share"
             ><li :class="{ active: $route.path === '/settings/shares' }">
               {{ t("settings.shareManagement") }}
