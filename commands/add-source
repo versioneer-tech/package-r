@@ -37,12 +37,13 @@ if ! kubectl create secret generic "${NAME}" \
   --from-literal=AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
   --from-literal=AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
   --from-literal=AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL}" \
-  --from-literal=AWS_REGION="${AWS_REGION}"; then
-  echo "Error: Failed to create secret '${NAME}' in namespace '${NAMESPACE}'."
+  --from-literal=AWS_REGION="${AWS_REGION}" \
+  --dry-run=client -o yaml | kubectl label -f - package-r/ui=true --local -o yaml | kubectl apply -f -; then
+  echo "Error: Failed to create and label Secret '${NAME}' in namespace '${NAMESPACE}'."
   exit 1
 fi
 
-cat <<EOF | kubectl apply -f -
+cat <<EOF | kubectl label -f - package-r/ui=true --local -o yaml | kubectl apply -f -
 apiVersion: package.r/alphav1
 kind: Source
 metadata:
@@ -54,7 +55,7 @@ spec:
 EOF
 
 if [ $? -ne 0 ]; then
-  echo "Error: Failed to apply the Source manifest."
+  echo "Error: Failed to apply the labeled Source manifest."
   exit 1
 fi
 

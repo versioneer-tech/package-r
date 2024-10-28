@@ -19,7 +19,7 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import relativeTime from "dayjs/plugin/relativeTime";
 import duration from "dayjs/plugin/duration";
 
-import { QTree, Quasar } from "quasar";
+import { QBtn, QTree, Quasar } from "quasar";
 
 import "./css/styles.css";
 import "./sass/quasar_styles.sass";
@@ -45,7 +45,8 @@ app.use(Toast, {
 // Use Quasar
 app.use(Quasar, {
   components: {
-    QTree, // Only importing the components you need
+    QTree,
+    QBtn,
   },
 });
 

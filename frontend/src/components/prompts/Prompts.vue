@@ -16,6 +16,7 @@ import DeleteUser from "./DeleteUser.vue";
 import Rename from "./Rename.vue";
 import Move from "./Move.vue";
 import Copy from "./Copy.vue";
+import Stage from "./Stage.vue";
 import NewFile from "./NewFile.vue";
 import NewDir from "./NewDir.vue";
 import Replace from "./Replace.vue";
@@ -38,6 +39,7 @@ const components = new Map<string, any>([
   ["rename", Rename],
   ["move", Move],
   ["copy", Copy],
+  ["stage", Stage],
   ["newFile", NewFile],
   ["newDir", NewDir],
   ["replace", Replace],

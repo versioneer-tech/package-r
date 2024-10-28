@@ -4,6 +4,7 @@
     "clear": "Clear",
     "close": "Close",
     "continue": "Continue",
+    "stage": "Stage",
     "copy": "Copy",
     "copyFile": "Copy file",
     "copyToClipboard": "Copy to clipboard",
@@ -103,6 +104,8 @@
   },
   "permanent": "Permanent",
   "prompts": {
+    "stage": "Stage",
+    "stageMessage": "Choose the location to stage your files to:",
     "copy": "Copy",
     "copyMessage": "Choose the location to copy your files to:",
     "currentlyNavigating": "Currently navigating on:",
@@ -153,6 +156,7 @@
     "video": "Video"
   },
   "settings": {
+    "addSources": "Add Source",
     "admin": "Admin",
     "administrator": "Administrator",
     "allowCommands": "Execute commands",
@@ -254,6 +258,13 @@
     "siteSettings": "Site Settings",
     "sources": "Sources",
     "no_sources": "No sources"
+  },
+  "source" : {
+    "bucketName": "Bucket Name",
+    "accessKey": "Access Key",
+    "accessSecret": "Access Secret",
+    "endpoint": "Endpoint",
+    "region": "Region",
   },
   "success": {
     "linkCopied": "Link copied!"

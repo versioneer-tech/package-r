@@ -175,6 +175,8 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 	fmt.Fprintf(w, "\tPermissions:\n")
 	fmt.Fprintf(w, "\t\tAdmin:\t%t\n", set.Defaults.Perm.Admin)
 	fmt.Fprintf(w, "\t\tExecute:\t%t\n", set.Defaults.Perm.Execute)
+	fmt.Fprintf(w, "\t\tConnect:\t%t\n", set.Defaults.Perm.Connect)
+	fmt.Fprintf(w, "\t\tStage:\t%t\n", set.Defaults.Perm.Stage)
 	fmt.Fprintf(w, "\t\tCreate:\t%t\n", set.Defaults.Perm.Create)
 	fmt.Fprintf(w, "\t\tRename:\t%t\n", set.Defaults.Perm.Rename)
 	fmt.Fprintf(w, "\t\tModify:\t%t\n", set.Defaults.Perm.Modify)

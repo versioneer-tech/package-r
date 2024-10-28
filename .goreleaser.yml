@@ -77,6 +77,8 @@ dockers:
       - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
     extra_files:
       - healthcheck.sh
+      - add-source
+      - remove-source
 docker_manifests:
   - name_template: "ghcr.io/versioneer-tech/package-r:latest"
     image_templates:

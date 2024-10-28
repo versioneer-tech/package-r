@@ -163,9 +163,9 @@ const fetchData = async () => {
   }
 };
 const keyEvent = (event: KeyboardEvent) => {
-  // if (event.key === "F1") {
-  //   event.preventDefault();
-  //   layoutStore.showHover("help");
-  // }
+  if (event.key === "F1") {
+    event.preventDefault();
+    //layoutStore.showHover("help");
+  }
 };
 </script>

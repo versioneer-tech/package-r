@@ -26,6 +26,13 @@
             show="rename"
           />
           <action
+            v-if="headerButtons.stage"
+            id="stage-button"
+            icon="move_to_inbox"
+            :label="t('buttons.stage')"
+            show="stage"
+          />
+          <action
             v-if="headerButtons.copy"
             id="copy-button"
             icon="content_copy"
@@ -90,6 +97,12 @@
         icon="mode_edit"
         :label="t('buttons.rename')"
         show="rename"
+      />
+      <action
+        v-if="headerButtons.stage"
+        icon="move_to_inbox"
+        :label="t('buttons.stage')"
+        show="stage"
       />
       <action
         v-if="headerButtons.copy"
@@ -271,7 +284,7 @@
 
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
-import { useClipboardStore } from "@/stores/clipboard";
+//import { useClipboardStore } from "@/stores/clipboard";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 
@@ -285,7 +298,7 @@ import { Base64 } from "js-base64";
 
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import Action from "@/components/header/Action.vue";
-import Search from "@/components/Search.vue";
+//import Search from "@/components/Search.vue";
 import Item from "@/components/files/ListingItem.vue";
 import {
   computed,
@@ -308,7 +321,7 @@ const itemWeight = ref<number>(0);
 
 const $showError = inject<IToastError>("$showError")!;
 
-const clipboardStore = useClipboardStore();
+//const clipboardStore = useClipboardStore();
 const authStore = useAuthStore();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
@@ -406,6 +419,7 @@ const headerButtons = computed(() => {
     share: fileStore.selectedCount === 1 && authStore.user?.perm.share,
     move: fileStore.selectedCount > 0 && authStore.user?.perm.rename,
     copy: fileStore.selectedCount > 0 && authStore.user?.perm.create,
+    stage: fileStore.selectedCount > 0 && authStore.user?.perm.stage,
   };
 });
 
@@ -540,97 +554,97 @@ const preventDefault = (event: Event) => {
   event.preventDefault();
 };
 
-const copyCut = (event: Event | KeyboardEvent): void => {
-  if ((event.target as HTMLElement).tagName?.toLowerCase() === "input") return;
+// const copyCut = (event: Event | KeyboardEvent): void => {
+//   if ((event.target as HTMLElement).tagName?.toLowerCase() === "input") return;
 
-  if (fileStore.req === null) return;
+//   if (fileStore.req === null) return;
 
-  let items = [];
+//   let items = [];
 
-  for (let i of fileStore.selected) {
-    items.push({
-      from: fileStore.req.items[i].url,
-      name: fileStore.req.items[i].name,
-    });
-  }
+//   for (let i of fileStore.selected) {
+//     items.push({
+//       from: fileStore.req.items[i].url,
+//       name: fileStore.req.items[i].name,
+//     });
+//   }
 
-  if (items.length === 0) {
-    return;
-  }
+//   if (items.length === 0) {
+//     return;
+//   }
 
-  clipboardStore.$patch({
-    key: (event as KeyboardEvent).key,
-    items,
-    path: route.path,
-  });
-};
+//   clipboardStore.$patch({
+//     key: (event as KeyboardEvent).key,
+//     items,
+//     path: route.path,
+//   });
+// };
 
-const paste = (event: Event) => {
-  if ((event.target as HTMLElement).tagName?.toLowerCase() === "input") return;
+// const paste = (event: Event) => {
+//   if ((event.target as HTMLElement).tagName?.toLowerCase() === "input") return;
 
-  // TODO router location should it be
-  let items: any[] = [];
+//   // TODO router location should it be
+//   let items: any[] = [];
 
-  for (let item of clipboardStore.items) {
-    const from = item.from.endsWith("/") ? item.from.slice(0, -1) : item.from;
-    const to = route.path + encodeURIComponent(item.name);
-    items.push({ from, to, name: item.name });
-  }
+//   for (let item of clipboardStore.items) {
+//     const from = item.from.endsWith("/") ? item.from.slice(0, -1) : item.from;
+//     const to = route.path + encodeURIComponent(item.name);
+//     items.push({ from, to, name: item.name });
+//   }
 
-  if (items.length === 0) {
-    return;
-  }
+//   if (items.length === 0) {
+//     return;
+//   }
 
-  let action = (overwrite: boolean, rename: boolean) => {
-    api
-      .copy(items, overwrite, rename)
-      .then(() => {
-        fileStore.reload = true;
-      })
-      .catch($showError);
-  };
+//   let action = (overwrite: boolean, rename: boolean) => {
+//     api
+//       .copy(items, overwrite, rename)
+//       .then(() => {
+//         fileStore.reload = true;
+//       })
+//       .catch($showError);
+//   };
 
-  if (clipboardStore.key === "x") {
-    action = (overwrite, rename) => {
-      api
-        .move(items, overwrite, rename)
-        .then(() => {
-          clipboardStore.resetClipboard();
-          fileStore.reload = true;
-        })
-        .catch($showError);
-    };
-  }
+//   if (clipboardStore.key === "x") {
+//     action = (overwrite, rename) => {
+//       api
+//         .move(items, overwrite, rename)
+//         .then(() => {
+//           clipboardStore.resetClipboard();
+//           fileStore.reload = true;
+//         })
+//         .catch($showError);
+//     };
+//   }
 
-  if (clipboardStore.path == route.path) {
-    action(false, true);
+//   if (clipboardStore.path == route.path) {
+//     action(false, true);
 
-    return;
-  }
+//     return;
+//   }
 
-  let conflict = upload.checkConflict(items, fileStore.req!.items);
+//   let conflict = upload.checkConflict(items, fileStore.req!.items);
 
-  let overwrite = false;
-  let rename = false;
+//   let overwrite = false;
+//   let rename = false;
 
-  if (conflict) {
-    layoutStore.showHover({
-      prompt: "replace-rename",
-      confirm: (event: Event, option: string) => {
-        overwrite = option == "overwrite";
-        rename = option == "rename";
+//   if (conflict) {
+//     layoutStore.showHover({
+//       prompt: "replace-rename",
+//       confirm: (event: Event, option: string) => {
+//         overwrite = option == "overwrite";
+//         rename = option == "rename";
 
-        event.preventDefault();
-        layoutStore.closeHovers();
-        action(overwrite, rename);
-      },
-    });
+//         event.preventDefault();
+//         layoutStore.closeHovers();
+//         action(overwrite, rename);
+//       },
+//     });
 
-    return;
-  }
+//     return;
+//   }
 
-  action(overwrite, rename);
-};
+//   action(overwrite, rename);
+// };
 
 const colunmsResize = () => {
   // Update the columns size based on the window width.
@@ -830,9 +844,9 @@ const sort = async (by: string) => {
   fileStore.reload = true;
 };
 
-const openSearch = () => {
-  layoutStore.showHover("search");
-};
+// const openSearch = () => {
+//   layoutStore.showHover("search");
+// };
 
 const toggleMultipleSelection = () => {
   fileStore.toggleMultiple();

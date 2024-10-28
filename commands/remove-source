@@ -1,0 +1,52 @@
+#!/bin/bash
+
+if [ $# -lt 1 ]; then
+  echo "Error: Missing arguments."
+  echo "Usage: $0 <name>"
+  exit 1
+fi
+
+NAME="$1"
+
+if [ -z "$NAMESPACE_DEFAULT" ]; then
+  if [ ! -f /var/run/secrets/kubernetes.io/serviceaccount/namespace ]; then
+    echo "Error: Service account namespace file does not exist."
+    exit 1
+  fi
+  NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+else
+  NAMESPACE="$NAMESPACE_DEFAULT"
+fi
+
+source_has_label=false
+secret_has_label=false
+
+if kubectl get source "${NAME}" -n "${NAMESPACE}" -o jsonpath='{.metadata.labels.package-r/ui}' 2>/dev/null | grep -q 'true'; then
+  source_has_label=true
+else
+  echo "Source '${NAME}' in namespace '${NAMESPACE}' does not have the label 'package-r/ui: true' or does not exist."
+fi
+
+if kubectl get secret "${NAME}" -n "${NAMESPACE}" -o jsonpath='{.metadata.labels.package-r/ui}' 2>/dev/null | grep -q 'true'; then
+  secret_has_label=true
+else
+  echo "Secret '${NAME}' in namespace '${NAMESPACE}' does not have the label 'package-r/ui: true' or does not exist."
+fi
+
+if [ "$source_has_label" = true ] && [ "$secret_has_label" = true ]; then
+  if kubectl delete source "${NAME}" -n "${NAMESPACE}"; then
+    echo "Source '${NAME}' deleted from namespace '${NAMESPACE}'."
+  else
+    echo "Error: Failed to delete Source '${NAME}' in namespace '${NAMESPACE}'."
+    exit 1
+  fi
+
+  if kubectl delete secret "${NAME}" -n "${NAMESPACE}"; then
+    echo "Secret '${NAME}' deleted from namespace '${NAMESPACE}'."
+  else
+    echo "Error: Failed to delete Secret '${NAME}' in namespace '${NAMESPACE}'."
+    exit 1
+  fi
+else
+  echo "Both Source and Secret must have the label 'package-r/ui: true' to be deleted."
+fi

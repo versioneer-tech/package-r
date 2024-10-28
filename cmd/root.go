@@ -294,6 +294,8 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 			Perm: users.Permissions{
 				Admin:    false,
 				Execute:  true,
+				Connect:  true,
+				Stage:    false,
 				Create:   false,
 				Rename:   false,
 				Modify:   false,
@@ -301,7 +303,7 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 				Share:    true,
 				Download: false,
 			},
-			Commands:     []string{"create-source"},
+			Commands:     []string{"add-source", "remove-source"},
 			HideDotfiles: true,
 		},
 		AuthMethod: "",

@@ -5,11 +5,19 @@
       <button
         class="action"
         @click="() => toRoot('')"
-        :aria-label="info.sources"
-        :title="info.sources"
+        :aria-label="$t('sidebar.sources')"
+        :title="$t('sidebar.sources')"
       >
         <i class="material-icons">folder</i>
         <span>{{ $t("sidebar.sources") }}</span>
+        <!--
+        <q-btn
+            class="button_add"
+            @click.stop="() => console.log('add')"
+            size="xs"
+            icon="add"
+        />
+        -->
       </button>
 
       <!--
@@ -42,7 +50,6 @@
           </div>
         </template>
       </q-tree>
-
       <div v-if="user.perm.create">
         <button
           @click="showHover('newDir')"
@@ -160,10 +167,9 @@ import {
   loginPage,
 } from "@/utils/constants";
 import { files as api } from "@/api";
-//import ProgressBar from "@/components/ProgressBar.vue";
 import prettyBytes from "pretty-bytes";
-
 import { QTree } from "quasar";
+//import ProgressBar from "@/components/ProgressBar.vue";
 
 const INFO_DEFAULT = {
   used: "0 B",
@@ -285,5 +291,12 @@ export default {
 }
 .tree {
   /*  margin-left: 5px; */
+}
+.button_add {
+  margin-left: 10px;
+  padding: 0.5em;
+}
+.button_add:hover {
+  background-color: transparent;
 }
 </style>

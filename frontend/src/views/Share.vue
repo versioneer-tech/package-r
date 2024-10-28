@@ -167,17 +167,23 @@ import dayjs from "dayjs";
 import { Base64 } from "js-base64";
 
 import HeaderBar from "@/components/header/HeaderBar.vue";
-import Action from "@/components/header/Action.vue";
+//import Action from "@/components/header/Action.vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Errors from "@/views/Errors.vue";
 import Item from "@/components/files/ListingItem.vue";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
-import { computed, inject, onMounted, onBeforeUnmount, ref, watch } from "vue";
+import {
+  computed,
+  /*inject,*/ onMounted,
+  onBeforeUnmount,
+  ref,
+  watch,
+} from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { StatusError } from "@/api/utils";
-import { copy } from "@/utils/clipboard";
+//import { copy } from "@/utils/clipboard";
 import { name } from "@/utils/constants";
 
 const error = ref<StatusError | null>(null);
@@ -186,10 +192,10 @@ const password = ref<string>("");
 const attemptedPasswordLogin = ref<boolean>(false);
 const hash = ref<string>("");
 const token = ref<string>("");
-const audio = ref<HTMLAudioElement>();
-const tag = ref<boolean>(false);
+//const audio = ref<HTMLAudioElement>();
+//const tag = ref<boolean>(false);
 
-const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
+//const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
 
 const { t } = useI18n({});
 
@@ -232,15 +238,15 @@ const modTime = computed(() =>
 
 // Functions
 const base64 = (name: any) => Base64.encodeURI(name);
-const play = () => {
-  if (tag.value) {
-    audio.value?.pause();
-    tag.value = false;
-  } else {
-    audio.value?.play();
-    tag.value = true;
-  }
-};
+// const play = () => {
+//   if (tag.value) {
+//     audio.value?.pause();
+//     tag.value = false;
+//   } else {
+//     audio.value?.play();
+//     tag.value = true;
+//   }
+// };
 const fetchData = async () => {
   fileStore.reload = false;
   fileStore.selected = [];
