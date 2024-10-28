@@ -4,21 +4,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## [1.4.0](https://github.com/versioneer-tech/package-r/compare/v1.3.0...v1.4.0) (2024-10-28)
 
-
-### Features
-
-* Add Source tab to connect additional buckets ([f1cc3d3](https://github.com/versioneer-tech/package-r/commit/f1cc3d3cc9691dbf52853e763e661482f67b272e))
-
-## [1.4.0](https://github.com/versioneer-tech/package-r/compare/v1.3.0...v1.4.0) (2024-10-28)
-
-
-### Features
-
-* Add Source tab to connect additional buckets ([f1cc3d3](https://github.com/versioneer-tech/package-r/commit/f1cc3d3cc9691dbf52853e763e661482f67b272e))
-
-### [1.3.1](https://github.com/versioneer-tech/package-r/compare/v1.3.0...v1.3.1) (2024-10-28)
-
-- incorporate shell commands to extend api (with create-source as first)
+* Add Source tab to connect additional buckets
 
 ## [1.3.0](https://github.com/versioneer-tech/package-r/compare/v1.2.5...v1.3.0) (2024-10-12)
 

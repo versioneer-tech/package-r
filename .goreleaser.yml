@@ -40,8 +40,6 @@ dockers:
     goarch: amd64
     image_templates:
       - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-amd64"
-    extra_files:
-      - healthcheck.sh
   -
     dockerfile: Dockerfile
     use: buildx
@@ -57,8 +55,6 @@ dockers:
     goarch: arm64
     image_templates:
       - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-arm64"
-    extra_files:
-      - healthcheck.sh
   -
     dockerfile: Dockerfile
     use: buildx
@@ -75,10 +71,6 @@ dockers:
     goarm: '7'
     image_templates:
       - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
-    extra_files:
-      - healthcheck.sh
-      - add-source
-      - remove-source
 docker_manifests:
   - name_template: "ghcr.io/versioneer-tech/package-r:latest"
     image_templates:
