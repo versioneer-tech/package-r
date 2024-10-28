@@ -30,7 +30,7 @@ func printUsers(usrs []*users.User) {
 	fmt.Fprintln(w, "ID\tUsername\tScope\tLocale\tV. Mode\tS.Click\tAdmin\tExecute\tCreate\tRename\tModify\tDelete\tShare\tDownload\tPwd Lock")
 
 	for _, u := range usrs {
-		fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t\n",
+		fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t\n",
 			u.ID,
 			u.Username,
 			u.Scope,
@@ -39,6 +39,8 @@ func printUsers(usrs []*users.User) {
 			u.SingleClick,
 			u.Perm.Admin,
 			u.Perm.Execute,
+			u.Perm.Connect,
+			u.Perm.Stage,
 			u.Perm.Create,
 			u.Perm.Rename,
 			u.Perm.Modify,
@@ -63,6 +65,8 @@ func parseUsernameOrID(arg string) (username string, id uint) {
 func addUserFlags(flags *pflag.FlagSet) {
 	flags.Bool("perm.admin", false, "admin perm for users")
 	flags.Bool("perm.execute", true, "execute perm for users")
+	flags.Bool("perm.connect", true, "connect perm for users")
+	flags.Bool("perm.stage", true, "stage perm for users")
 	flags.Bool("perm.create", true, "create perm for users")
 	flags.Bool("perm.rename", true, "rename perm for users")
 	flags.Bool("perm.modify", true, "modify perm for users")
@@ -103,6 +107,10 @@ func getUserDefaults(flags *pflag.FlagSet, defaults *settings.UserDefaults, all 
 			defaults.Perm.Admin = mustGetBool(flags, flag.Name)
 		case "perm.execute":
 			defaults.Perm.Execute = mustGetBool(flags, flag.Name)
+		case "perm.connect":
+			defaults.Perm.Connect = mustGetBool(flags, flag.Name)
+		case "perm.stage":
+			defaults.Perm.Stage = mustGetBool(flags, flag.Name)
 		case "perm.create":
 			defaults.Perm.Create = mustGetBool(flags, flag.Name)
 		case "perm.rename":

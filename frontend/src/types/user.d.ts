@@ -35,6 +35,8 @@ interface IUserForm {
 interface Permissions {
   admin: boolean;
   copy: boolean;
+  connect: boolean;
+  stage: boolean;
   create: boolean;
   delete: boolean;
   download: boolean;

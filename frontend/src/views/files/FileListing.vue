@@ -26,6 +26,13 @@
             show="rename"
           />
           <action
+            v-if="headerButtons.stage"
+            id="stage-button"
+            icon="move_to_inbox"
+            :label="t('buttons.stage')"
+            show="stage"
+          />
+          <action
             v-if="headerButtons.copy"
             id="copy-button"
             icon="content_copy"
@@ -90,6 +97,12 @@
         icon="mode_edit"
         :label="t('buttons.rename')"
         show="rename"
+      />
+      <action
+        v-if="headerButtons.stage"
+        icon="move_to_inbox"
+        :label="t('buttons.stage')"
+        show="stage"
       />
       <action
         v-if="headerButtons.copy"
@@ -406,6 +419,7 @@ const headerButtons = computed(() => {
     share: fileStore.selectedCount === 1 && authStore.user?.perm.share,
     move: fileStore.selectedCount > 0 && authStore.user?.perm.rename,
     copy: fileStore.selectedCount > 0 && authStore.user?.perm.create,
+    stage: fileStore.selectedCount > 0 && authStore.user?.perm.stage,
   };
 });
 

@@ -4,6 +4,7 @@
     "clear": "Clear",
     "close": "Close",
     "continue": "Continue",
+    "stage": "Stage",
     "copy": "Copy",
     "copyFile": "Copy file",
     "copyToClipboard": "Copy to clipboard",
@@ -103,6 +104,8 @@
   },
   "permanent": "Permanent",
   "prompts": {
+    "stage": "Stage",
+    "stageMessage": "Choose the location to stage your files to:",
     "copy": "Copy",
     "copyMessage": "Choose the location to copy your files to:",
     "currentlyNavigating": "Currently navigating on:",
@@ -257,13 +260,12 @@
     "no_sources": "No sources"
   },
   "source" : {
-    "name": "Name",
-    "bucketName": "Bucket name",
-    "credentials": "Credentials",
+    "bucketName": "Bucket Name",
+    "accessKey": "Access Key",
+    "accessSecret": "Access Secret",
     "endpoint": "Endpoint",
     "region": "Region",
   },
-
   "success": {
     "linkCopied": "Link copied!"
   },

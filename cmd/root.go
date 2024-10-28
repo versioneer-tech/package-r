@@ -294,6 +294,8 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 			Perm: users.Permissions{
 				Admin:    false,
 				Execute:  true,
+				Connect:  true,
+				Stage:    false,
 				Create:   false,
 				Rename:   false,
 				Modify:   false,

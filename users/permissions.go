@@ -4,6 +4,8 @@ package users
 type Permissions struct {
 	Admin    bool `json:"admin"`
 	Execute  bool `json:"execute"`
+	Connect  bool `json:"connect"`
+	Stage    bool `json:"stage"`
 	Create   bool `json:"create"`
 	Rename   bool `json:"rename"`
 	Modify   bool `json:"modify"`

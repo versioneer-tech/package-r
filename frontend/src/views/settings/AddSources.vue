@@ -1,22 +1,22 @@
 <template>
   <div class="row">
     <div class="column">
-      <form class="card" @submit="addSource">
+      <form class="card" @submit="submitAddSource">
         <div class="card-title">
           <h2>{{ t("settings.addSources") }}</h2>
         </div>
 
         <div class="card-content">
-          <p>{{ $t("source.name") }}</p>
-          <input class="input input--block" v-model.trim="source.name" />
           <p>{{ $t("source.bucketName") }}</p>
-          <input class="input input--block" v-model.trim="source.bucketName" />
+          <input class="input input--block" v-model.trim="addSource.bucketName" />
+          <p>{{ $t("source.accessKey") }}</p>
+          <input class="input input--block" v-model.trim="addSource.accessKey" />
+          <p>{{ $t("source.accessSecret") }}</p>
+          <input class="input input--block" v-model.trim="addSource.accessSecret" />
           <p>{{ $t("source.endpoint") }}</p>
-          <input class="input input--block" v-model.trim="source.endpoint" />
+          <input class="input input--block" v-model.trim="addSource.endpoint" />
           <p>{{ $t("source.region") }}</p>
-          <input class="input input--block" v-model.trim="source.region" />
-          <p>{{ $t("source.credentials") }}</p>
-          <input class="input input--block" v-model.trim="source.credentials" />
+          <input class="input input--block" v-model.trim="addSource.region" />
         </div>
 
         <div class="card-action">
@@ -34,18 +34,26 @@
 
 <script setup lang="ts">
 import { useLayoutStore } from "@/stores/layout";
-import { source as api } from "@/api";
 import { inject, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { NewSource } from "@/types/sources.js";
+import { baseURL } from "@/utils/constants";
+import { useAuthStore } from "@/stores/auth";
+
+interface AddSource {
+  bucketName: string;
+  accessKey: string;
+  accessSecret: string;
+  endpoint: string;
+  region: string;
+}
 
 const layoutStore = useLayoutStore();
 const { t } = useI18n();
 
-// const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
+const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
 const $showError = inject<IToastError>("$showError")!;
 
-const source = ref<NewSource>({} as NewSource);
+const addSource = ref<AddSource>({} as AddSource);
 
 onMounted(() => {
   layoutStore.loading = true;
@@ -54,15 +62,33 @@ onMounted(() => {
   return true;
 });
 
-const addSource = async (event: Event) => {
-  event.preventDefault();
+const ssl = window.location.protocol === "https:";
+const protocol = ssl ? "wss:" : "ws:";
 
+const submitAddSource = async (event: Event) => {
+  event.preventDefault();
   try {
-    await api.update(source.value);
-    //    $showSuccess(t("settings.settingsUpdated"));
-  } catch (err) {
-    if (err instanceof Error) {
-      $showError(err);
+    const authStore = useAuthStore();
+    const url = `${protocol}//${window.location.host}${baseURL}/api/command/?auth=${authStore.jwt}`;
+
+    const websocket = await new Promise<WebSocket>((resolve, reject) => {
+      const conn = new WebSocket(url);
+
+      conn.onopen = () => {
+        resolve(conn);
+      };
+
+      conn.onerror = (error) => {
+        reject(error);
+      };
+    });
+
+    websocket.send(`create-source ${addSource.value.bucketName} ${addSource.value.accessKey} ${addSource.value.accessSecret} ${addSource.value.endpoint} ${addSource.value.region}`);
+    $showSuccess(`Source added`);
+    websocket.close();
+  } catch (error) {
+    if (error instanceof Error) {
+      $showError(error);
     }
   }
 };

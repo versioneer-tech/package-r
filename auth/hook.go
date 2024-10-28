@@ -210,6 +210,8 @@ func (a *HookAuth) GetUser(d *users.User) *users.User {
 	perms := users.Permissions{
 		Admin:    isAdmin,
 		Execute:  isAdmin || a.Fields.GetBoolean("user.perm.execute", d.Perm.Execute),
+		Connect:  isAdmin || a.Fields.GetBoolean("user.perm.connect", d.Perm.Connect),
+		Stage:    isAdmin || a.Fields.GetBoolean("user.perm.stage", d.Perm.Stage),
 		Create:   isAdmin || a.Fields.GetBoolean("user.perm.create", d.Perm.Create),
 		Rename:   isAdmin || a.Fields.GetBoolean("user.perm.rename", d.Perm.Rename),
 		Modify:   isAdmin || a.Fields.GetBoolean("user.perm.modify", d.Perm.Modify),
@@ -256,6 +258,8 @@ var validHookFields = []string{
 	"user.hideDotfiles",
 	"user.perm.admin",
 	"user.perm.execute",
+	"user.perm.connect",
+	"user.perm.stage",
 	"user.perm.create",
 	"user.perm.rename",
 	"user.perm.modify",

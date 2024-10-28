@@ -12,7 +12,7 @@
               {{ t("settings.profileSettings") }}
             </li></router-link
           >
-          <router-link to="/settings/addsources"
+          <router-link to="/settings/addsources" v-if="user?.perm.connect"
             ><li :class="{ active: $route.path === '/settings/addsources' }">
               {{ t("settings.addSources") }}
             </li></router-link
