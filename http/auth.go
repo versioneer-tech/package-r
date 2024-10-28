@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -104,6 +105,8 @@ func withUser(fn handleFunc) handleFunc {
 			if session != nil {
 				d.user.Fs = afero.NewBasePathFs(objects.NewObjectFs(source.BucketName, session), "/"+source.BucketPrefix)
 			}
+		} else {
+			d.user.Fs = afero.NewBasePathFs(afero.NewOsFs(), path.Join(d.UserHomeBasePath, d.user.Username))
 		}
 
 		d.raw = tk.Sources

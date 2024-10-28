@@ -293,7 +293,7 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 			SingleClick: false,
 			Perm: users.Permissions{
 				Admin:    false,
-				Execute:  false,
+				Execute:  true,
 				Create:   false,
 				Rename:   false,
 				Modify:   false,
@@ -301,6 +301,8 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 				Share:    true,
 				Download: false,
 			},
+			Commands:     []string{"create-source"},
+			HideDotfiles: true,
 		},
 		AuthMethod: "",
 		Branding:   settings.Branding{},
@@ -361,7 +363,6 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 	}
 
 	set.Defaults.Apply(user)
-	user.Perm.Admin = false
 
 	err = d.store.Users.Save(user)
 	checkErr(err)
