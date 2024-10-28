@@ -14,8 +14,8 @@ builds:
       - linux
     goarch:
       - amd64
-      - arm
-      - arm64
+      # - arm
+      # - arm64
     goarm:
       - 7
 
@@ -43,51 +43,51 @@ dockers:
     extra_files:
       - healthcheck.sh
       - commands/
-  -
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.name={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source={{.GitURL}}"
-      - "--platform=linux/arm64"
-    goos: linux
-    goarch: arm64
-    image_templates:
-      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-arm64"
-    extra_files:
-      - healthcheck.sh
-      - commands/
-  -
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.name={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source={{.GitURL}}"
-      - "--platform=linux/arm/v7"
-    goos: linux
-    goarch: arm
-    goarm: '7'
-    image_templates:
-      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
-    extra_files:
-      - healthcheck.sh
-      - commands/
+  # -
+  #   dockerfile: Dockerfile
+  #   use: buildx
+  #   build_flag_templates:
+  #     - "--pull"
+  #     - "--label=org.opencontainers.image.created={{.Date}}"
+  #     - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  #     - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  #     - "--label=org.opencontainers.image.version={{.Version}}"
+  #     - "--label=org.opencontainers.image.source={{.GitURL}}"
+  #     - "--platform=linux/arm64"
+  #   goos: linux
+  #   goarch: arm64
+  #   image_templates:
+  #     - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-arm64"
+  #   extra_files:
+  #     - healthcheck.sh
+  #     - commands/
+  # -
+  #   dockerfile: Dockerfile
+  #   use: buildx
+  #   build_flag_templates:
+  #     - "--pull"
+  #     - "--label=org.opencontainers.image.created={{.Date}}"
+  #     - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  #     - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  #     - "--label=org.opencontainers.image.version={{.Version}}"
+  #     - "--label=org.opencontainers.image.source={{.GitURL}}"
+  #     - "--platform=linux/arm/v7"
+  #   goos: linux
+  #   goarch: arm
+  #   goarm: '7'
+  #   image_templates:
+  #     - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
+  #   extra_files:
+  #     - healthcheck.sh
+  #     - commands/
 docker_manifests:
   - name_template: "ghcr.io/versioneer-tech/package-r:latest"
     image_templates:
       - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-amd64"
-      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-arm64"
-      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
+      # - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-arm64"
+      # - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
   - name_template: "ghcr.io/versioneer-tech/package-r:{{ .Tag }}"
     image_templates:
       - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-amd64"
-      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-arm64"
-      - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
+      # - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-arm64"
+      # - "ghcr.io/versioneer-tech/package-r:{{ .Tag }}-armv7"
