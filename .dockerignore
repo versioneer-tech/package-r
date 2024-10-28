@@ -1,5 +1,5 @@
 *
 !docker/*
-!bin/
 !healthcheck.sh
 !package-r
+!create-source.sh

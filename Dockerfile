@@ -19,8 +19,8 @@ RUN curl -LO "https://dl.k8s.io/release/v1.31.2/bin/linux/amd64/kubectl" && \
 COPY healthcheck.sh /healthcheck.sh
 RUN chmod +x /healthcheck.sh
 
-COPY bin /usr/local/bin
-RUN chmod +x /usr/local/bin/*
+COPY create-source.sh /usr/local/bin/create-source
+RUN chmod +x /usr/local/bin/create-source
 
 ENV PATH="/usr/local/bin:${PATH}"
 
