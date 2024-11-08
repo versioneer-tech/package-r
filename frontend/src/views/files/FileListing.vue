@@ -405,9 +405,9 @@ const viewIcon = computed(() => {
 });
 
 function hasWritePermissions(mode: number) {
-    const OWNER_WRITE = 0o200;
-    mode = mode & 0o777;
-    return (mode & OWNER_WRITE) !== 0;
+  const OWNER_WRITE = 0o200;
+  mode = mode & 0o777;
+  return (mode & OWNER_WRITE) !== 0;
 }
 
 const headerButtons = computed(() => {
@@ -416,10 +416,13 @@ const headerButtons = computed(() => {
     upload: authStore.user?.perm.create && canWrite,
     download: authStore.user?.perm.download,
     shell: authStore.user?.perm.execute && enableExec,
-    delete: fileStore.selectedCount > 0 && authStore.user?.perm.delete && canWrite,
-    rename: fileStore.selectedCount === 1 && authStore.user?.perm.rename && canWrite,
+    delete:
+      fileStore.selectedCount > 0 && authStore.user?.perm.delete && canWrite,
+    rename:
+      fileStore.selectedCount === 1 && authStore.user?.perm.rename && canWrite,
     share: fileStore.selectedCount === 1 && authStore.user?.perm.share,
-    move: fileStore.selectedCount > 0 && authStore.user?.perm.rename && canWrite,
+    move:
+      fileStore.selectedCount > 0 && authStore.user?.perm.rename && canWrite,
     copy: fileStore.selectedCount > 0 && authStore.user?.perm.create,
   };
 });

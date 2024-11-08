@@ -120,7 +120,7 @@ const submit = async (event: Event) => {
 
 // Run hooks
 onMounted(() => {
-  username.value = 'default';
+  username.value = "default";
 
   if (!recaptcha) return;
 

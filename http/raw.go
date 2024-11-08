@@ -47,6 +47,7 @@ func parseQueryFiles(r *http.Request, f *files.FileInfo, _ *users.User) ([]strin
 	return fileSlice, nil
 }
 
+//nolint:goconst
 func parseQueryAlgorithm(r *http.Request) (string, archiver.Writer, error) {
 	switch r.URL.Query().Get("algo") {
 	case "zip", "true", "":

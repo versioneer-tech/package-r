@@ -93,8 +93,9 @@ func (u *User) Clean(baseScope string, fields ...string) error {
 
 	if u.Fs == nil {
 		scope := u.Scope
-		scope = filepath.Join(baseScope, filepath.Join("/", scope))                                                                //nolint:gocritic
-		u.Fs = afero.NewBasePathFs(files.NewPointerFs(scope, afero.OsFs{}, 5*1024*1024, files.PointerFsExtensionWhitelist), scope) //nolint:gomnd
+		scope = filepath.Join(baseScope, filepath.Join("/", scope)) //nolint:gocritic
+		u.Fs = afero.NewBasePathFs(
+			files.NewPointerFs(scope, afero.OsFs{}, 5*1024*1024, files.PointerFsExtensionWhitelist), scope) //nolint:gomnd
 	}
 
 	return nil

@@ -137,7 +137,10 @@
               level="M"
             ></qrcode-vue>
           </div>
-          <div v-if="false && !req?.isDir" class="share__box__element share__box__center">
+          <div
+            v-if="false && !req?.isDir"
+            class="share__box__element share__box__center"
+          >
             <qrcode-vue :value="link" :size="200" level="M"></qrcode-vue>
           </div>
           <div

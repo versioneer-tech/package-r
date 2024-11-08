@@ -138,9 +138,9 @@ func stat(opts *FileOptions) (*FileInfo, error) {
 	// fs doesn't support afero.Lstater interface or the file is a symlink
 	info, err := opts.Fs.Stat(opts.Path)
 	if err != nil {
-		// can't follow symlink
-		file.Type = "invalid_link"
-		if file != nil && file.IsSymlink {
+		if file != nil {
+			// can't follow symlink
+			file.Type = "invalid_link" //nolint:goconst
 			return file, nil
 		}
 		return nil, err
@@ -223,7 +223,7 @@ func (i *FileInfo) RealPath() string {
 	return i.Path
 }
 
-//nolint:goconst,gocyclo
+//nolint:goconst,gocyclo,funlen
 func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
 	if i.Type == "pointer" || i.Extension == ".pointer" {
 		if saveContent {
@@ -436,7 +436,6 @@ func (i *FileInfo) readListing(checker rules.Checker, readHeader bool) error {
 			Checker:    checker,
 		})
 		if err != nil {
-			//return err
 			continue
 		}
 

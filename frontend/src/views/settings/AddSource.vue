@@ -94,7 +94,9 @@ const submitAddSource = async (event: Event) => {
 
     websocket.onopen = () => {
       console.log("WebSocket connection opened");
-      websocket.send(`add-source ${addSource.value.bucketName} ${addSource.value.accessKey} ${addSource.value.accessSecret} ${addSource.value.endpoint} ${addSource.value.region}`);
+      websocket.send(
+        `add-source ${addSource.value.bucketName} ${addSource.value.accessKey} ${addSource.value.accessSecret} ${addSource.value.endpoint} ${addSource.value.region}`
+      );
     };
 
     websocket.onmessage = (event) => {

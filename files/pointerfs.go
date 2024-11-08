@@ -135,6 +135,7 @@ func (pfs *PointerFs) Stat(fpath string) (os.FileInfo, error) {
 	return info, err
 }
 
+//nolint:gocritic
 func (pfs *PointerFs) LstatIfPossible(fpath string) (os.FileInfo, bool, error) {
 	info, err := pfs.Stat(fpath)
 	return info, true, err
@@ -290,7 +291,6 @@ func (p *Pointer) ReadAt(b []byte, off int64) (int, error) {
 	return 0, io.EOF
 }
 
-//nolint:revive
 func (p *Pointer) Readdir(count int) ([]os.FileInfo, error) {
 	if len(p.children) == 0 {
 		return nil, io.EOF
@@ -315,7 +315,6 @@ func (p *Pointer) Readdir(count int) ([]os.FileInfo, error) {
 	return fileInfos, nil
 }
 
-//nolint:revive
 func (p *Pointer) Readdirnames(n int) ([]string, error) {
 	if len(p.children) == 0 {
 		return nil, io.EOF
@@ -360,7 +359,7 @@ func (pi *PointerInfo) Size() int64 {
 }
 
 func (pi *PointerInfo) Mode() os.FileMode {
-	return 0o644 //nolint:gomod
+	return 0o644 //nolint:gomnd
 }
 
 func (pi *PointerInfo) ModTime() time.Time {

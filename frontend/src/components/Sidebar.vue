@@ -119,7 +119,7 @@
           href="https://github.com/versioneer-tech/package-r"
           >packageR</a
         >
-        <span> {{ ' ' }} {{ version }}</span>
+        <span> {{ " " }} {{ version }}</span>
       </span>
       <span>
         <a @click="help">{{ $t("sidebar.help") }}</a>
@@ -218,8 +218,10 @@ export default {
         websocket.onmessage = (event) => {
           console.log("Message received from server:", event.data);
           if (event.data) {
-            const newSource = { name: event.data }
-            const existingIndex = this.sources.findIndex(source => source.name === newSource.name);
+            const newSource = { name: event.data };
+            const existingIndex = this.sources.findIndex(
+              (source) => source.name === newSource.name
+            );
             if (existingIndex !== -1) {
               this.sources[existingIndex] = newSource;
             } else {
@@ -257,7 +259,7 @@ export default {
       const OWNER_WRITE = 0o200;
       let mode = req?.mode & 0o777;
       return (mode & OWNER_WRITE) !== 0;
-    }
+    },
   },
   watch: {
     isFiles(newValue) {
@@ -266,7 +268,7 @@ export default {
     },
     req() {
       // Watch logic for req
-    }
+    },
   },
 };
 </script>
