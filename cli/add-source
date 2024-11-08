@@ -1,0 +1,80 @@
+#!/bin/bash
+
+SECRETS_DIR="/secrets"
+MOUNTS_DIR="/mounts"
+
+if [ $# -lt 5 ]; then
+  echo "Error: Missing arguments." >&2
+  echo "Usage: $0 <sourcename> <aws_access_key_id> <aws_secret_access_key> <aws_endpoint_url> <aws_region>" >&2
+  exit 1
+fi
+
+SOURCENAME="$1"
+AWS_ACCESS_KEY_ID="$2"
+AWS_SECRET_ACCESS_KEY="$3"
+AWS_ENDPOINT_URL="$4"
+AWS_REGION="$5"
+
+if [ -z "$NAMESPACE_DEFAULT" ]; then
+  if [ ! -f /var/run/secrets/kubernetes.io/serviceaccount/namespace ]; then
+    echo "Namespace file does not exist. Saving credentials in $SECRETS_DIR." >&2
+
+    SECRET_PATH="$SECRETS_DIR/$SOURCENAME"
+    mkdir -p "$SECRET_PATH" || { echo "Error: Failed to create $SECRET_PATH." >&2; exit 1; }
+
+    echo "$AWS_ACCESS_KEY_ID" > "$SECRET_PATH/AWS_ACCESS_KEY_ID"
+    echo "$AWS_SECRET_ACCESS_KEY" > "$SECRET_PATH/AWS_SECRET_ACCESS_KEY"
+    echo "$AWS_ENDPOINT_URL" > "$SECRET_PATH/AWS_ENDPOINT_URL"
+    echo "$AWS_REGION" > "$SECRET_PATH/AWS_REGION"
+
+    echo "Credentials saved successfully under $SECRET_PATH." >&2
+
+    MOUNT_PATH="$MOUNTS_DIR/$SOURCENAME"
+    mkdir -p "$MOUNT_PATH" || { echo "Error: Failed to create $MOUNT_PATH." >&2; exit 1; }
+
+    exit 0
+  else
+    NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+  fi
+else
+  NAMESPACE="$NAMESPACE_DEFAULT"
+fi
+
+if kubectl get source "${SOURCENAME}" -n "${NAMESPACE}" &> /dev/null; then
+  echo "Error: Source '${SOURCENAME}' already exists in namespace '${NAMESPACE}'." >&2
+  exit 1
+fi
+
+if kubectl get secret "${SOURCENAME}" -n "${NAMESPACE}" &> /dev/null; then
+  echo "Error: Secret '${SOURCENAME}' already exists in namespace '${NAMESPACE}'." >&2
+  exit 1
+fi
+
+if ! kubectl create secret generic "${SOURCENAME}" \
+  --namespace="${NAMESPACE}" \
+  --from-literal=AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+  --from-literal=AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+  --from-literal=AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL}" \
+  --from-literal=AWS_REGION="${AWS_REGION}" \
+  --dry-run=client -o yaml | kubectl label -f - package-r/ui=true --local -o yaml | kubectl apply -f -; then
+  echo "Error: Failed to create and label Secret '${SOURCENAME}' in namespace '${NAMESPACE}'." >&2
+  exit 1
+fi
+
+cat <<EOF | kubectl label -f - package-r/ui=true --local -o yaml | kubectl apply -f -
+apiVersion: package.r/alphav1
+kind: Source
+metadata:
+  name: ${SOURCENAME}
+  namespace: ${NAMESPACE}
+spec:
+  access:
+    secretName: ${SOURCENAME}
+EOF
+
+if [ $? -ne 0 ]; then
+  echo "Error: Failed to apply the labeled Source manifest." >&2
+  exit 1
+fi
+
+echo "Source object and Secret created successfully!" >&2

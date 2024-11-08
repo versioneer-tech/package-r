@@ -6,9 +6,9 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/rules"
+	"github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/files"
+	"github.com/versioneer-tech/package-r/rules"
 )
 
 // ViewMode describes a view mode.
@@ -93,8 +93,8 @@ func (u *User) Clean(baseScope string, fields ...string) error {
 
 	if u.Fs == nil {
 		scope := u.Scope
-		scope = filepath.Join(baseScope, filepath.Join("/", scope)) //nolint:gocritic
-		u.Fs = afero.NewBasePathFs(afero.NewOsFs(), scope)
+		scope = filepath.Join(baseScope, filepath.Join("/", scope))                                                                //nolint:gocritic
+		u.Fs = afero.NewBasePathFs(files.NewPointerFs(scope, afero.OsFs{}, 5*1024*1024, files.PointerFsExtensionWhitelist), scope) //nolint:gomnd
 	}
 
 	return nil

@@ -3,12 +3,13 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 
-	libErrors "github.com/filebrowser/filebrowser/v2/errors"
+	libErrors "github.com/versioneer-tech/package-r/errors"
 )
 
 func renderJSON(w http.ResponseWriter, _ *http.Request, data interface{}) (int, error) {
@@ -65,4 +66,18 @@ func stripPrefix(prefix string, h http.Handler) http.Handler {
 		r2.URL.RawPath = rp
 		h.ServeHTTP(w, r2)
 	})
+}
+
+func GetRequestURI(r *http.Request) string {
+	scheme := "http"
+	if forwardedProto := r.Header.Get("X-Forwarded-Proto"); forwardedProto != "" {
+		scheme = forwardedProto
+	}
+
+	host := r.Header.Get("X-Forwarded-Host")
+	if host == "" {
+		host = r.Host
+	}
+
+	return fmt.Sprintf("%s://%s%s", scheme, host, r.RequestURI)
 }

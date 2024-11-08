@@ -1,19 +1,22 @@
 package http
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	gopath "path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/mholt/archiver/v3"
 
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/fileutils"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/versioneer-tech/package-r/files"
+	"github.com/versioneer-tech/package-r/fileutils"
+	"github.com/versioneer-tech/package-r/users"
 )
 
 func slashClean(name string) string {
@@ -44,7 +47,6 @@ func parseQueryFiles(r *http.Request, f *files.FileInfo, _ *users.User) ([]strin
 	return fileSlice, nil
 }
 
-//nolint:goconst
 func parseQueryAlgorithm(r *http.Request) (string, archiver.Writer, error) {
 	switch r.URL.Query().Get("algo") {
 	case "zip", "true", "":
@@ -104,12 +106,12 @@ var rawHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) 
 	return rawDirHandler(w, r, d, file)
 })
 
-func addFile(ar archiver.Writer, d *data, path, commonPath string) error {
-	if !d.Check(path) {
+func addFile(ar archiver.Writer, d *data, fpath, commonPath, downloadURLBase string) error {
+	if !d.Check(fpath) {
 		return nil
 	}
 
-	info, err := d.user.Fs.Stat(path)
+	info, err := d.user.Fs.Stat(fpath)
 	if err != nil {
 		return err
 	}
@@ -118,15 +120,19 @@ func addFile(ar archiver.Writer, d *data, path, commonPath string) error {
 		return nil
 	}
 
-	file, err := d.user.Fs.Open(path)
+	file, err := d.user.Fs.Open(fpath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	if path != commonPath {
-		filename := strings.TrimPrefix(path, commonPath)
+	if fpath != commonPath {
+		filename := strings.TrimPrefix(fpath, commonPath)
 		filename = strings.TrimPrefix(filename, string(filepath.Separator))
+		if pointerInfo, ok := info.(*files.PointerInfo); ok {
+			filename += ".pointer"
+			file = files.NewPointer(pointerInfo, downloadURLBase+fpath)
+		}
 		err = ar.Write(archiver.File{
 			FileInfo: archiver.FileInfo{
 				FileInfo:   info,
@@ -146,8 +152,8 @@ func addFile(ar archiver.Writer, d *data, path, commonPath string) error {
 		}
 
 		for _, name := range names {
-			fPath := filepath.Join(path, name)
-			err = addFile(ar, d, fPath, commonPath)
+			fPath := filepath.Join(fpath, name)
+			err = addFile(ar, d, fPath, commonPath, downloadURLBase)
 			if err != nil {
 				log.Printf("Failed to archive %s: %v", fPath, err)
 			}
@@ -174,7 +180,12 @@ func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.
 	}
 	defer ar.Close()
 
-	commonDir := fileutils.CommonPrefix(filepath.Separator, filenames...)
+	commonDir := ""
+	if !file.IsDir {
+		commonDir = filepath.Dir(file.Path)
+	} else {
+		commonDir = fileutils.CommonPrefix(filepath.Separator, filenames...)
+	}
 
 	name := filepath.Base(commonDir)
 	if name == "." || name == "" || name == string(filepath.Separator) {
@@ -188,8 +199,19 @@ func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.
 	name += extension
 	w.Header().Set("Content-Disposition", "attachment; filename*=utf-8''"+url.PathEscape(name))
 
+	downloadURLBase, err := url.Parse(GetRequestURI(r))
+	if err == nil {
+		escaped, err2 := url.PathUnescape(downloadURLBase.Path)
+		if err2 == nil {
+			// Regular expression to match `/public/dl/{hash}/`
+			re := regexp.MustCompile(`(/public/dl/[^/]+)(/.*)?`)
+			downloadURLBase.Path = re.ReplaceAllString(escaped, `$1`)
+			downloadURLBase.RawQuery = ""
+		}
+	}
+
 	for _, fname := range filenames {
-		err = addFile(ar, d, fname, commonDir)
+		err = addFile(ar, d, fname, commonDir, downloadURLBase.String())
 		if err != nil {
 			log.Printf("Failed to archive %s: %v", fname, err)
 		}
@@ -198,7 +220,65 @@ func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.
 	return 0, nil
 }
 
-func rawFileHandler(w http.ResponseWriter, r *http.Request, file *files.FileInfo) (int, error) {
+func rawFileHandler(w http.ResponseWriter, r *http.Request, file *files.FileInfo) (int, error) { //nolint:gocyclo
+	if file.Type == "pointer" {
+		info, err := file.Fs.Stat(file.Path)
+		if err != nil {
+			return http.StatusInternalServerError, err
+		}
+		if pinfo, ok := info.(*files.PointerInfo); ok {
+			var b strings.Builder
+			relpath := pinfo.Filepath
+			if pinfo.Linkpath != "" {
+				relpath = pinfo.Linkpath
+			}
+			if strings.HasPrefix(relpath, "http") {
+				_, err = HandleHttpCommand(w, &b, os.TempDir(), "do-echo", relpath)
+				if err != nil {
+					return http.StatusInternalServerError, err
+				}
+			} else if strings.HasPrefix(relpath, "/sources/") {
+				parts := strings.Split(relpath, "/")
+				if len(parts) <= 3 {
+					_, err = HandleHttpCommand(w, &b, os.TempDir(), "do-log", relpath)
+					if err != nil {
+						return http.StatusInternalServerError, err
+					}
+				} else {
+					_, err = HandleHttpCommand(w, &b, os.TempDir(), "do-presign", parts[2], strings.TrimRight(strings.Join(parts[3:], "/"), "/"))
+					if err != nil {
+						return http.StatusInternalServerError, err
+					}
+				}
+			} else {
+				_, err = HandleHttpCommand(w, &b, os.TempDir(), "do-log", relpath)
+				if err != nil {
+					return http.StatusInternalServerError, err
+				}
+			}
+			abspath := strings.TrimRight(b.String(), "\n")
+			if abspath == "" {
+				log.Printf("invalid pointer:%v", pinfo)
+				return http.StatusNoContent, nil
+			}
+			if r.Header.Get("Accept") == "application/json" {
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				encoder := json.NewEncoder(w)
+				encoder.SetEscapeHTML(false)
+				err = encoder.Encode(abspath)
+				if err != nil {
+					return http.StatusInternalServerError, err
+				}
+			} else {
+				setContentDisposition(w, r, file)
+				w.Header().Add("Content-Security-Policy", `script-src 'none';`)
+				w.Header().Set("Cache-Control", "private")
+				http.Redirect(w, r, abspath, http.StatusFound)
+			}
+			return 0, nil
+		}
+	}
+
 	fd, err := file.Fs.Open(file.Path)
 	if err != nil {
 		return http.StatusInternalServerError, err

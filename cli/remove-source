@@ -1,0 +1,78 @@
+#!/bin/bash
+
+SECRETS_DIR="/secrets"
+
+if [ $# -lt 1 ]; then
+  echo "Error: Missing arguments." >&2
+  echo "Usage: $0 <sourcename>" >&2
+  exit 1
+fi
+
+SOURCENAME="$1"
+
+if [ -z "$NAMESPACE_DEFAULT" ]; then
+  if [ ! -f /var/run/secrets/kubernetes.io/serviceaccount/namespace ]; then
+    echo "Namespace file does not exist. Checking for secrets in $SECRETS_DIR." >&2
+    
+    SECRET_PATH="$SECRETS_DIR/$SOURCENAME"
+    if [ -d "$SECRET_PATH" ] && [ -f "$SECRET_PATH/AWS_ACCESS_KEY_ID" ] && \
+       [ -f "$SECRET_PATH/AWS_SECRET_ACCESS_KEY" ] && [ -f "$SECRET_PATH/AWS_ENDPOINT_URL" ] && \
+       [ -f "$SECRET_PATH/AWS_REGION" ]; then
+       
+      echo "Found secrets in $SECRET_PATH. Deleting directory..." >&2
+      rm -rf "$SECRET_PATH"
+
+      if [ $? -eq 0 ]; then
+        echo "Directory $SECRET_PATH deleted successfully." >&2
+      else
+        echo "Error: Failed to delete directory $SECRET_PATH." >&2
+        exit 1
+      fi
+    else
+      echo "Required secret files not found in $SECRET_PATH or directory does not exist." >&2
+    fi
+    exit 0
+  else
+    NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+  fi
+else
+  NAMESPACE="$NAMESPACE_DEFAULT"
+fi
+
+source_has_label=false
+secret_has_label=false
+
+# Check if source has the required label
+if kubectl get source "${SOURCENAME}" -n "${NAMESPACE}" -o jsonpath='{.metadata.labels.package-r/ui}' 2>/dev/null | grep -q 'true'; then
+  source_has_label=true
+else
+  echo "Source '${SOURCENAME}' in namespace '${NAMESPACE}' does not have the label 'package-r/ui: true' or does not exist." >&2
+fi
+
+# Check if secret has the required label or if it exists under /secrets
+if kubectl get secret "${SOURCENAME}" -n "${NAMESPACE}" -o jsonpath='{.metadata.labels.package-r/ui}' 2>/dev/null | grep -q 'true'; then
+  secret_has_label=true
+elif [ -f "/secrets/${SOURCENAME}" ]; then
+  echo "Secret with name '${SOURCENAME}' exists in /secrets." >&2
+else
+  echo "Secret '${SOURCENAME}' in namespace '${NAMESPACE}' does not have the label 'package-r/ui: true', does not exist, or is not found in /secrets." >&2
+fi
+
+# Delete source and secret if both have the required label
+if [ "$source_has_label" = true ] && [ "$secret_has_label" = true ]; then
+  if kubectl delete source "${SOURCENAME}" -n "${NAMESPACE}"; then
+    echo "Source '${SOURCENAME}' deleted from namespace '${NAMESPACE}'." >&2
+  else
+    echo "Error: Failed to delete Source '${SOURCENAME}' in namespace '${NAMESPACE}'." >&2
+    exit 1
+  fi
+
+  if kubectl delete secret "${SOURCENAME}" -n "${NAMESPACE}"; then
+    echo "Secret '${SOURCENAME}' deleted from namespace '${NAMESPACE}'." >&2
+  else
+    echo "Error: Failed to delete Secret '${SOURCENAME}' in namespace '${NAMESPACE}'." >&2
+    exit 1
+  fi
+else
+  echo "Both Source and Secret must have the label 'package-r/ui: true' to be deleted." >&2
+fi

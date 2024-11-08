@@ -7,9 +7,9 @@ import (
 	"github.com/asdine/storm/v3"
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/filebrowser/filebrowser/v2/rules"
-	"github.com/filebrowser/filebrowser/v2/storage"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/versioneer-tech/package-r/rules"
+	"github.com/versioneer-tech/package-r/storage"
+	"github.com/versioneer-tech/package-r/users"
 )
 
 type oldUser struct {

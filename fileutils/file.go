@@ -1,14 +1,16 @@
 package fileutils
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/afero"
 
-	"github.com/filebrowser/filebrowser/v2/files"
+	"github.com/versioneer-tech/package-r/files"
 )
 
 // MoveFile moves file from src to dst.
@@ -47,27 +49,35 @@ func CopyFile(fs afero.Fs, source, dest string) error {
 		return err
 	}
 
-	// Create the destination file.
-	dst, err := fs.OpenFile(dest, os.O_RDWR|os.O_CREATE|os.O_TRUNC, files.PermFile)
-	if err != nil {
-		return err
-	}
-	defer dst.Close()
+	if strings.Contains(source, "/sources/") && strings.Contains(dest, "/packages/") {
+		err = fs.(*afero.BasePathFs).SymlinkIfPossible(source, dest)
+		if err != nil {
+			fmt.Println("Error creating symlink:", err)
+			return err
+		}
+	} else {
+		// Create the destination file.
+		dst, err := fs.OpenFile(dest, os.O_RDWR|os.O_CREATE|os.O_TRUNC, files.PermFile)
+		if err != nil {
+			return err
+		}
+		defer dst.Close()
 
-	// Copy the contents of the file.
-	_, err = io.Copy(dst, src)
-	if err != nil {
-		return err
-	}
+		// Copy the contents of the file.
+		_, err = io.Copy(dst, src)
+		if err != nil {
+			return err
+		}
 
-	// Copy the mode
-	info, err := fs.Stat(source)
-	if err != nil {
-		return err
-	}
-	err = fs.Chmod(dest, info.Mode())
-	if err != nil {
-		return err
+		// Copy the mode
+		info, err := fs.Stat(source)
+		if err != nil {
+			return err
+		}
+		err = fs.Chmod(dest, info.Mode())
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

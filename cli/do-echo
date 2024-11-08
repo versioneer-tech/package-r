@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [[ -p /dev/stdin ]]; then
+  input=$(cat)
+else
+  input="$*"
+fi
+
+echo "$input"

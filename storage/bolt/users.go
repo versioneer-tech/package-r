@@ -7,8 +7,8 @@ import (
 
 	"github.com/asdine/storm/v3"
 
-	fbErrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/users"
+	fbErrors "github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/users"
 )
 
 type usersBackend struct {

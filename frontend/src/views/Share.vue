@@ -1,8 +1,8 @@
 <template>
   <div>
     <header-bar showMenu showLogo>
+      {{ name }}
       <title />
-
       <action
         v-if="fileStore.selectedCount"
         icon="file_download"
@@ -92,7 +92,7 @@
             }}
           </div>
           <div
-            v-if="!req.isDir"
+            v-if="false && !req?.isDir"
             class="share__box__element share__box__center share__box__icon"
           >
             <i class="material-icons">{{ icon }}</i>
@@ -112,6 +112,7 @@
               :href="link"
               class="button button--flat"
               style="height: 4em"
+              v-if="!req.isDir"
             >
               <div>
                 <i class="material-icons">file_download</i
@@ -130,24 +131,24 @@
               </div>
             </a>
             <qrcode-vue
-              v-if="req.isDir"
+              v-if="false && req?.isDir"
               :value="link"
               :size="100"
               level="M"
             ></qrcode-vue>
           </div>
-          <div v-if="!req.isDir" class="share__box__element share__box__center">
+          <div v-if="false && !req?.isDir" class="share__box__element share__box__center">
             <qrcode-vue :value="link" :size="200" level="M"></qrcode-vue>
           </div>
           <div
-            v-if="req.isDir"
+            v-if="false && req?.isDir"
             class="share__box__element share__box__header"
             style="height: 3em"
           >
             {{ $t("sidebar.preview") }}
           </div>
           <div
-            v-if="req.isDir"
+            v-if="false && req?.isDir"
             class="share__box__element share__box__center share__box__icon"
             style="padding: 0em !important; height: 12em !important"
           >
@@ -158,7 +159,7 @@
               v-if="
                 !fileStore.multiple &&
                 fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].type === 'image'
+                req?.items[fileStore.selected[0]].type === 'image'
               "
               style="height: 12em; padding: 0; margin: 0"
             >
@@ -168,7 +169,7 @@
               v-else-if="
                 fileStore.multiple &&
                 fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].type === 'audio'
+                req?.items[fileStore.selected[0]].type === 'audio'
               "
               style="height: 12em; padding-top: 1em; margin: 0"
             >
@@ -210,7 +211,7 @@
               v-else-if="
                 !fileStore.multiple &&
                 fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].type === 'video'
+                req?.items[fileStore.selected[0]].type === 'video'
               "
               style="height: 12em; padding: 0; margin: 0"
               :src="raw"
@@ -224,7 +225,7 @@
               v-else-if="
                 !fileStore.multiple &&
                 fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].isDir
+                req?.items[fileStore.selected[0]].isDir
               "
               class="material-icons"
               >folder
@@ -315,6 +316,7 @@ import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { StatusError } from "@/api/utils";
 import { copy } from "@/utils/clipboard";
+import { name } from "@/utils/constants";
 
 const error = ref<StatusError | null>(null);
 const showLimit = ref<number>(100);
@@ -374,7 +376,11 @@ const humanSize = computed(() => {
     return "";
   }
 });
-const humanTime = computed(() => dayjs(req.value?.modified).fromNow());
+const humanTime = computed(() =>
+  dayjs(req.value?.modified).isAfter("1.1.2000")
+    ? dayjs(req.value?.modified).fromNow()
+    : ""
+);
 const modTime = computed(() =>
   req.value
     ? new Date(Date.parse(req.value.modified)).toLocaleString()

@@ -5,7 +5,7 @@
       <title>{{ fileStore.req?.name ?? "" }}</title>
 
       <action
-        v-if="authStore.user?.perm.modify"
+        v-if="authStore.user?.perm.modify && fileStore.req && fileStore.req.type !== 'textImmutable' && fileStore.req.type !== 'pointer'"
         id="save-button"
         icon="save"
         :label="t('buttons.save')"
@@ -106,7 +106,7 @@ onMounted(() => {
   editor.value = ace.edit("editor", {
     value: fileContent,
     showPrintMargin: false,
-    readOnly: fileStore.req?.type === "textImmutable",
+    readOnly: fileStore.req?.type === "textImmutable" || fileStore.req?.type === "pointer",
     theme: "ace/theme/chrome",
     mode: modelist.getModeForPath(fileStore.req?.name).mode,
     wrap: true,

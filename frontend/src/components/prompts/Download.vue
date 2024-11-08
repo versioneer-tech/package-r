@@ -35,6 +35,6 @@ const formats = {
   tarbz2: "tar.bz2",
   tarxz: "tar.xz",
   tarlz4: "tar.lz4",
-  tarsz: "tar.sz",
+  tarsz: "tar.sz"
 };
 </script>

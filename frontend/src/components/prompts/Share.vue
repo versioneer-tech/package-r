@@ -10,6 +10,7 @@
           <tr>
             <th>#</th>
             <th>{{ $t("settings.shareDuration") }}</th>
+            <th>{{ $t("settings.shareDescription") }}</th>
             <th></th>
             <th></th>
           </tr>
@@ -22,6 +23,7 @@
               }}</template>
               <template v-else>{{ $t("permanent") }}</template>
             </td>
+            <td>{{ link.description }}</td>
             <td class="small">
               <button
                 class="action copy-clipboard"
@@ -112,6 +114,12 @@
           v-model.trim="password"
           tabindex="3"
         />
+        <p>{{ $t("settings.shareDescription") }}</p>
+        <input
+          class="input input--block"
+          v-model.trim="description"
+          tabindex="4"
+        />
       </div>
 
       <div class="card-action">
@@ -156,6 +164,7 @@ export default {
       links: [],
       clip: null,
       password: "",
+      description: "",
       listing: true,
     };
   },
@@ -211,9 +220,15 @@ export default {
         let res = null;
 
         if (!this.time) {
-          res = await api.create(this.url, this.password);
+          res = await api.create(this.url, this.password, this.description);
         } else {
-          res = await api.create(this.url, this.password, this.time, this.unit);
+          res = await api.create(
+            this.url,
+            this.password,
+            this.description,
+            this.time,
+            this.unit
+          );
         }
 
         this.links.push(res);
@@ -242,7 +257,9 @@ export default {
       }
     },
     humanTime(time) {
-      return dayjs(time * 1000).fromNow();
+      return dayjs(time * 1000).isAfter("1.1.2000")
+        ? dayjs(time * 1000).fromNow()
+        : "";
     },
     buildLink(share) {
       return api.getShareURL(share);

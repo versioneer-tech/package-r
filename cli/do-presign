@@ -1,0 +1,104 @@
+#!/bin/bash
+
+SECRETS_DIR="/secrets"
+
+if [[ -z "$1" || -z "$2" ]]; then
+  echo "Usage: $0 <sourcename> <url>" >&2
+  exit 1
+fi
+SOURCENAME="$1"
+URL="$2"
+
+required_keys=(
+  "AWS_ACCESS_KEY_ID"
+  "AWS_SECRET_ACCESS_KEY"
+  "AWS_REGION"
+  "AWS_ENDPOINT_URL"
+)
+
+NAMESPACE=""
+if [ -n "$NAMESPACE_DEFAULT" ]; then
+  NAMESPACE="$NAMESPACE_DEFAULT"
+elif [ -f /var/run/secrets/kubernetes.io/serviceaccount/namespace ]; then
+  NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+fi
+
+mkdir -p "$SECRETS_DIR/$SOURCENAME"
+
+# Check if all required secret files exist
+all_keys_exist=true
+for key in "${required_keys[@]}"; do
+  if [[ ! -f "$SECRETS_DIR/$SOURCENAME/$key" ]]; then
+    all_keys_exist=false
+    break
+  fi
+done
+
+# If not all required files exist, refresh from Kubernetes
+if ! $all_keys_exist; then
+  if ! kubectl get secret "$SOURCENAME" -n "$NAMESPACE" > /dev/null 2>&1; then
+    echo "Info: Unable to refresh secrets; secret '$SOURCENAME' not found." >&2
+  else
+    echo "Info: Refreshing secrets for '$SOURCENAME'" >&2
+    secret_data=$(kubectl get secret "$SOURCENAME" -n "$NAMESPACE" -o json | jq -r '.data | to_entries[] | "\(.key)=\(.value)"')
+
+    missing_keys=()
+    for key in "${required_keys[@]}"; do
+      if ! echo "$secret_data" | grep -q "$key"; then
+        missing_keys+=("$key")
+      fi
+    done
+
+    if [ ${#missing_keys[@]} -ne 0 ]; then
+      echo "Warning: Missing keys in secret '$SOURCENAME': ${missing_keys[*]}" >&2
+    fi
+
+    while IFS='=' read -r key value; do
+      if [[ -n "$value" ]]; then
+        decoded_value=$(echo "$value" | base64 --decode 2>/dev/null || echo "")
+        if [[ -n "$decoded_value" ]]; then
+          echo "$decoded_value" > "$SECRETS_DIR/$SOURCENAME/$key"
+        else
+          echo "Warning: Invalid base64 data for key '$key' in secret '$SOURCENAME'." >&2
+        fi
+      fi
+    done <<< "$secret_data"
+  fi
+fi
+
+AWS_ACCESS_KEY_ID=$(cat "$SECRETS_DIR/$SOURCENAME/AWS_ACCESS_KEY_ID" 2>/dev/null || echo "$AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY=$(cat "$SECRETS_DIR/$SOURCENAME/AWS_SECRET_ACCESS_KEY" 2>/dev/null || echo "$AWS_SECRET_ACCESS_KEY")
+AWS_REGION=$(cat "$SECRETS_DIR/$SOURCENAME/AWS_REGION" 2>/dev/null || echo "$AWS_REGION")
+AWS_ENDPOINT_URL=$(cat "$SECRETS_DIR/$SOURCENAME/AWS_ENDPOINT_URL" 2>/dev/null || echo "$AWS_ENDPOINT_URL")
+
+BUCKET_NAME=$(cat "$SECRETS_DIR/$SOURCENAME/BUCKET_NAME" 2>/dev/null)
+if [[ -z "$BUCKET_NAME" ]]; then
+  BUCKET_NAME="$SOURCENAME"
+fi
+
+missing_vars=()
+for key in "${required_keys[@]}"; do
+  if [[ -z "${!key}" ]]; then
+    missing_vars+=("$key")
+  fi
+done
+
+if [ ${#missing_vars[@]} -ne 0 ]; then
+  echo "Error: Missing required values: ${missing_vars[*]}" >&2
+  exit 1
+fi
+
+export AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY
+export AWS_REGION
+export AWS_ENDPOINT_URL
+
+s3_url="s3://$BUCKET_NAME/$URL"
+presigned_url=$(aws s3 presign "$s3_url" --endpoint-url $AWS_ENDPOINT_URL 2>/dev/null)
+
+if [[ -n "$presigned_url" ]]; then
+  echo "$presigned_url"
+else
+  echo "Error: Failed to generate presigned URL." >&2
+  exit 1
+fi

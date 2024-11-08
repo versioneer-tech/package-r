@@ -251,3 +251,13 @@
 .file-icons [aria-selected="true"] i {
   color: var(--iconSecondary);
 }
+
+.file-icons [data-type="pointer"] i::before {
+  content: "link";
+  color: var(--icon-darkgreen);
+}
+
+.file-icons [data-ext=".pointer"] i::before {
+  content: "link";
+  color: var(--icon-lightgreen);
+}

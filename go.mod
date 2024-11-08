@@ -1,4 +1,4 @@
-module github.com/filebrowser/filebrowser/v2
+module github.com/versioneer-tech/package-r
 
 go 1.23
 
@@ -66,7 +66,6 @@ require (
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

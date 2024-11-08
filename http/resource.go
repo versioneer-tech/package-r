@@ -15,9 +15,9 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/spf13/afero"
 
-	fbErrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/fileutils"
+	fbErrors "github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/files"
+	"github.com/versioneer-tech/package-r/fileutils"
 )
 
 var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
@@ -351,7 +351,7 @@ var diskUsage = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (
 		return errToStatus(err), err
 	}
 	fPath := file.RealPath()
-	if !file.IsDir {
+	if !file.IsDir || strings.Contains(file.Name, ".source") {
 		return renderJSON(w, r, &DiskUsageResponse{
 			Total: 0,
 			Used:  0,

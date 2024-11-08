@@ -4,15 +4,33 @@
     <template v-if="isLoggedIn">
       <button
         class="action"
-        @click="toRoot"
-        :aria-label="$t('sidebar.myFiles')"
-        :title="$t('sidebar.myFiles')"
+        @click="toFiles('sources')"
+        :aria-label="$t('sidebar.mySources')"
+        :title="$t('sidebar.mySources')"
       >
         <i class="material-icons">folder</i>
-        <span>{{ $t("sidebar.myFiles") }}</span>
+        <span>{{ $t("sidebar.mySources") }}</span>
       </button>
-
-      <div v-if="user.perm.create">
+      <div v-for="source in sources" :key="source.name">
+        <button
+          class="action sub-action"
+          @click="toFiles('sources/' + source.name)"
+          :aria-label="source.name"
+          :title="source.name"
+        >
+          <span>{{ source.name }}</span>
+        </button>
+      </div>
+      <button
+        class="action"
+        @click="toFiles('packages')"
+        :aria-label="$t('sidebar.myPackages')"
+        :title="$t('sidebar.myPackages')"
+      >
+        <i class="material-icons">folder</i>
+        <span>{{ $t("sidebar.myPackages") }}</span>
+      </button>
+      <div v-if="user.perm.create && hasWritePermissions(req)">
         <button
           @click="showHover('newDir')"
           class="action"
@@ -93,13 +111,13 @@
 
     <p class="credits">
       <span>
-        <span v-if="disableExternal">File Browser</span>
+        <span v-if="disableExternal">packageR</span>
         <a
           v-else
           rel="noopener noreferrer"
           target="_blank"
-          href="https://github.com/filebrowser/filebrowser"
-          >File Browser</a
+          href="https://github.com/versioneer-tech/package-r"
+          >packageR</a
         >
         <span> {{ ' ' }} {{ version }}</span>
       </span>
@@ -116,6 +134,7 @@ import { mapActions, mapState } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
+import { baseURL } from "@/utils/constants";
 
 import * as auth from "@/utils/auth";
 import {
@@ -132,11 +151,15 @@ import prettyBytes from "pretty-bytes";
 
 const USAGE_DEFAULT = { used: "0 B", total: "0 B", usedPercentage: 0 };
 
+const ssl = window.location.protocol === "https:";
+const protocol = ssl ? "wss:" : "ws:";
+
 export default {
   name: "sidebar",
   setup() {
     const usage = reactive(USAGE_DEFAULT);
-    return { usage };
+    const sources = reactive([]); // Create a reactive sources array
+    return { usage, sources };
   },
   components: {
     ProgressBar,
@@ -144,7 +167,7 @@ export default {
   inject: ["$showError"],
   computed: {
     ...mapState(useAuthStore, ["user", "isLoggedIn"]),
-    ...mapState(useFileStore, ["isFiles", "reload"]),
+    ...mapState(useFileStore, ["isFiles", "reload", "req"]),
     ...mapState(useLayoutStore, ["currentPromptName"]),
     active() {
       return this.currentPromptName === "sidebar";
@@ -177,8 +200,49 @@ export default {
       }
       return Object.assign(this.usage, usageStats);
     },
-    toRoot() {
-      this.$router.push({ path: "/files" });
+    getSourcenames(event) {
+      //event.preventDefault();  // Prevent default behavior
+      const ssl = window.location.protocol === "https:";
+      const protocol = ssl ? "wss:" : "ws:";
+      const authStore = useAuthStore();
+      const url = `${protocol}//${window.location.host}${baseURL}/api/command/?auth=${authStore.jwt}`;
+
+      try {
+        const websocket = new WebSocket(url); // Create WebSocket connection
+
+        websocket.onopen = () => {
+          console.log("WebSocket connection opened");
+          websocket.send("establish-sources"); // Send command once connection opens
+        };
+
+        websocket.onmessage = (event) => {
+          console.log("Message received from server:", event.data);
+          if (event.data) {
+            const newSource = { name: event.data }
+            const existingIndex = this.sources.findIndex(source => source.name === newSource.name);
+            if (existingIndex !== -1) {
+              this.sources[existingIndex] = newSource;
+            } else {
+              this.sources.push(newSource);
+            }
+          }
+        };
+
+        websocket.onerror = (error) => {
+          console.error("WebSocket error:", error);
+          this.$showError("WebSocket error occurred"); // Show error message
+        };
+
+        websocket.onclose = () => {
+          console.log("WebSocket connection closed");
+        };
+      } catch (error) {
+        console.error("Error creating WebSocket:", error);
+        this.$showError("An error occurred while creating WebSocket");
+      }
+    },
+    toFiles(path) {
+      this.$router.push({ path: `/files/${path}` });
       this.closeHovers();
     },
     toSettings() {
@@ -189,11 +253,29 @@ export default {
       this.showHover("help");
     },
     logout: auth.logout,
+    hasWritePermissions(req) {
+      const OWNER_WRITE = 0o200;
+      let mode = req?.mode & 0o777;
+      return (mode & OWNER_WRITE) !== 0;
+    }
   },
   watch: {
     isFiles(newValue) {
       newValue && this.fetchUsage();
+      newValue && this.getSourcenames(); // Call getSourcenames when files are active
     },
+    req() {
+      // Watch logic for req
+    }
   },
 };
 </script>
+<style scoped>
+.sub-action {
+  margin-left: 30px;
+  font-size: 0.8em;
+}
+.sub-action.active {
+  background-color: lightgray;
+}
+</style>

@@ -1,0 +1,115 @@
+#!/bin/bash
+
+SECRETS_DIR="/secrets"
+MOUNTS_DIR="/mounts"
+LINK_DIR="./sources"
+CACHE_DIR="/tmp/cache"
+LOG_DIR="/tmp/logs"
+
+linked_dirs=()
+required_keys=(
+  "AWS_ACCESS_KEY_ID"
+  "AWS_SECRET_ACCESS_KEY"
+  "AWS_REGION"
+  "AWS_ENDPOINT_URL"
+)
+
+mkdir -p "$LINK_DIR"
+mkdir -p "$CACHE_DIR"
+mkdir -p "$LOG_DIR"
+
+if timeout 10 ls -A "$MOUNTS_DIR" &>/dev/null; then
+  for dir in "$MOUNTS_DIR"/*/; do
+    if [[ -d "$dir" ]]; then
+      dir_name=$(basename "$dir")
+
+      if [[ ! -d "$SECRETS_DIR/$dir_name" || -z "$(ls -A "$SECRETS_DIR/$dir_name")" ]]; then
+        MOUNT_PATH="/mounts/$dir_name"
+        if mount | grep -q "$MOUNT_PATH "; then # space important!
+          echo "Unmounting $MOUNT_PATH..." >&2
+          umount "$MOUNT_PATH"
+        fi
+      else
+        all_keys_exist=true
+        for key in "${required_keys[@]}"; do
+          if [[ ! -f "$SECRETS_DIR/$dir_name/$key" ]]; then
+            echo "Error: Required key file $SECRETS_DIR/$dir_name/$key does not exist." >&2
+            all_keys_exist=false
+            break
+          fi
+        done      
+
+        if [[ "$all_keys_exist" = true ]]; then
+          if [[ -f "$SECRETS_DIR/$dir_name/BUCKET_NAME" ]]; then
+            BUCKET_NAME=$(<"$SECRETS_DIR/$dir_name/BUCKET_NAME")
+          else
+            BUCKET_NAME="$dir_name"
+          fi
+
+          AWS_ACCESS_KEY_ID=$(<"$SECRETS_DIR/$dir_name/AWS_ACCESS_KEY_ID")
+          AWS_SECRET_ACCESS_KEY=$(<"$SECRETS_DIR/$dir_name/AWS_SECRET_ACCESS_KEY")
+          AWS_REGION=$(<"$SECRETS_DIR/$dir_name/AWS_REGION")
+          AWS_ENDPOINT_URL=$(<"$SECRETS_DIR/$dir_name/AWS_ENDPOINT_URL")
+
+          if mount | grep -q "$dir_name "; then # space important!
+            echo "S3 bucket $BUCKET_NAME is already mounted at $dir." >&2
+          else
+            MOUNT_PATH="$dir"
+            echo "Mounting S3 bucket $BUCKET_NAME at $MOUNT_PATH..." >&2
+
+            if AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+              AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+              AWS_REGION="$AWS_REGION" \
+              s3fs -d "$BUCKET_NAME" "$MOUNT_PATH" \
+              -o use_path_request_style \
+              -o url="$AWS_ENDPOINT_URL" \
+              -o endpoint="$AWS_REGION" \
+              -o use_cache="$CACHE_DIR" \
+              -o logfile="${LOG_DIR}/${BUCKET_NAME}.log" \
+              -o max_stat_cache_size="1048576000" \
+              -o stat_cache_expire="86400" \
+              -o ensure_diskfree="1024"; then
+              echo "S3 bucket $BUCKET_NAME mounted successfully at $MOUNT_PATH." >&2
+            else
+              echo "Error: Failed to mount S3 bucket $BUCKET_NAME at $MOUNT_PATH." >&2
+            fi
+          fi
+
+          link_path="$LINK_DIR/$dir_name"
+
+          if [[ -f "$link_path" ]]; then
+            echo "Cannot establish link. A file $link_path already exists." >&2
+            continue
+          fi
+
+          if [[ -L "$link_path" ]]; then
+            linked_dirs+=("$dir_name")
+            continue
+          fi
+
+          if [[ -d "$link_path" ]]; then
+            if [[ -z "$(ls -A "$link_path")" ]]; then
+              echo "Removing empty directory at $link_path" >&2
+              rmdir "$link_path" || echo "Failed to remove directory $link_path" >&2
+            else
+              echo "Cannot establish link. Directory $link_path is not empty." >&2
+              continue
+            fi
+          fi
+
+          echo "Creating symbolic link: ln -s \"$dir\" \"$link_path\"" >&2
+          ln -s "$dir" "$link_path"
+          linked_dirs+=("$dir_name")
+        fi
+      fi
+    fi
+  done
+fi
+
+if [[ ${#linked_dirs[@]} -gt 0 ]]; then
+  for link in "${linked_dirs[@]}"; do
+    echo "$link"
+  done
+else
+  echo "No symbolic links were created or already existed." >&2
+fi
