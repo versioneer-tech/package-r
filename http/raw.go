@@ -132,7 +132,7 @@ func addFile(ar archiver.Writer, d *data, fpath, commonPath, downloadURLBase str
 		filename = strings.TrimPrefix(filename, string(filepath.Separator))
 		if pointerInfo, ok := info.(*files.PointerInfo); ok {
 			filename += ".pointer"
-			file = files.NewPointer(pointerInfo, downloadURLBase+fpath)
+			file = files.NewPointer(pointerInfo, downloadURLBase+strings.TrimLeft(fpath, "/")) // TBD
 		}
 		err = ar.Write(archiver.File{
 			FileInfo: archiver.FileInfo{

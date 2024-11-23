@@ -1,8 +1,10 @@
 package files
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -61,6 +63,7 @@ func (pfs *PointerFs) isExtensionWhitelisted(extension string) bool {
 	return false
 }
 
+//nolint:gocyclo
 func (pfs *PointerFs) OpenFile(fpath string, flag int, perm os.FileMode) (afero.File, error) {
 	info, err := pfs.Stat(fpath)
 	if err != nil {
@@ -103,20 +106,82 @@ func (pfs *PointerFs) Rename(oldpath, newpath string) error {
 	return pfs.OsFs.Rename(oldpath, newpath)
 }
 
-func (pfs *PointerFs) Stat(fpath string) (os.FileInfo, error) {
-	if strings.HasSuffix(fpath, ".source") {
-		dir := filepath.Clean(fpath)
-		pinfo := &PointerInfo{
-			Filename: filepath.Base(dir),
-			Filepath: strings.Replace(fpath, pfs.Scope, "", 1),
+func initSourceIfNecessary(fpath string) {
+	if !strings.Contains(fpath, ".source") {
+		return
+	}
+
+	segments := strings.Split(fpath, string(filepath.Separator))
+	for i, segment := range segments {
+		if strings.HasSuffix(segment, ".source") {
+			sourceDirPath := filepath.Join(strings.Join(segments[:i], string(filepath.Separator)), strings.TrimSuffix(segment, ".source"))
+			sourceFilePath := filepath.Join(strings.Join(segments[:i+1], string(filepath.Separator)))
+
+			initializeSourceDirectory(sourceDirPath, sourceFilePath)
+			break
 		}
-		return pinfo, nil
 	}
-	info, err := pfs.OsFs.Stat(fpath) // Stat first as strange behavior with mounted folders having IsDir flag not set with Lstat
+}
+
+func initializeSourceDirectory(sourceDirPath, sourceFilePath string) {
+	if _, err := os.Stat(sourceDirPath); err == nil {
+		log.Printf("Source directory already initialized: %s", sourceDirPath)
+		return
+	}
+	log.Printf("Initializing source directory: %s", sourceDirPath)
+	if err := os.MkdirAll(sourceDirPath, os.ModePerm); err != nil {
+		log.Printf("Failed to create directory: %s, error: %v", sourceDirPath, err)
+		return
+	}
+	file, err := os.Open(sourceFilePath)
 	if err != nil {
-		return nil, err
+		log.Printf("Failed to open .source file: %s, error: %v", sourceFilePath, err)
+		return
 	}
-	if !info.IsDir() {
+	defer file.Close()
+	var dataArray []map[string]interface{}
+	if err := json.NewDecoder(file).Decode(&dataArray); err != nil {
+		log.Printf("Failed to decode JSON in file: %s, error: %v", sourceFilePath, err)
+		return
+	}
+	for _, data := range dataArray {
+		var name, url, checksum string
+		var size int64
+		for key, value := range data {
+			switch key {
+			case "name", "filename":
+				if strVal, ok := value.(string); ok {
+					name = strVal
+				}
+			case "size":
+				if floatVal, ok := value.(float64); ok {
+					size = int64(floatVal)
+				}
+			case "url", "download_url", "link", "href":
+				if strVal, ok := value.(string); ok {
+					url = strVal
+				}
+			case "checksum", "hash", "md5", "computed_md5":
+				if strVal, ok := value.(string); ok {
+					checksum = strVal
+				}
+			}
+		}
+		if url != "" && name != "" {
+			symlinkPath := filepath.Join(sourceDirPath, name)
+			if err := os.Symlink(url, symlinkPath); err != nil {
+				log.Printf("Failed to create symbolic link for %s -> %s (%s/%d): %v", symlinkPath, url, checksum, size, err)
+			}
+		}
+	}
+}
+
+func (pfs *PointerFs) Stat(fpath string) (os.FileInfo, error) {
+	initSourceIfNecessary(fpath)
+	// Stat first as strange behavior with mounted folders having IsDir flag not set with Lstat
+	// Accept that invalid symbolic link will produce error
+	info, err := pfs.OsFs.Stat(fpath)
+	if err != nil || !info.IsDir() {
 		linfo, _, lerr := pfs.OsFs.LstatIfPossible(fpath)
 		if lerr != nil {
 			return nil, lerr
@@ -124,10 +189,10 @@ func (pfs *PointerFs) Stat(fpath string) (os.FileInfo, error) {
 		lpath, _ := pfs.OsFs.ReadlinkIfPossible(fpath)
 		if IsSymlink(linfo.Mode()) || !pfs.isExtensionWhitelisted(filepath.Ext(fpath)) || info.Size() >= pfs.Threshold {
 			pinfo := &PointerInfo{
-				Filename:    info.Name(),
+				Filename:    linfo.Name(),
 				Filepath:    strings.Replace(fpath, pfs.Scope, "", 1),
 				Linkpath:    strings.Replace(lpath, pfs.Scope, "", 1),
-				ContentSize: info.Size(),
+				ContentSize: linfo.Size(),
 			}
 			return pinfo, nil
 		}
@@ -135,7 +200,6 @@ func (pfs *PointerFs) Stat(fpath string) (os.FileInfo, error) {
 	return info, err
 }
 
-//nolint:gocritic
 func (pfs *PointerFs) LstatIfPossible(fpath string) (os.FileInfo, bool, error) {
 	info, err := pfs.Stat(fpath)
 	return info, true, err
@@ -175,57 +239,6 @@ func NewPointer(pointerInfo *PointerInfo, content string) *Pointer {
 		content:     content,
 	}
 }
-
-// //noling:goconst
-// func (p *Pointer) initChildren() {
-// 	if p.children == nil {
-// 		file, _ := p.osFs.Open(p.pointerInfo.Filepath)
-
-// 		var dataArray []map[string]interface{}
-// 		decoder := json.NewDecoder(file)
-// 		if err := decoder.Decode(&dataArray); err != nil {
-// 			fmt.Println("Error decoding JSON:", err)
-// 			return
-// 		}
-
-// 		for _, data := range dataArray {
-// 			var name, url, checksum string
-// 			var size int64
-
-// 			for key, value := range data {
-// 				switch key {
-// 				case "name", "filename":
-// 					if strVal, ok := value.(string); ok {
-// 						name = strVal
-// 					}
-// 				case "size":
-// 					if intVal, ok := value.(float64); ok { // JSON numbers decode as float64
-// 						size = int64(intVal)
-// 					}
-// 				case "url", "download_url", "link", "href":
-// 					if strVal, ok := value.(string); ok {
-// 						url = strVal
-// 					}
-// 				case "checksum", "hash", "md5", "computed_md5":
-// 					if strVal, ok := value.(string); ok {
-// 						checksum = strVal
-// 					}
-// 				}
-// 			}
-
-// 			if name != "" {
-// 				pinfo := &PointerInfo{
-// 					Filename:    name,
-// 					Filepath:    path.Join(p.pointerInfo.Filepath, name),
-// 					Linkpath:    url,
-// 					ContentSize: size,
-// 					Checksum:    checksum,
-// 				}
-// 				p.children = append(p.children, pinfo)
-// 			}
-// 		}
-// 	}
-// }
 
 func (p *Pointer) Read(b []byte) (int, error) {
 	if p.closed {
