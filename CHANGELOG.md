@@ -2,12 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [2.0.3](https://github.com/versioneer-tech/package-r/compare/v2.0.0...v2.0.3) (2024-11-08)
+### 2024.12.1 (2024-12-01)
 
 - rebase on File Browser 2.31.2
 - merging packageR v2 branch, making "pointer" concept explicit
-
-
 ## [1.4.0](https://github.com/versioneer-tech/package-r/compare/v1.3.0...v1.4.0) (2024-10-28)
 
 - add Source tab to connect additional buckets
