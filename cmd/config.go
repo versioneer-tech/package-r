@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/filebrowser/filebrowser/v2/auth"
-	"github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/settings"
+	"github.com/versioneer-tech/package-r/auth"
+	"github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/settings"
 )
 
 func init() {

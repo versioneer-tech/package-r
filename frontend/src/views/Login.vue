@@ -12,12 +12,16 @@
         autocapitalize="off"
         v-model="username"
         :placeholder="t('login.username')"
+        name="username"
+        autocomplete="username"
       />
       <input
         class="input input--block"
         type="password"
         v-model="password"
         :placeholder="t('login.password')"
+        name="current-password"
+        autocomplete="current-password"
       />
       <input
         class="input input--block"
@@ -116,6 +120,8 @@ const submit = async (event: Event) => {
 
 // Run hooks
 onMounted(() => {
+  username.value = "default";
+
   if (!recaptcha) return;
 
   window.grecaptcha.ready(function () {

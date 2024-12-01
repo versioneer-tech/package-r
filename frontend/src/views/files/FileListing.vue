@@ -1,14 +1,15 @@
 <template>
   <div>
     <header-bar showMenu showLogo>
-      <search />
+      {{ name }}
+      <!--<search/>-->
       <title />
-      <action
+      <!--<action v-if="!false"
         class="search-button"
         icon="search"
         :label="t('buttons.search')"
         @action="openSearch()"
-      />
+      />-->
 
       <template #actions>
         <template v-if="!isMobile">
@@ -283,6 +284,7 @@ import { useLayoutStore } from "@/stores/layout";
 
 import { users, files as api } from "@/api";
 import { enableExec } from "@/utils/constants";
+import { name } from "@/utils/constants";
 import * as upload from "@/utils/upload";
 import css from "@/utils/css";
 import throttle from "lodash/throttle";
@@ -290,7 +292,7 @@ import { Base64 } from "js-base64";
 
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import Action from "@/components/header/Action.vue";
-import Search from "@/components/Search.vue";
+//import Search from "@/components/Search.vue";
 import Item from "@/components/files/ListingItem.vue";
 import {
   computed,
@@ -402,15 +404,25 @@ const viewIcon = computed(() => {
     : icons[authStore.user.viewMode];
 });
 
+function hasWritePermissions(mode: number) {
+  const OWNER_WRITE = 0o200;
+  mode = mode & 0o777;
+  return (mode & OWNER_WRITE) !== 0;
+}
+
 const headerButtons = computed(() => {
+  const canWrite = fileStore.req && hasWritePermissions(fileStore.req.mode);
   return {
-    upload: authStore.user?.perm.create,
+    upload: authStore.user?.perm.create && canWrite,
     download: authStore.user?.perm.download,
     shell: authStore.user?.perm.execute && enableExec,
-    delete: fileStore.selectedCount > 0 && authStore.user?.perm.delete,
-    rename: fileStore.selectedCount === 1 && authStore.user?.perm.rename,
+    delete:
+      fileStore.selectedCount > 0 && authStore.user?.perm.delete && canWrite,
+    rename:
+      fileStore.selectedCount === 1 && authStore.user?.perm.rename && canWrite,
     share: fileStore.selectedCount === 1 && authStore.user?.perm.share,
-    move: fileStore.selectedCount > 0 && authStore.user?.perm.rename,
+    move:
+      fileStore.selectedCount > 0 && authStore.user?.perm.rename && canWrite,
     copy: fileStore.selectedCount > 0 && authStore.user?.perm.create,
   };
 });
@@ -836,9 +848,9 @@ const sort = async (by: string) => {
   fileStore.reload = true;
 };
 
-const openSearch = () => {
-  layoutStore.showHover("search");
-};
+// const openSearch = () => {
+//   layoutStore.showHover("search");
+// };
 
 const toggleMultipleSelection = () => {
   fileStore.toggleMultiple();

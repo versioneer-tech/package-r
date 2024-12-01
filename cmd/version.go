@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/filebrowser/filebrowser/v2/version"
+	"github.com/versioneer-tech/package-r/version"
 )
 
 func init() {

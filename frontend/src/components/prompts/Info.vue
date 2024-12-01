@@ -132,10 +132,16 @@ export default {
     },
     humanTime: function () {
       if (this.selectedCount === 0) {
-        return dayjs(this.req.modified).fromNow();
+        return dayjs(this.req.modified).isAfter("1.1.2000")
+          ? dayjs(this.req.modified).fromNow()
+          : "";
       }
 
-      return dayjs(this.req.items[this.selected[0]].modified).fromNow();
+      return dayjs(this.req.items[this.selected[0]].modified).isAfter(
+        "1.1.2000"
+      )
+        ? dayjs(this.req.items[this.selected[0]].modified).fromNow()
+        : "";
     },
     modTime: function () {
       if (this.selectedCount === 0) {
