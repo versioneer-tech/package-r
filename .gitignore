@@ -4,7 +4,6 @@ _old
 rice-box.go
 .idea/
 /filebrowser
-/filebrowser.exe
 /dist
 
 .DS_Store
@@ -21,7 +20,6 @@ yarn-error.log*
 
 # Editor directories and files
 .idea
-.vscode
 *.suo
 *.ntvs*
 *.njsproj
@@ -38,6 +36,3 @@ build/
 /frontend/test-results/
 /frontend/playwright-report/
 /frontend/playwright/.cache/
-
-default.nix
-Dockerfile.dev

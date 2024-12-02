@@ -33,8 +33,8 @@ func (s *Settings) MakeUserDir(username, userScope, serverRoot string) (string, 
 	userScope = path.Join("/", userScope)
 
 	fs := afero.NewBasePathFs(afero.NewOsFs(), serverRoot)
-	if err := fs.MkdirAll(userScope, os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to create user home dir: [%s]: %w", userScope, err)
+	if err := fs.MkdirAll(userScope+"/packages", os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to create user home dir: [%s]: %w", userScope+"/packages", err)
 	}
 	return userScope, nil
 }

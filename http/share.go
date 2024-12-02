@@ -14,8 +14,8 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	fbErrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/share"
+	fbErrors "github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/share"
 )
 
 func withPermShare(fn handleFunc) handleFunc {
@@ -141,6 +141,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		Path:         r.URL.Path,
 		Hash:         str,
 		Expire:       expire,
+		Description:  body.Description,
 		UserID:       d.user.ID,
 		PasswordHash: string(hash),
 		Token:        token,

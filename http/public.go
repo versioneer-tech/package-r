@@ -11,13 +11,14 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/share"
+	"github.com/versioneer-tech/package-r/files"
+	"github.com/versioneer-tech/package-r/share"
 )
 
 var withHashFile = func(fn handleFunc) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		id, ifPath := ifPathWithName(r)
+		ifPath = strings.TrimSuffix(ifPath, ".pointer")
 		link, err := d.store.Share.GetByHash(id)
 		if err != nil {
 			return errToStatus(err), err
@@ -28,12 +29,10 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			return status, err
 		}
 
-		user, err := d.store.Users.Get(d.server.Root, link.UserID)
+		d.user, err = d.store.Users.Get(d.server.Root, link.UserID)
 		if err != nil {
 			return errToStatus(err), err
 		}
-
-		d.user = user
 
 		file, err := files.NewFileInfo(&files.FileOptions{
 			Fs:         d.user.Fs,
@@ -108,6 +107,12 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	file := d.raw.(*files.FileInfo)
+
+	if files.IsNamedPipe(file.Mode) {
+		setContentDisposition(w, r, file)
+		return 0, nil
+	}
+
 	if !file.IsDir {
 		return rawFileHandler(w, r, file)
 	}

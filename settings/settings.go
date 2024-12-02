@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/filebrowser/filebrowser/v2/rules"
+	"github.com/versioneer-tech/package-r/rules"
 )
 
-const DefaultUsersHomeBasePath = "/users"
+const DefaultUsersHomeBasePath = "/home"
 
 // AuthMethod describes an authentication method.
 type AuthMethod string

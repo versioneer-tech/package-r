@@ -76,7 +76,8 @@ const currentView = computed(() => {
     return FileListing;
   } else if (
     fileStore.req.type === "text" ||
-    fileStore.req.type === "textImmutable"
+    fileStore.req.type === "textImmutable" ||
+    fileStore.req.type === "pointer"
   ) {
     return Editor;
   } else {

@@ -11,7 +11,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/filebrowser/filebrowser/v2/runner"
+	"github.com/versioneer-tech/package-r/runner"
 )
 
 const (
@@ -96,11 +96,16 @@ var commandsHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *d
 		return 0, nil
 	}
 
-	s := bufio.NewScanner(io.MultiReader(stdout, stderr))
+	s := bufio.NewScanner(io.Reader(stdout))
 	for s.Scan() {
 		if err := conn.WriteMessage(websocket.TextMessage, s.Bytes()); err != nil {
 			log.Print(err)
 		}
+	}
+
+	s2 := bufio.NewScanner(io.Reader(stderr))
+	for s2.Scan() {
+		log.Print(string(s2.Bytes()))
 	}
 
 	if err := cmd.Wait(); err != nil {

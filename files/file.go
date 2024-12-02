@@ -23,8 +23,8 @@ import (
 
 	"github.com/spf13/afero"
 
-	fbErrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/rules"
+	fbErrors "github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/rules"
 )
 
 const PermFile = 0644
@@ -123,6 +123,11 @@ func stat(opts *FileOptions) (*FileInfo, error) {
 			Extension: filepath.Ext(info.Name()),
 			Token:     opts.Token,
 		}
+		if !file.IsDir && !file.IsSymlink {
+			if _, ok := info.(*PointerInfo); ok {
+				file.Type = "pointer" //nolint:goconst
+			}
+		}
 	}
 
 	// regular file
@@ -133,8 +138,9 @@ func stat(opts *FileOptions) (*FileInfo, error) {
 	// fs doesn't support afero.Lstater interface or the file is a symlink
 	info, err := opts.Fs.Stat(opts.Path)
 	if err != nil {
-		// can't follow symlink
-		if file != nil && file.IsSymlink {
+		if file != nil {
+			// can't follow symlink
+			file.Type = "invalid_link" //nolint:goconst
 			return file, nil
 		}
 		return nil, err
@@ -217,8 +223,26 @@ func (i *FileInfo) RealPath() string {
 	return i.Path
 }
 
-//nolint:goconst
+//nolint:goconst,gocyclo,funlen
 func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
+	if i.Type == "pointer" || i.Extension == ".pointer" {
+		if saveContent {
+			reader, err := i.Fs.Open(i.Path)
+			if err == nil {
+				buffer := make([]byte, 512) //nolint:gomnd
+				n, err := reader.Read(buffer)
+				if err == nil {
+					i.Content = string(buffer[:n])
+				}
+			}
+		}
+		return nil
+	}
+
+	if i.Type == "invalid_link" {
+		return nil
+	}
+
 	if IsNamedPipe(i.Mode) {
 		i.Type = "blob"
 		return nil
@@ -231,9 +255,8 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
 	mimetype := mime.TypeByExtension(i.Extension)
 
 	var buffer []byte
-	if readHeader {
+	if readHeader || true {
 		buffer = i.readFirstBytes()
-
 		if mimetype == "" {
 			mimetype = http.DetectContentType(buffer)
 		}
@@ -404,43 +427,16 @@ func (i *FileInfo) readListing(checker rules.Checker, readHeader bool) error {
 		name := f.Name()
 		fPath := path.Join(i.Path, name)
 
-		if !checker.Check(fPath) {
-			continue
-		}
-
-		isSymlink, isInvalidLink := false, false
-		if IsSymlink(f.Mode()) {
-			isSymlink = true
-			// It's a symbolic link. We try to follow it. If it doesn't work,
-			// we stay with the link information instead of the target's.
-			info, err := i.Fs.Stat(fPath)
-			if err == nil {
-				f = info
-			} else {
-				isInvalidLink = true
-			}
-		}
-
-		file := &FileInfo{
+		file, err := stat(&FileOptions{
 			Fs:         i.Fs,
-			Name:       name,
-			Size:       f.Size(),
-			ModTime:    f.ModTime(),
-			Mode:       f.Mode(),
-			IsDir:      f.IsDir(),
-			IsSymlink:  isSymlink,
-			Extension:  filepath.Ext(name),
 			Path:       fPath,
-			currentDir: dir,
-		}
-
-		if !file.IsDir && strings.HasPrefix(mime.TypeByExtension(file.Extension), "image/") {
-			resolution, err := calculateImageResolution(file.Fs, file.Path)
-			if err != nil {
-				log.Printf("Error calculating resolution for image %s: %v", file.Path, err)
-			} else {
-				file.Resolution = resolution
-			}
+			Modify:     true,
+			Expand:     false,
+			ReadHeader: readHeader,
+			Checker:    checker,
+		})
+		if err != nil {
+			continue
 		}
 
 		if file.IsDir {
@@ -448,13 +444,9 @@ func (i *FileInfo) readListing(checker rules.Checker, readHeader bool) error {
 		} else {
 			listing.NumFiles++
 
-			if isInvalidLink {
-				file.Type = "invalid_link"
-			} else {
-				err := file.detectType(true, false, readHeader)
-				if err != nil {
-					return err
-				}
+			err := file.detectType(true, false, readHeader)
+			if err != nil {
+				return err
 			}
 		}
 

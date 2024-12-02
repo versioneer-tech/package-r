@@ -6,9 +6,9 @@ if ! [ -x "$(command -v standard-version)" ]; then
   exit 1
 fi
 
-standard-version --dry-run --skip
+standard-version --dry-run --skip #--release-as 2.0.0
 read -p "Continue (y/n)? " -n 1 -r
 echo ;
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-	standard-version -s ;
+	standard-version -s #--release-as 2.0.0;
 fi

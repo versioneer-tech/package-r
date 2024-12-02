@@ -1,0 +1,29 @@
+#!/bin/bash
+
+SECRETS_DIR="/secrets"
+
+if [ $# -lt 1 ]; then
+  echo "Error: Missing arguments." >&2
+  echo "Usage: $0 <sourcename>" >&2
+  exit 1
+fi
+
+SOURCENAME="$1"
+
+SECRET_PATH="$SECRETS_DIR/$SOURCENAME"
+if [ -d "$SECRET_PATH" ] && [ -f "$SECRET_PATH/AWS_ACCESS_KEY_ID" ] && \
+   [ -f "$SECRET_PATH/AWS_SECRET_ACCESS_KEY" ] && [ -f "$SECRET_PATH/AWS_ENDPOINT_URL" ] && \
+   [ -f "$SECRET_PATH/AWS_REGION" ]; then
+
+  echo "Found secrets in $SECRET_PATH. Deleting directory..." >&2
+  rm -rf "$SECRET_PATH"
+
+  if [ $? -eq 0 ]; then
+    echo "Directory $SECRET_PATH deleted successfully." >&2
+  else
+    echo "Error: Failed to delete directory $SECRET_PATH." >&2
+    exit 1
+  fi
+else
+  echo "Required secret files not found in $SECRET_PATH or directory does not exist." >&2
+fi

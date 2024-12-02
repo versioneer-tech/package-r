@@ -1,6 +1,8 @@
 <template>
   <div class="dashboard">
-    <header-bar showMenu showLogo />
+    <header-bar showMenu showLogo>
+      {{ name }}
+    </header-bar>
 
     <div id="nav">
       <div class="wrapper">
@@ -8,6 +10,11 @@
           <router-link to="/settings/profile"
             ><li :class="{ active: $route.path === '/settings/profile' }">
               {{ t("settings.profileSettings") }}
+            </li></router-link
+          >
+          <router-link to="/settings/addsource" v-if="user?.perm.create"
+            ><li :class="{ active: $route.path === '/settings/addsource' }">
+              {{ t("settings.addSource") }}
             </li></router-link
           >
           <router-link to="/settings/shares" v-if="user?.perm.share"
@@ -55,6 +62,7 @@ import { useLayoutStore } from "@/stores/layout";
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { name } from "@/utils/constants";
 
 const { t } = useI18n();
 

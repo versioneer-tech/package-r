@@ -105,7 +105,7 @@
     "deleteTitle": "Lösche Dateien",
     "displayName": "Anzeigename:",
     "download": "Lade Dateien",
-    "downloadMessage": "Wählen Sie ein Format zum Herunterladen aus.",
+    "downloadMessage": "Wählen Sie ein Format zum Herunterladen der Metadaten und Pointer Dateien aus.",
     "error": "Etwas ist schiefgelaufen",
     "fileInfo": "Dateiinformation",
     "filesSelected": "{count} Dateien ausgewählt.",
@@ -222,7 +222,8 @@
     "userManagement": "Benutzerverwaltung",
     "userUpdated": "Benutzer aktualisiert!",
     "username": "Nutzername",
-    "users": "Nutzer"
+    "users": "Nutzer",
+    "addSource": "Source hinzufügen"
   },
   "sidebar": {
     "help": "Hilfe",
@@ -246,5 +247,12 @@
     "minutes": "Minuten",
     "seconds": "Sekunden",
     "unit": "Zeiteinheit"
+  },
+  "source" : {
+    "bucketName": "Bucket Name",
+    "accessKey": "Access Key",
+    "accessSecret": "Access Secret",
+    "endpoint": "Endpunkt",
+    "region": "Region"
   }
 }
