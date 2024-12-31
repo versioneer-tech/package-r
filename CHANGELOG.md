@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 2024.12.4 (2024-12-31)
+
+- add bucket versioning support
+
 ### 2024.12.3 (2024-12-02)
 
 - rebase on File Browser 2.31.2
