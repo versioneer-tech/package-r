@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -116,7 +117,7 @@ type S3 struct {
 }
 
 //nolint:gocritic
-func (p *S3) presign(path string) (string, error) {
+func (p *S3) presign(path string, cutoff int64) (string, error) {
 	if p == nil || p.s3Client == nil {
 		return "", fmt.Errorf("presign without S3 not possible using %s with %s", p.bucketName, path)
 	}
@@ -125,9 +126,31 @@ func (p *S3) presign(path string) (string, error) {
 	}
 	path = strings.TrimPrefix(path, "/")
 	path = strings.TrimPrefix(path, p.bucketPrefix)
+
+	versionID := ""
+
+	if cutoff > 0 {
+		cutoffTime := time.Unix(cutoff, 0)
+		listObjectVersionsInput := &s3.ListObjectVersionsInput{
+			Bucket: aws.String(p.bucketName),
+			Prefix: aws.String(path),
+		}
+
+		listObjectVersions, _ := p.s3Client.ListObjectVersions(listObjectVersionsInput)
+
+		for _, version := range listObjectVersions.Versions {
+			if version.LastModified.After(cutoffTime) {
+				continue
+			}
+			versionID = *version.VersionId
+			break
+		}
+	}
+
 	getObjectInput := &s3.GetObjectInput{
-		Bucket: aws.String(p.bucketName),
-		Key:    aws.String(path),
+		Bucket:    aws.String(p.bucketName),
+		Key:       aws.String(path),
+		VersionId: aws.String(versionID),
 	}
 	req, _ := p.s3Client.GetObjectRequest(getObjectInput)
 	presignedURL, err := req.Presign(7 * 24 * time.Hour)
@@ -147,6 +170,13 @@ func (pfs *PointerFs) isExtensionWhitelisted(extension string) bool {
 }
 
 func (pfs *PointerFs) OpenFile(fpath string, flag int, perm os.FileMode) (afero.File, error) {
+	cutoff := int64(0)
+	if strings.Contains(fpath, "#") {
+		parts := strings.SplitN(fpath, "#", 2)
+		fpath = strings.TrimRight(parts[0], "/")
+		cutoff, _ = strconv.ParseInt(parts[1], 10, 64)
+	}
+
 	info, err := pfs.Stat(fpath)
 	if err != nil {
 		if flag&os.O_CREATE == os.O_CREATE {
@@ -164,7 +194,7 @@ func (pfs *PointerFs) OpenFile(fpath string, flag int, perm os.FileMode) (afero.
 			if len(parts) > 3 {
 				source := parts[2]
 				if source != "" {
-					url, err := pfs.withS3(source).presign(strings.TrimRight(strings.Join(parts[3:], "/"), "/"))
+					url, err := pfs.withS3(source).presign(strings.TrimRight(strings.Join(parts[3:], "/"), "/"), cutoff)
 					log.Printf("presign %s -> %s:%v", relpath, url, err)
 					return &Pointer{
 						URL:   url,
@@ -348,6 +378,10 @@ func initializeSourceDirectory(sourceDirPath, sourceFilePath string) error {
 }
 
 func (pfs *PointerFs) Stat(fpath string) (os.FileInfo, error) {
+	if strings.Contains(fpath, "#") {
+		parts := strings.SplitN(fpath, "#", 2)
+		fpath = strings.TrimRight(parts[0], "/")
+	}
 	initSourceIfNecessary(fpath)
 	// Stat first as strange behavior with mounted folders having IsDir flag not set with Lstat
 	// Accept that invalid symbolic link will produce error

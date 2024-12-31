@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/afero"
@@ -18,6 +19,10 @@ import (
 var withHashFile = func(fn handleFunc) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		id, ifPath := ifPathWithName(r)
+		if strings.Contains(id, "#") {
+			parts := strings.SplitN(id, "#", 2)
+			id = strings.TrimRight(parts[0], "/")
+		}
 		ifPath = strings.TrimSuffix(ifPath, ".pointer")
 		link, err := d.store.Share.GetByHash(id)
 		if err != nil {
@@ -61,6 +66,11 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		// set fs root to the shared file/folder
 		d.user.Fs = afero.NewBasePathFs(d.user.Fs, basePath)
 
+		// until we introduce explicit flag on link
+		if strings.HasPrefix(link.Description, "version") {
+			filePath += "#" + strconv.FormatInt(link.Creation, 10)
+		}
+
 		file, err = files.NewFileInfo(&files.FileOptions{
 			Fs:      d.user.Fs,
 			Path:    filePath,
@@ -69,6 +79,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			Checker: d,
 			Token:   link.Token,
 		})
+
 		if err != nil {
 			return errToStatus(err), err
 		}

@@ -142,6 +142,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		Hash:         str,
 		Expire:       expire,
 		Description:  body.Description,
+		Creation:     time.Now().Unix(),
 		UserID:       d.user.ID,
 		PasswordHash: string(hash),
 		Token:        token,
