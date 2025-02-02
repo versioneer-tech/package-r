@@ -28,6 +28,11 @@ type ProxyAuth struct {
 // Auth authenticates the user via an HTTP header.
 func (a ProxyAuth) Auth(r *http.Request, usr users.Store, _ *settings.Settings, srv *settings.Server) (*users.User, error) {
 	header := r.Header.Get(a.Header)
+	if header == "" {
+		log.Printf("Missing header %s", a.Header)
+		return nil, os.ErrPermission
+	}
+
 	if a.Mapper != "" {
 		if !strings.HasPrefix(a.Mapper, ".") {
 			header = a.Mapper
