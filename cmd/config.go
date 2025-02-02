@@ -36,6 +36,7 @@ func addConfigFlags(flags *pflag.FlagSet) {
 
 	flags.String("auth.method", string(auth.MethodJSONAuth), "authentication type")
 	flags.String("auth.header", "", "HTTP header for auth.method=proxy")
+	flags.String("auth.mapper", "", "(optional) HTTP header value mapper for auth.method=proxy")
 	flags.String("auth.command", "", "command for auth.method=hook")
 
 	flags.String("recaptcha.host", "https://www.google.com", "use another host for ReCAPTCHA. recaptcha.net might be useful in China")
@@ -83,7 +84,9 @@ func getAuthentication(flags *pflag.FlagSet, defaults ...interface{}) (settings.
 			checkErr(nerrors.New("you must set the flag 'auth.header' for method 'proxy'"))
 		}
 
-		auther = &auth.ProxyAuth{Header: header}
+		mapper := mustGetString(flags, "auth.mapper")
+
+		auther = &auth.ProxyAuth{Header: header, Mapper: mapper}
 	}
 
 	if method == auth.MethodNoAuth {

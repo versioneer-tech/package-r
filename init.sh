@@ -15,5 +15,8 @@ mkdir -p /secrets || exit 1
   --branding.files ${FB_BRANDING_FILES:-/package-r} \
   --scope "" \
   --create-user-dir \
-  --commands "add-source","establish-sources","remove-source" > /dev/null || exit
+  --auth.method=proxy \
+  --auth.header=x-id-token \
+  --auth.mapper="default" \
+   --commands "add-source","establish-sources","remove-source" > /dev/null || exit
   ./filebrowser users add default ${FB_PASSWORD:-changeme} --lockPassword > /dev/null 2>&1 || true # true as it is ok if resource already exists
