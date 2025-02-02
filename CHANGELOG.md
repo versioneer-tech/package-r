@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 2025.2.1 (2025-02-02)
+
+- introduce auth.mapper config option allowing to map header values from JWT/base64 encoded JSON, use either explicit value or jq like path prefixed with .
+
 ### 2024.12.4 (2024-12-31)
 
 - add bucket versioning support
