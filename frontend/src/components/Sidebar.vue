@@ -51,6 +51,22 @@
           <span>{{ $t("sidebar.newFile") }}</span>
         </button>
       </div>
+      <div
+        v-if="
+          user.perm.share &&
+          (req?.path == '/packages/' || req?.path == '/packages')
+        "
+      >
+        <button
+          @click="showHover('newPackage')"
+          class="action"
+          :aria-label="$t('sidebar.newPackage')"
+          :title="$t('sidebar.newPackage')"
+        >
+          <i class="material-icons">add_link</i>
+          <span>{{ $t("sidebar.newPackage") }}</span>
+        </button>
+      </div>
 
       <div>
         <button
@@ -252,6 +268,9 @@ export default {
     },
     logout: auth.logout,
     hasWritePermissions(req) {
+      if (req?.path.startsWith("/sources/")) {
+        return false;
+      }
       const OWNER_WRITE = 0o200;
       let mode = req?.mode & 0o777;
       return (mode & OWNER_WRITE) !== 0;

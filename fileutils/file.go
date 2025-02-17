@@ -3,10 +3,10 @@ package fileutils
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/afero"
 
@@ -21,7 +21,7 @@ func MoveFile(fs afero.Fs, src, dst string) error {
 		return nil
 	}
 	// fallback
-	err := Copy(fs, src, dst)
+	err := Copy(fs, src, dst, false)
 	if err != nil {
 		_ = fs.Remove(dst)
 		return err
@@ -34,7 +34,7 @@ func MoveFile(fs afero.Fs, src, dst string) error {
 
 // CopyFile copies a file from source to dest and returns
 // an error if any.
-func CopyFile(fs afero.Fs, source, dest string) error {
+func CopyFile(fs afero.Fs, source, dest string, deepLink bool) error {
 	// Open the source file.
 	src, err := fs.Open(source)
 	if err != nil {
@@ -49,35 +49,37 @@ func CopyFile(fs afero.Fs, source, dest string) error {
 		return err
 	}
 
-	if strings.Contains(source, "/sources/") && strings.Contains(dest, "/packages/") {
+	if deepLink {
 		err = fs.(*afero.BasePathFs).SymlinkIfPossible(source, dest)
 		if err != nil {
 			fmt.Println("Error creating symlink:", err)
 			return err
 		}
-	} else {
-		// Create the destination file.
-		dst, err := fs.OpenFile(dest, os.O_RDWR|os.O_CREATE|os.O_TRUNC, files.PermFile)
-		if err != nil {
-			return err
-		}
-		defer dst.Close()
+		log.Printf("Created symlink %s -> %s", source, dest)
+		return nil
+	}
 
-		// Copy the contents of the file.
-		_, err = io.Copy(dst, src)
-		if err != nil {
-			return err
-		}
+	// Create the destination file.
+	dst, err := fs.OpenFile(dest, os.O_RDWR|os.O_CREATE|os.O_TRUNC, files.PermFile)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
 
-		// Copy the mode
-		info, err := fs.Stat(source)
-		if err != nil {
-			return err
-		}
-		err = fs.Chmod(dest, info.Mode())
-		if err != nil {
-			return err
-		}
+	// Copy the contents of the file.
+	_, err = io.Copy(dst, src)
+	if err != nil {
+		return err
+	}
+
+	// Copy the mode
+	info, err := fs.Stat(source)
+	if err != nil {
+		return err
+	}
+	err = fs.Chmod(dest, info.Mode())
+	if err != nil {
+		return err
 	}
 
 	return nil

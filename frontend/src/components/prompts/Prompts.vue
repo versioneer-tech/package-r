@@ -17,8 +17,10 @@ import Download from "./Download.vue";
 import Rename from "./Rename.vue";
 import Move from "./Move.vue";
 import Copy from "./Copy.vue";
+import DeepLink from "./DeepLink.vue";
 import NewFile from "./NewFile.vue";
 import NewDir from "./NewDir.vue";
+import NewPackage from "./NewPackage.vue";
 import Replace from "./Replace.vue";
 import ReplaceRename from "./ReplaceRename.vue";
 import Share from "./Share.vue";
@@ -39,8 +41,10 @@ const components = new Map<string, any>([
   ["rename", Rename],
   ["move", Move],
   ["copy", Copy],
+  ["deepLink", DeepLink],
   ["newFile", NewFile],
   ["newDir", NewDir],
+  ["newPackage", NewPackage],
   ["download", Download],
   ["replace", Replace],
   ["replace-rename", ReplaceRename],
