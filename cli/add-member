@@ -1,0 +1,30 @@
+#!/bin/bash
+
+if [ -z "$WORKSPACE" ]; then
+  echo "Error: WORKSPACE environment variable is not set."
+  exit 1
+fi
+
+kubectl get memberships "$WORKSPACE" -o json | jq -r '.spec.forProvider.members[]'
+
+if [ -z "$1" ]; then
+  echo "Usage: $0 <new-member>"
+  exit 1
+fi
+
+NEW_MEMBER=$1
+
+CURRENT_MEMBERS=$(kubectl get memberships "$WORKSPACE" -o json | jq -r '.spec.forProvider.members[]' 2>/dev/null)
+
+if echo "$CURRENT_MEMBERS" | grep -q "^$NEW_MEMBER$"; then
+  echo "Member '$NEW_MEMBER' already exists in Memberships resource '$WORKSPACE'. No changes made."
+  exit 0
+fi
+
+kubectl patch memberships "$WORKSPACE" --type='json' -p="[{
+  \"op\": \"add\",
+  \"path\": \"/spec/forProvider/members/-\",
+  \"value\": \"$NEW_MEMBER\"
+}]"
+
+echo "Member '$NEW_MEMBER' added to Memberships resource '$WORKSPACE'."

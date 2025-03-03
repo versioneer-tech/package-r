@@ -1,11 +1,11 @@
 <template>
   <div class="card floating">
     <div class="card-title">
-      <h2>{{ $t("prompts.deeplink") }}</h2>
+      <h2>{{ $t("prompts.deepLink") }}</h2>
     </div>
 
     <div class="card-content">
-      <p>{{ $t("prompts.deeplinkMessage") }}</p>
+      <p>{{ $t("prompts.deepLinkMessage") }}</p>
       <file-list
         ref="fileList"
         @update:selected="(val) => (dest = val)"

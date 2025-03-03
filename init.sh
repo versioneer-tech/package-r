@@ -18,5 +18,5 @@ mkdir -p /secrets || exit 1
   --auth.method=proxy \
   --auth.header=x-id-token \
   --auth.mapper="default" \
-   --commands "add-source","establish-sources","remove-source","ls" > /dev/null || exit
+   --commands "add-source","establish-sources","remove-source","get-members","add-member","get-groups","ls" > /dev/null || exit
   ./filebrowser users add default ${FB_PASSWORD:-changeme} --perm.execute=true --perm.create=false --perm.rename=false --perm.modify=false --perm.delete=true --perm.share=true --perm.download=false --lockPassword > /dev/null 2>&1 || true # true as it is ok if resource already exists

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ -z "$WORKSPACE" ]; then
+  echo "Error: WORKSPACE environment variable is not set."
+  exit 1
+fi
+
+kubectl get groups "$WORKSPACE" -o json | jq -r '.items[].spec.forProvider.name' | grep ws-

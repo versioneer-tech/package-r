@@ -12,6 +12,11 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+ENV KUBECTL_VERSION=1.31.6
+RUN curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/
+
 ENV BOLTBROWSER_VERSION=2.2
 ENV BOLTBROWSER_URL=https://github.com/br0xen/boltbrowser/releases/download/${BOLTBROWSER_VERSION}/boltbrowser.linux64
 RUN curl -L $BOLTBROWSER_URL -o /usr/local/bin/boltbrowser && \
