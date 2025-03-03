@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 2025.2.4 (2025-03-03)
+
+- allow to connect to Kubernetes, provide dedicated cli methods wrapping specific Kubernetes calls
+
 ### 2025.2.3 (2025-02-17)
 
 - allow package creation, support adding files/folders to package
