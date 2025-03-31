@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 2025.3.1 (2025-03-31)
+
+- additional pages for member management, source management and runtime settings
+
 ### 2025.2.4 (2025-03-03)
 
 - allow to connect to Kubernetes, provide dedicated cli methods wrapping specific Kubernetes calls
