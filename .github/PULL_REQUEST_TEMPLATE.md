@@ -8,7 +8,7 @@ If the feature changes current behaviour, explain why your solution is better.
 
 - [ ] DO make sure you are requesting to **pull a topic/feature/bugfix branch** (right side).
 - [ ] DO make sure you are making a pull request against the **main branch** (left side). Also you should start *your branch* off *our main*.
-- [ ] DO make sure that packageR can be successfully built.
+- [ ] DO make sure that the project can be successfully built.
 - [ ] AVOID breaking the continuous integration build.
 
 **Further comments**

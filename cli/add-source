@@ -22,4 +22,4 @@ echo "$AWS_SECRET_ACCESS_KEY" > "$SECRET_PATH/AWS_SECRET_ACCESS_KEY"
 echo "$AWS_ENDPOINT_URL" > "$SECRET_PATH/AWS_ENDPOINT_URL"
 echo "$AWS_REGION" > "$SECRET_PATH/AWS_REGION"
 
-echo "Credentials saved successfully under $SECRET_PATH." >&2
+echo "Credentials saved successfully under $SECRET_PATH."

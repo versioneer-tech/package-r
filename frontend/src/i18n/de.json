@@ -1,5 +1,6 @@
 {
   "buttons": {
+    "add": "Hinzufügen",
     "cancel": "Abbrechen",
     "clear": "Schließen",
     "close": "Schließen",
@@ -223,7 +224,15 @@
     "userUpdated": "Benutzer aktualisiert!",
     "username": "Nutzername",
     "users": "Nutzer",
-    "addSource": "Source hinzufügen"
+    "sourceManagement": "Source Management",
+    "addSource": "Sources",    
+    "memberManagement": "Member Management",
+    "addMember": "Members",
+    "membername": "Name",
+    "runtimeSettings": "Runtime Einstellungen",
+    "runtime": "Runtime",
+    "runtimeType": "Typ",
+    "runtimeStatus": "Status"
   },
   "sidebar": {
     "help": "Hilfe",
@@ -254,5 +263,8 @@
     "accessSecret": "Access Secret",
     "endpoint": "Endpunkt",
     "region": "Region"
+  },  
+  "member" : {
+    "name": "Name"
   }
 }

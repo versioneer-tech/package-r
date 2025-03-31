@@ -12,14 +12,24 @@
               {{ t("settings.profileSettings") }}
             </li></router-link
           >
-          <router-link to="/settings/addsource" v-if="user?.perm.create"
-            ><li :class="{ active: $route.path === '/settings/addsource' }">
-              {{ t("settings.addSource") }}
-            </li></router-link
-          >
           <router-link to="/settings/shares" v-if="user?.perm.share"
             ><li :class="{ active: $route.path === '/settings/shares' }">
               {{ t("settings.shareManagement") }}
+            </li></router-link
+          >
+          <router-link to="/settings/addsource"
+            ><li :class="{ active: $route.path === '/settings/addsource' }">
+              {{ t("settings.sourceManagement") }}
+            </li></router-link
+          >
+          <router-link to="/settings/addmember"
+            ><li :class="{ active: $route.path === '/settings/addmember' }">
+              {{ t("settings.memberManagement") }}
+            </li></router-link
+          >
+          <router-link to="/settings/runtime"
+            ><li :class="{ active: $route.path === '/settings/runtime' }">
+              {{ t("settings.runtimeSettings") }}
             </li></router-link
           >
           <router-link to="/settings/global" v-if="user?.perm.admin"

@@ -1,5 +1,6 @@
 {
   "buttons": {
+    "add": "Add",
     "cancel": "Cancel",
     "clear": "Clear",
     "close": "Close",
@@ -245,7 +246,15 @@
     "userUpdated": "User updated!",
     "username": "Username",
     "users": "Users",
-    "addSource": "Add Source"
+    "sourceManagement": "Source Management",
+    "addSource": "Sources",    
+    "memberManagement": "Member Management",
+    "addMember": "Members",
+    "membername": "Name",
+    "runtimeSettings": "Runtime Settings",
+    "runtime": "Runtime",
+    "runtimeType": "Type",
+    "runtimeStatus": "Status"
   },
   "sidebar": {
     "help": "Help",
@@ -254,7 +263,7 @@
     "logout": "Logout",
     "mySources": "My Sources",
     "myPackages": "My Packages",
-    "myFiles": "My files",        
+    "myFiles": "My files",
     "newFile": "New file",
     "newFolder": "New folder",
     "newPackage": "New Package",
@@ -279,5 +288,8 @@
     "accessSecret": "Access Secret",
     "endpoint": "Endpoint",
     "region": "Region"
+  },
+  "member" : {
+    "name": "Name"
   }
 }

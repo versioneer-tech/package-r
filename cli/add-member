@@ -1,20 +1,23 @@
 #!/bin/bash
 
 if [ -z "$WORKSPACE" ]; then
-  echo "Error: WORKSPACE environment variable is not set."
+  echo "Error: WORKSPACE environment variable is not set." >&2
   exit 1
 fi
 
-kubectl get memberships "$WORKSPACE" -o json | jq -r '.spec.forProvider.members[]'
-
 if [ -z "$1" ]; then
-  echo "Usage: $0 <new-member>"
+  echo "Usage: $0 <new-member>" >&2
   exit 1
 fi
 
 NEW_MEMBER=$1
 
 CURRENT_MEMBERS=$(kubectl get memberships "$WORKSPACE" -o json | jq -r '.spec.forProvider.members[]' 2>/dev/null)
+
+if [ $? -ne 0 ]; then
+  echo "Error: Failed to get memberships for '$WORKSPACE'." >&2
+  exit 1
+fi
 
 if echo "$CURRENT_MEMBERS" | grep -q "^$NEW_MEMBER$"; then
   echo "Member '$NEW_MEMBER' already exists in Memberships resource '$WORKSPACE'. No changes made."
@@ -26,5 +29,10 @@ kubectl patch memberships "$WORKSPACE" --type='json' -p="[{
   \"path\": \"/spec/forProvider/members/-\",
   \"value\": \"$NEW_MEMBER\"
 }]"
+
+if [ $? -ne 0 ]; then
+  echo "Error: Failed to add '$NEW_MEMBER' to Memberships resource '$WORKSPACE'." >&2
+  exit 1
+fi
 
 echo "Member '$NEW_MEMBER' added to Memberships resource '$WORKSPACE'."
