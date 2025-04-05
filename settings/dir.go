@@ -15,7 +15,7 @@ var (
 )
 
 // MakeUserDir makes the user directory according to settings.
-func (s *Settings) MakeUserDir(username, userScope, serverRoot string) (string, error) {
+func (s *Settings) MakeUserDir(username, userScope, _ string) (string, error) {
 	userScope = strings.TrimSpace(userScope)
 	if userScope == "" && s.CreateUserDir {
 		username = cleanUsername(username)

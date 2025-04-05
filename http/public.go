@@ -2,7 +2,6 @@ package http
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -13,6 +12,7 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/versioneer-tech/package-r/auth"
 	"github.com/versioneer-tech/package-r/files"
 	"github.com/versioneer-tech/package-r/share"
 )
@@ -133,11 +133,15 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 })
 
 func authenticateShareRequest(r *http.Request, l *share.Link) (int, error) {
-	claims := r.Context().Value("claims")
-
-	if l.Token != "" {
-		//claims := r.Context().Value("claims")
-		log.Print(claims)
+	if l.Grant != "" {
+		proxyAuth := auth.ProxyAuth{
+			Header: "x-id-token",
+			Mapper: "^" + l.Grant,
+		}
+		_, _, ok := proxyAuth.Extract(r)
+		if !ok {
+			return http.StatusForbidden, nil // http.StatusUnauthorized would prompt for password!
+		}
 	}
 
 	if l.PasswordHash == "" {

@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import Languages from "./Languages.vue";
-import Rules from "./Rules.vue";
+//import Rules from "./Rules.vue";
 import Permissions from "./Permissions.vue";
 import Commands from "./Commands.vue";
 import { enableExec } from "@/utils/constants";
@@ -94,9 +94,9 @@ onMounted(() => {
   }
 });
 
-const passwordPlaceholder = computed(() =>
-  props.isNew ? "" : t("settings.avoidChanges")
-);
+// const passwordPlaceholder = computed(() =>
+//   props.isNew ? "" : t("settings.avoidChanges")
+// );
 const scopePlaceholder = computed(() =>
   createUserDirData.value ? t("settings.userScopeGenerationPlaceholder") : ""
 );

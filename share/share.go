@@ -5,6 +5,7 @@ type CreateBody struct {
 	Expires     string `json:"expires"`
 	Description string `json:"description,omitempty"`
 	Unit        string `json:"unit"`
+	Grant       string `json:"grant"`
 }
 
 // Link is the information needed to build a shareable link.
@@ -20,4 +21,5 @@ type Link struct {
 	// URL-Safe and is used to download links in password-protected shares via a
 	// query arg.
 	Token string `json:"token,omitempty"`
+	Grant string `json:"grant,omitempty"`
 }

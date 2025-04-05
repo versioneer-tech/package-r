@@ -19,6 +19,7 @@ export async function create(
   url: string,
   password = "",
   description: string,
+  grant: string,
   expires = "",
   unit = "hours"
 ) {
@@ -32,11 +33,13 @@ export async function create(
     password != "" ||
     expires !== "" ||
     unit !== "hours" ||
-    description !== ""
+    description !== "" ||
+    grant !== ""
   ) {
     body = JSON.stringify({
       password: password,
       description: description,
+      grant: grant,
       expires: expires.toString(), // backend expects string not number
       unit: unit,
     });

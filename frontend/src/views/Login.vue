@@ -29,7 +29,7 @@
         type="password"
         v-model="passwordConfirm"
         :placeholder="t('login.passwordConfirm')"
-      />
+      /> -->
 
       <div v-if="recaptcha" id="recaptcha"></div>
       <input
@@ -40,7 +40,7 @@
 
       <p @click="toggleMode" v-if="signup">
         {{ createMode ? t("login.loginInstead") : t("login.createAnAccount") }}
-      </p> -->
+      </p>
     </form>
   </div>
 </template>
