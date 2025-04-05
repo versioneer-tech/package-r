@@ -10,7 +10,7 @@
       />
     </p>
 
-    <p v-if="!isDefault">
+    <!-- <p v-if="!isDefault">
       <label for="password">{{ t("settings.password") }}</label>
       <input
         class="input input--block"
@@ -19,7 +19,7 @@
         v-model="user.password"
         id="password"
       />
-    </p>
+    </p> -->
 
     <p>
       <label for="scope">{{ t("settings.scope") }}</label>
@@ -46,23 +46,23 @@
       ></languages>
     </p>
 
-    <p v-if="!isDefault && user.perm">
+    <!-- <p v-if="!isDefault && user.perm">
       <input
         type="checkbox"
         :disabled="user.perm.admin"
         v-model="user.lockPassword"
       />
       {{ t("settings.lockPassword") }}
-    </p>
+    </p> -->
 
     <permissions v-model:perm="user.perm" />
     <commands v-if="enableExec" v-model:commands="user.commands" />
 
-    <div v-if="!isDefault">
+    <!-- <div v-if="!isDefault">
       <h3>{{ t("settings.rules") }}</h3>
       <p class="small">{{ t("settings.rulesHelp") }}</p>
       <rules v-model:rules="user.rules" />
-    </div>
+    </div> -->
   </div>
 </template>
 

@@ -2,14 +2,10 @@ package settings
 
 import (
 	"errors"
-	"fmt"
 	"log"
-	"os"
 	"path"
 	"regexp"
 	"strings"
-
-	"github.com/spf13/afero"
 )
 
 var (
@@ -31,11 +27,6 @@ func (s *Settings) MakeUserDir(username, userScope, serverRoot string) (string, 
 	}
 
 	userScope = path.Join("/", userScope)
-
-	fs := afero.NewBasePathFs(afero.NewOsFs(), serverRoot)
-	if err := fs.MkdirAll(userScope+"/packages", os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to create user home dir: [%s]: %w", userScope+"/packages", err)
-	}
 	return userScope, nil
 }
 

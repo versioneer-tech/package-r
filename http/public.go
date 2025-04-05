@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -132,6 +133,13 @@ var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, 
 })
 
 func authenticateShareRequest(r *http.Request, l *share.Link) (int, error) {
+	claims := r.Context().Value("claims")
+
+	if l.Token != "" {
+		//claims := r.Context().Value("claims")
+		log.Print(claims)
+	}
+
 	if l.PasswordHash == "" {
 		return 0, nil
 	}

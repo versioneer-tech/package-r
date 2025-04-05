@@ -5,7 +5,7 @@
       <h1>{{ name }}</h1>
       <div v-if="error !== ''" class="wrong">{{ error }}</div>
 
-      <input
+      <!-- <input
         autofocus
         class="input input--block"
         type="text"
@@ -40,7 +40,7 @@
 
       <p @click="toggleMode" v-if="signup">
         {{ createMode ? t("login.loginInstead") : t("login.createAnAccount") }}
-      </p>
+      </p> -->
     </form>
   </div>
 </template>

@@ -4,7 +4,14 @@
 
 ## Goal
 
-`packageR` is a lightweight tool developed by the [Versioneer](https://versioneer.at) team, designed to facilitate secure and seamless data sharing from object storage systems using **temporary URLs**. It eliminates the need for direct access to object storage or proxying data through intermediary systems by delegating access control directly to the object storage layer’s existing capabilities. Additionally, it allows users to bundle additional context or metadata with shared datasets, making sharing comprehensive and user-friendly.
+`packageR` is a lightweight tool built on top of a fork of [File Browser](https://github.com/filebrowser/filebrowser/), further adapted by the [Versioneer](https://versioneer.at) team. It is designed to facilitate secure and seamless data sharing from object storage systems using **temporary URLs**. By leveraging the native access control capabilities of object storage, `packageR` removes the need for direct access or proxying data through intermediary systems. Additionally, it enables users to bundle extra context or metadata with shared datasets, making the sharing process more comprehensive and user-friendly.
+
+A key design decision and long-term goal is to eliminate state management by use of the embedded [BoltDB](https://github.com/boltdb/bolt) — not by replacing it with another database, but by shifting all state management entirely to external systems. Currently, BoltDB stores user information, configuration state, and data about created dataset shares.
+- User information has been offloaded by leveraging an external identity management provider through the existing auth proxy strategy. The internal user management entities have been migrated to represent user roles instead of individual users. This change allows for a simple role-mapping mechanism that infers roles such as `guest`, `user`, or `admin` from the identity claims provided.
+- Configuration is treated as immutable and is fully bootstrapped at startup by initialization scripts.
+- A replacement for the share storage system is still under development and is planned for a future release.
+
+Note: It is therefore important to still provide a persistent (durable) mount location for the database!
 
 ## Why `packageR` Exists
 
@@ -48,9 +55,9 @@ Command-line tools like [wget](https://www.gnu.org/software/wget/) simplify the 
 
 `packageR` uses the following directory conventions, initialized via the `init.sh` script (used in the Docker entry point):
 
-- **Packages**: Stored in `~/packages`
-- **Sources**: Stored in `~/sources`, which may optionally link to mounted buckets (e.g. via `s3fs`) or be materialized as symbolic links based on text or JSON files describing object identifiers
-- **Credentials**: Stored in `/secrets` as individual files with the following structure:
+- **Packages**: Stored in `/workspace/packages`.
+- **Sources**: Expected to be available under `/sources` (e.g. mounted via tooling like `s3fs` or `rclone`) and automatically linked to `/workspace/sources` if accessible (see secret below).
+- **Credentials**: Expected to be available under `/secrets` as individual files with the following structure:
 
 ```bash
 $ tree /secrets
@@ -69,8 +76,6 @@ $ tree /secrets
 ```
 
 Note: The `BUCKET_NAME` file is optional. By default, the folder name (e.g., `bucket-a`) will be used instead.
-
-Symbolic linking is employed to facilitate all standard functionality within `packageR`.
 
 Secrets are read by `packageR` from the `/secrets` folder to generate temporary URLs in the code. These secrets can be mounted by the IT or operations teams, or added by users via the `add-source` bash script located in the `cli` folder, which creates the necessary folder structure. 
 
@@ -106,13 +111,6 @@ Note: After creating a file in the `~/sources` directory, the entries are parsed
 - Ubuntu 22.04
 - Windows systems using WSL2 with Ubuntu 22.04
 
-## Current Limitations and Roadmap
-
-- Although the inherited File Browser tool offers pluggable authentication mechanisms, we have currently limited ourselves to the default `json` strategy with a preconfigured `default` user (password provided via the `PASSWORD` environment variable). The folder setup is thus `/home/default/source` and `/home/default/packages`. Since there is no immediate need for fine-grained authorization within `packageR`, we may enhance the authentication in the future by extending proxy header authentication, but this is still under discussion.
-
-- At present, only obfuscated URLs using distinct hashes are supported for sharing. In future releases, `packageR` may integrate with identity systems like Keycloak to enable sharing data with specific users or groups.
-
 ## License
 
 [Apache 2.0](LICENSE) (Apache License Version 2.0, January 2004) from https://www.apache.org/licenses/LICENSE-2.0
-
