@@ -72,7 +72,8 @@
             type="submit"
             name="submitAddSource"
             :value="t('buttons.add')"
-            :disabled="layoutStore.loading"
+            disabled
+            title="No s3 endpoints are whitelisted. Please contact administrator!"
           />
         </div>
       </form>
