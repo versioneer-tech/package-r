@@ -15,6 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	fbErrors "github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/fileutils"
 	"github.com/versioneer-tech/package-r/share"
 )
 
@@ -141,8 +142,16 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		token = base64.URLEncoding.EncodeToString(tokenBuffer)
 	}
 
+	path := r.URL.Path
+	if body.Mode == "indexed" { //nolint:goconst,nolintlint
+		path = "/packages/." + hash
+		if err := fileutils.Copy(d.user.Fs, r.URL.Path, path, true); err != nil {
+			return http.StatusInternalServerError, err
+		}
+	}
+
 	s = &share.Link{
-		Path:         r.URL.Path,
+		Path:         path,
 		Hash:         hash,
 		Expire:       expire,
 		Description:  body.Description,
@@ -151,6 +160,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		PasswordHash: string(passwordHash),
 		Token:        token,
 		Grant:        body.Grant,
+		Mode:         body.Mode,
 	}
 
 	if err := d.store.Share.Save(s); err != nil {

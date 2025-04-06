@@ -8,7 +8,7 @@
         <div class="card-content full" v-if="members.length > 0">
           <table>
             <tr>
-              <th class="padded">{{ t("settings.membername") }}</th>
+              <th class="padded">{{ t("settings.name") }}</th>
             </tr>
             <tr v-for="(member, index) in members" :key="index">
               <td>{{ member }}</td>
@@ -124,3 +124,9 @@ const submitAddMember = () => {
 
 onMounted(fetchMembers);
 </script>
+
+<style scoped>
+.padded {
+  padding-right: 30px;
+}
+</style>

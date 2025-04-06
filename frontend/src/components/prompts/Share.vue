@@ -12,6 +12,7 @@
             <th>{{ $t("settings.shareDuration") }}</th>
             <th>{{ $t("settings.shareDescription") }}</th>
             <th>{{ $t("settings.shareGrant") }}</th>
+            <th>{{ $t("settings.shareMode") }}</th>
             <th></th>
             <th></th>
           </tr>
@@ -26,6 +27,7 @@
             </td>
             <td>{{ link.description }}</td>
             <td>{{ link.grant }}</td>
+            <td>{{ link.mode }}</td>
             <td class="small">
               <button
                 class="action copy-clipboard"
@@ -129,6 +131,16 @@
             {{ group }}
           </option>
         </select>
+        <p>{{ $t("settings.shareMode") }}</p>
+        <select class="input input--block" v-model="mode" tabindex="5">
+          <option value="">default</option>
+          <option
+            value="indexed"
+            v-if="!this.url.startsWith('/files/packages')"
+          >
+            indexed
+          </option>
+        </select>
       </div>
 
       <div class="card-action">
@@ -177,6 +189,7 @@ export default {
       password: "",
       description: "",
       grant: "",
+      mode: "",
       listing: true,
       groups: [],
     };
@@ -237,7 +250,8 @@ export default {
             this.url,
             this.password,
             this.description,
-            this.grant
+            this.grant,
+            this.mode
           );
         } else {
           res = await api.create(
@@ -245,6 +259,7 @@ export default {
             this.password,
             this.description,
             this.grant,
+            this.mode,
             this.time,
             this.unit
           );
@@ -258,6 +273,7 @@ export default {
         this.password = "";
         this.description = "";
         this.grant = "";
+        this.mode = "";
 
         this.listing = true;
       } catch (e) {

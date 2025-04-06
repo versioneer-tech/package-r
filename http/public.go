@@ -64,14 +64,18 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			filePath = ifPath
 		}
 
-		// set fs root to the shared file/folder
-		d.user.Fs = afero.NewBasePathFs(d.user.Fs, basePath)
-
-		// until we introduce explicit flag on link
-		if strings.HasPrefix(link.Description, "version") {
-			filePath += "#" + strconv.FormatInt(link.Creation, 10)
+		if link.Mode == "indexed" { //nolint:goconst,nolintlint
+			if file.IsDir {
+				// for directories we use the created package (i.e. the folder with deeplinks)
+				basePath = "/packages/." + link.Hash
+			} else {
+				// for files we use creation timestamp to resolve specific object version (only works if bucket has versioning enabled)
+				filePath += "#" + strconv.FormatInt(link.Creation, 10)
+			}
 		}
 
+		// set fs root to the shared file/folder
+		d.user.Fs = afero.NewBasePathFs(d.user.Fs, basePath)
 		file, err = files.NewFileInfo(&files.FileOptions{
 			Fs:      d.user.Fs,
 			Path:    filePath,

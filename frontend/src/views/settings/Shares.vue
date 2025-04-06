@@ -16,6 +16,8 @@
                 {{ t("settings.username") }}
               </th>
               <th class="padded">{{ t("settings.shareDescription") }}</th>
+              <th class="padded">{{ $t("settings.shareGrant") }}</th>
+              <th class="padded">{{ $t("settings.shareMode") }}</th>
               <th class="padded"></th>
               <th class="padded"></th>
             </tr>
@@ -34,6 +36,8 @@
               <td>
                 {{ link.description }}
               </td>
+              <td>{{ link.grant }}</td>
+              <td>{{ link.mode }}</td>
               <td class="small">
                 <button
                   class="action"
@@ -156,6 +160,6 @@ const buildLink = (share: Share) => {
 
 <style scoped>
 .padded {
-  margin-right: 30px;
+  padding-right: 30px;
 }
 </style>

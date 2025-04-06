@@ -6,6 +6,7 @@ type CreateBody struct {
 	Description string `json:"description,omitempty"`
 	Unit        string `json:"unit"`
 	Grant       string `json:"grant"`
+	Mode        string `json:"mode"`
 }
 
 // Link is the information needed to build a shareable link.
@@ -22,4 +23,5 @@ type Link struct {
 	// query arg.
 	Token string `json:"token,omitempty"`
 	Grant string `json:"grant,omitempty"`
+	Mode  string `json:"mode,omitempty"`
 }

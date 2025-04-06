@@ -8,7 +8,7 @@
         <div class="card-content full" v-if="sources.length > 0">
           <table>
             <tr>
-              <th class="padded">{{ t("settings.membername") }}</th>
+              <th class="padded">{{ t("settings.name") }}</th>
             </tr>
             <tr v-for="(source, index) in sources" :key="index">
               <td>{{ source }}</td>
@@ -180,3 +180,9 @@ const submitAddSource = () => {
 
 onMounted(fetchSources);
 </script>
+
+<style scoped>
+.padded {
+  padding-right: 30px;
+}
+</style>

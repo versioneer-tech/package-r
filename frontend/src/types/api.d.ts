@@ -23,7 +23,9 @@ interface Share {
   hash: string;
   path: string;
   expire?: any;
-  description: string;
+  description?: string;
+  grant?: string;
+  mode?: string;
   userID?: number;
   token?: string;
   username?: string;
