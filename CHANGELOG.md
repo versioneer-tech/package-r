@@ -1,6 +1,11 @@
 # Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+### 2025.4.1 (2025-04-06)
+
+- make different share modes explicit in UI
+- allow to share with specific groups (as provided through external IdP)
+- migrated existing user management to userrolemanagement
 
 ### 2025.3.1 (2025-03-31)
 
