@@ -32,7 +32,7 @@
             <span>{{ source.name }}</span>
           </button>
         </div>
-      
+
         <button
           class="action"
           @click="toFiles('packages')"
@@ -160,7 +160,6 @@
     </p>
   </nav>
 </template>
-
 
 <script>
 import { reactive } from "vue";

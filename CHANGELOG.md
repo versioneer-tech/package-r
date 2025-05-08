@@ -1,6 +1,13 @@
 # Changelog
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### 2025.5.1 (2025-05-08)
+
+- adapt for roles `admin`, `user`, `browser` and grant source and member management only to `admin`, no share permissions to `browser`
+- don't check origin for websockets
+- add Home button
+
 ### 2025.4.1 (2025-04-06)
 
 - make different share modes explicit in UI

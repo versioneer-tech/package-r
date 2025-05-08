@@ -285,8 +285,6 @@ func (hf *hookFields) GetString(k, dv string) string {
 }
 
 // GetBoolean returns the bool value or provided default
-//
-//nolint:goconst
 func (hf *hookFields) GetBoolean(k string, dv bool) bool {
 	val, ok := hf.Values[k]
 	if ok {

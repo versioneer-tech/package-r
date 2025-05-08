@@ -73,7 +73,6 @@ func extractClaims(header string) (map[string]interface{}, bool) {
 // "^team1" check groups with static value
 // "^.azp" check groups with inferred value from header
 func (a ProxyAuth) Extract(r *http.Request) (string, bool) {
-
 	header := r.Header.Get(a.Header)
 	if header == "" || a.Mapper == "" {
 		return "", false
