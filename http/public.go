@@ -142,7 +142,7 @@ func authenticateShareRequest(r *http.Request, l *share.Link) (int, error) {
 			Header: "x-id-token",
 			Mapper: "^" + l.Grant,
 		}
-		_, _, ok := proxyAuth.Extract(r)
+		_, ok := proxyAuth.Extract(r)
 		if !ok {
 			return http.StatusForbidden, nil // http.StatusUnauthorized would prompt for password!
 		}

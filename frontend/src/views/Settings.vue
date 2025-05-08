@@ -17,17 +17,17 @@
               {{ t("settings.shareManagement") }}
             </li></router-link
           >
-          <router-link to="/settings/addsource"
+          <router-link to="/settings/addsource" v-if="user?.perm.admin"
             ><li :class="{ active: $route.path === '/settings/addsource' }">
               {{ t("settings.sourceManagement") }}
             </li></router-link
           >
-          <router-link to="/settings/addmember"
+          <router-link to="/settings/addmember" v-if="user?.perm.admin"
             ><li :class="{ active: $route.path === '/settings/addmember' }">
               {{ t("settings.memberManagement") }}
             </li></router-link
           >
-          <router-link to="/settings/runtime"
+          <router-link to="/settings/runtime" v-if="user?.perm.admin"
             ><li :class="{ active: $route.path === '/settings/runtime' }">
               {{ t("settings.runtimeSettings") }}
             </li></router-link

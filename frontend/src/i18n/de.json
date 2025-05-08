@@ -248,7 +248,8 @@
     "preview": "Vorschau",
     "settings": "Einstellungen",
     "signup": "Registrieren",
-    "siteSettings": "Seiteneinstellungen"
+    "siteSettings": "Seiteneinstellungen",
+    "home": "Home"
   },
   "success": {
     "linkCopied": "Verweis wurde kopiert!"

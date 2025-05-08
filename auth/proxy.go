@@ -72,67 +72,59 @@ func extractClaims(header string) (map[string]interface{}, bool) {
 // ".role" dynamic value from header
 // "^team1" check groups with static value
 // "^.azp" check groups with inferred value from header
-//
-//nolint:goconst,gocritic
-func (a ProxyAuth) Extract(r *http.Request) (string, bool, bool) {
+func (a ProxyAuth) Extract(r *http.Request) (string, bool) {
+
 	header := r.Header.Get(a.Header)
 	if header == "" || a.Mapper == "" {
-		return "", false, false
+		return "", false
 	}
 	if a.Mapper == "." {
-		return header, header == "admin", true
+		return header, true
 	}
 	if a.Mapper[0] != '.' && a.Mapper[0] != '^' {
-		return a.Mapper, a.Mapper == "admin", false
+		return a.Mapper, true
 	}
 	claims, ok := extractClaims(header)
 	if !ok {
-		return "", false, false
-	}
-	admin, ok := extractClaimValue(claims, "admin")
-	if !ok {
-		admin = "false"
+		return "", false
 	}
 	if a.Mapper[0] != '^' {
 		str, ok2 := extractClaimValue(claims, a.Mapper[2:])
-		return str, admin == "true", ok2
+		return str, ok2
 	}
 	expectedStr := a.Mapper[1:]
 	if a.Mapper[1] == '.' {
 		expectedStr, ok = extractClaimValue(claims, a.Mapper[2:])
 		if !ok {
-			return "", false, false
+			return "", false
 		}
 	}
 	groups, ok := extractClaimValues(claims, "groups")
 	if !ok {
-		return "", false, false
+		return "", false
 	}
 	for _, group := range groups {
 		if str, ok := group.(string); ok && str == expectedStr {
-			return str, admin == "true", true
+			return "user", true
 		}
 	}
-	return "", false, false
+	return "", false
 }
 
 func (a ProxyAuth) Auth(r *http.Request, usr users.Store, _ *settings.Settings, srv *settings.Server) (*users.User, error) {
-	value, isAdmin, ok := a.Extract(r)
+	if a.Header == "" {
+		log.Println("Missing auth.header config")
+		return nil, os.ErrPermission
+	}
+	value, ok := a.Extract(r)
 	if !ok {
-		log.Printf("No value can be inferred from %s with %s", a.Header, a.Mapper)
+		log.Printf("No value can be inferred from header %s with mapper %s", a.Header, a.Mapper)
 		return nil, os.ErrPermission
 	}
 	user, err := usr.Get(srv.Root, value)
 	if errors.Is(err, fbErrors.ErrNotExist) {
-		if isAdmin {
-			user, err = usr.Get(srv.Root, "admin")
-		} else {
-			user, err = usr.Get(srv.Root, "user")
-		}
-		if errors.Is(err, fbErrors.ErrNotExist) {
-			log.Printf("User %s not found", value)
-			return nil, os.ErrPermission
-		}
+		log.Printf("Role %s not found", value)
+		return nil, os.ErrPermission
 	}
 	return user, err
 }

@@ -4,32 +4,46 @@
     <template v-if="isLoggedIn">
       <button
         class="action"
-        @click="toFiles('sources')"
-        :aria-label="$t('sidebar.mySources')"
-        :title="$t('sidebar.mySources')"
+        @click="toFiles('')"
+        :aria-label="$t('sidebar.home')"
+        :title="$t('sidebar.home')"
       >
         <i class="material-icons">folder</i>
-        <span>{{ $t("sidebar.mySources") }}</span>
+        <span>{{ $t("sidebar.home") }}</span>
       </button>
-      <div v-for="source in sources" :key="source.name">
+
+      <div v-if="user.perm.share">
         <button
-          class="action sub-action"
-          @click="toFiles('sources/' + source.name)"
-          :aria-label="source.name"
-          :title="source.name"
+          class="action"
+          @click="toFiles('sources')"
+          :aria-label="$t('sidebar.mySources')"
+          :title="$t('sidebar.mySources')"
         >
-          <span>{{ source.name }}</span>
+          <i class="material-icons">folder</i>
+          <span>{{ $t("sidebar.mySources") }}</span>
+        </button>
+        <div v-for="source in sources" :key="source.name">
+          <button
+            class="action sub-action"
+            @click="toFiles('sources/' + source.name)"
+            :aria-label="source.name"
+            :title="source.name"
+          >
+            <span>{{ source.name }}</span>
+          </button>
+        </div>
+      
+        <button
+          class="action"
+          @click="toFiles('packages')"
+          :aria-label="$t('sidebar.myPackages')"
+          :title="$t('sidebar.myPackages')"
+        >
+          <i class="material-icons">folder</i>
+          <span>{{ $t("sidebar.myPackages") }}</span>
         </button>
       </div>
-      <button
-        class="action"
-        @click="toFiles('packages')"
-        :aria-label="$t('sidebar.myPackages')"
-        :title="$t('sidebar.myPackages')"
-      >
-        <i class="material-icons">folder</i>
-        <span>{{ $t("sidebar.myPackages") }}</span>
-      </button>
+
       <div v-if="user.perm.create && hasWritePermissions(req)">
         <button
           @click="showHover('newDir')"
@@ -51,6 +65,7 @@
           <span>{{ $t("sidebar.newFile") }}</span>
         </button>
       </div>
+
       <div
         v-if="
           user.perm.share &&
@@ -92,6 +107,7 @@
         </button>
       </div>
     </template>
+
     <template v-else>
       <router-link
         class="action"
@@ -133,8 +149,9 @@
           rel="noopener noreferrer"
           target="_blank"
           href="https://github.com/versioneer-tech/package-r"
-          >packageR</a
         >
+          packageR
+        </a>
         <span> {{ " " }} {{ version }}</span>
       </span>
       <span>
@@ -143,6 +160,7 @@
     </p>
   </nav>
 </template>
+
 
 <script>
 import { reactive } from "vue";
@@ -279,7 +297,7 @@ export default {
   watch: {
     isFiles(newValue) {
       newValue && this.fetchUsage();
-      newValue && this.getSourcenames(); // Call getSourcenames when files are active
+      newValue && this.user.perm.share && this.getSourcenames(); // Call getSourcenames when files are active
     },
     req() {
       // Watch logic for req
