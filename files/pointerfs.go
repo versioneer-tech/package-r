@@ -44,6 +44,7 @@ var PointerFsExtensionWhitelist = []string{
 	".ipynb",
 	".pointer",
 	".source",
+	".parquet",
 }
 
 type PointerFs struct {
@@ -124,10 +125,11 @@ func (p *S3) presign(path string, cutoff int64) (string, error) {
 	if path == "" {
 		return "", fmt.Errorf("presign with empty path not possible using %s", p.bucketName)
 	}
+
 	path = strings.TrimPrefix(path, "/")
 	path = strings.TrimPrefix(path, p.bucketPrefix)
 
-	versionID := ""
+	var getObjectInput *s3.GetObjectInput
 
 	if cutoff > 0 {
 		cutoffTime := time.Unix(cutoff, 0)
@@ -139,19 +141,25 @@ func (p *S3) presign(path string, cutoff int64) (string, error) {
 		listObjectVersions, _ := p.s3Client.ListObjectVersions(listObjectVersionsInput)
 
 		for _, version := range listObjectVersions.Versions {
-			if version.LastModified.After(cutoffTime) {
+			if version.LastModified != nil && version.LastModified.After(cutoffTime) {
 				continue
 			}
-			versionID = *version.VersionId
+			getObjectInput = &s3.GetObjectInput{
+				Bucket:    aws.String(p.bucketName),
+				Key:       aws.String(path),
+				VersionId: version.VersionId,
+			}
 			break
 		}
 	}
 
-	getObjectInput := &s3.GetObjectInput{
-		Bucket:    aws.String(p.bucketName),
-		Key:       aws.String(path),
-		VersionId: aws.String(versionID),
+	if getObjectInput == nil {
+		getObjectInput = &s3.GetObjectInput{
+			Bucket: aws.String(p.bucketName),
+			Key:    aws.String(path),
+		}
 	}
+
 	req, _ := p.s3Client.GetObjectRequest(getObjectInput)
 	presignedURL, err := req.Presign(7 * 24 * time.Hour)
 	if err != nil {
@@ -377,6 +385,7 @@ func initializeSourceDirectory(sourceDirPath, sourceFilePath string) error {
 	return nil
 }
 
+//nolint:lll
 func (pfs *PointerFs) Stat(fpath string) (os.FileInfo, error) {
 	if strings.Contains(fpath, "#") {
 		parts := strings.SplitN(fpath, "#", 2)
@@ -392,7 +401,8 @@ func (pfs *PointerFs) Stat(fpath string) (os.FileInfo, error) {
 			return nil, lerr
 		}
 		lpath, _ := pfs.OsFs.ReadlinkIfPossible(fpath)
-		if IsSymlink(linfo.Mode()) || !pfs.isExtensionWhitelisted(filepath.Ext(fpath)) || info.Size() >= pfs.Threshold {
+
+		if IsSymlink(linfo.Mode()) || strings.Contains(fpath, "/sources/") && (!pfs.isExtensionWhitelisted(filepath.Ext(fpath)) || info.Size() >= pfs.Threshold) {
 			pinfo := &PointerInfo{
 				filename:    linfo.Name(),
 				filepath:    strings.Replace(fpath, pfs.Scope, "", 1),
