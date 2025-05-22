@@ -1,10 +1,11 @@
-module github.com/filebrowser/filebrowser/v2
+module github.com/versioneer-tech/package-r
 
 go 1.23
 
 require (
 	github.com/asdine/storm/v3 v3.2.1
 	github.com/asticode/go-astisub v0.26.2
+	github.com/aws/aws-sdk-go v1.55.5
 	github.com/disintegration/imaging v1.6.2
 	github.com/dsoprea/go-exif/v3 v3.0.1
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568
@@ -46,6 +47,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
@@ -66,7 +68,6 @@ require (
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

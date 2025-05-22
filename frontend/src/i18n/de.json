@@ -1,5 +1,6 @@
 {
   "buttons": {
+    "add": "Hinzufügen",
     "cancel": "Abbrechen",
     "clear": "Schließen",
     "close": "Schließen",
@@ -90,8 +91,8 @@
     "passwordsDontMatch": "Passwörter stimmen nicht überein",
     "signup": "Registrieren",
     "submit": "Login",
-    "username": "Benutzername",
-    "usernameTaken": "Benutzername ist bereits vergeben",
+    "username": "Benutzerrollenname",
+    "usernameTaken": "Benutzerrollenname ist bereits vergeben",
     "wrongCredentials": "Falsche Zugangsdaten"
   },
   "permanent": "Permanent",
@@ -105,7 +106,7 @@
     "deleteTitle": "Lösche Dateien",
     "displayName": "Anzeigename:",
     "download": "Lade Dateien",
-    "downloadMessage": "Wählen Sie ein Format zum Herunterladen aus.",
+    "downloadMessage": "Wählen Sie ein Format zum Herunterladen der Metadaten und Pointer Dateien aus.",
     "error": "Etwas ist schiefgelaufen",
     "fileInfo": "Dateiinformation",
     "filesSelected": "{count} Dateien ausgewählt.",
@@ -205,6 +206,9 @@
     "setDateFormat": "Exaktes Datumsformat setzen",
     "settingsUpdated": "Einstellungen aktualisiert!",
     "shareDuration": "Dauer",
+    "shareDescription": "Beschreibung",
+    "shareGrants": "Berechtigte Gruppe",
+    "shareMode": "Modus",
     "shareManagement": "Freigaben verwalten",
     "shareDeleted": "Freigabe gelöscht!",
     "singleClick": "Einfacher Klick zum Öffnen von Dateien und Ordnern",
@@ -213,16 +217,25 @@
       "light": "Hell",
       "title": "Erscheinungsbild"
     },
-    "user": "Benutzer",
+    "user": "Benutzerrolle",
     "userCommands": "Befehle",
-    "userCommandsHelp": "Eine Liste, mit einem Leerzeichen als Trennung, mit den für diesen Nutzer verfügbaren Befehlen. Beispiel:\n",
-    "userCreated": "Benutzer angelegt!",
-    "userDefaults": "Benutzer Standard Einstellungen",
-    "userDeleted": "Benutzer gelöscht!",
-    "userManagement": "Benutzerverwaltung",
-    "userUpdated": "Benutzer aktualisiert!",
-    "username": "Nutzername",
-    "users": "Nutzer"
+    "userCommandsHelp": "Eine Liste, mit einem Leerzeichen als Trennung, mit den für diese Benutzerrolle verfügbaren Befehlen. Beispiel:\n",
+    "userCreated": "Benutzerrolle angelegt!",
+    "userDefaults": "Benutzerrolle Standard Einstellungen",
+    "userDeleted": "Benutzerrolle gelöscht!",
+    "userManagement": "Benutzerrollenverwaltung",
+    "userUpdated": "Benutzerrolle aktualisiert!",
+    "username": "Benutzerrollenname",
+    "users": "Benutzerrollen",
+    "sourceManagement": "Source Management",
+    "addSource": "Sources",    
+    "memberManagement": "Member Management",
+    "addMember": "Members",
+    "name": "Name",
+    "runtimeSettings": "Runtime Einstellungen",
+    "runtime": "Runtime",
+    "runtimeType": "Typ",
+    "runtimeStatus": "Status"
   },
   "sidebar": {
     "help": "Hilfe",
@@ -235,7 +248,8 @@
     "preview": "Vorschau",
     "settings": "Einstellungen",
     "signup": "Registrieren",
-    "siteSettings": "Seiteneinstellungen"
+    "siteSettings": "Seiteneinstellungen",
+    "home": "Home"
   },
   "success": {
     "linkCopied": "Verweis wurde kopiert!"
@@ -246,5 +260,15 @@
     "minutes": "Minuten",
     "seconds": "Sekunden",
     "unit": "Zeiteinheit"
+  },
+  "source" : {
+    "bucketName": "Bucket Name",
+    "accessKey": "Access Key",
+    "accessSecret": "Access Secret",
+    "endpoint": "Endpunkt",
+    "region": "Region"
+  },  
+  "member" : {
+    "name": "Name"
   }
 }

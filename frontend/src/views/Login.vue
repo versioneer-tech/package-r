@@ -5,19 +5,23 @@
       <h1>{{ name }}</h1>
       <div v-if="error !== ''" class="wrong">{{ error }}</div>
 
-      <input
+      <!-- <input
         autofocus
         class="input input--block"
         type="text"
         autocapitalize="off"
         v-model="username"
         :placeholder="t('login.username')"
+        name="username"
+        autocomplete="username"
       />
       <input
         class="input input--block"
         type="password"
         v-model="password"
         :placeholder="t('login.password')"
+        name="current-password"
+        autocomplete="current-password"
       />
       <input
         class="input input--block"
@@ -25,7 +29,7 @@
         type="password"
         v-model="passwordConfirm"
         :placeholder="t('login.passwordConfirm')"
-      />
+      /> -->
 
       <div v-if="recaptcha" id="recaptcha"></div>
       <input
@@ -116,6 +120,8 @@ const submit = async (event: Event) => {
 
 // Run hooks
 onMounted(() => {
+  username.value = "default";
+
   if (!recaptcha) return;
 
   window.grecaptcha.ready(function () {

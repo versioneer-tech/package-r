@@ -7,7 +7,7 @@ import (
 
 	"github.com/asticode/go-astisub"
 
-	"github.com/filebrowser/filebrowser/v2/files"
+	"github.com/versioneer-tech/package-r/files"
 )
 
 var subtitleHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {

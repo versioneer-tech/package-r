@@ -9,6 +9,9 @@ import Settings from "@/views/Settings.vue";
 import GlobalSettings from "@/views/settings/Global.vue";
 import ProfileSettings from "@/views/settings/Profile.vue";
 import Shares from "@/views/settings/Shares.vue";
+import AddSource from "@/views/settings/AddSource.vue";
+import AddMember from "@/views/settings/AddMember.vue";
+import Runtime from "@/views/settings/Runtime.vue";
 import Errors from "@/views/Errors.vue";
 import { useAuthStore } from "@/stores/auth";
 import { baseURL, name } from "@/utils/constants";
@@ -23,6 +26,9 @@ const titles = {
   Settings: "sidebar.settings",
   ProfileSettings: "settings.profileSettings",
   Shares: "settings.shareManagement",
+  AddSource: "settings.addSource",
+  AddMember: "settings.addMember",
+  Runtime: "settings.runtime",
   GlobalSettings: "settings.globalSettings",
   Users: "settings.users",
   User: "settings.user",
@@ -86,6 +92,21 @@ const routes = [
             path: "shares",
             name: "Shares",
             component: Shares,
+          },
+          {
+            path: "addsource",
+            name: "AddSource",
+            component: AddSource,
+          },
+          {
+            path: "addmember",
+            name: "AddMember",
+            component: AddMember,
+          },
+          {
+            path: "runtime",
+            name: "Runtime",
+            component: Runtime,
           },
           {
             path: "global",

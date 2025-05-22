@@ -1,6 +1,8 @@
 <template>
   <div class="dashboard">
-    <header-bar showMenu showLogo />
+    <header-bar showMenu showLogo>
+      {{ name }}
+    </header-bar>
 
     <div id="nav">
       <div class="wrapper">
@@ -15,11 +17,26 @@
               {{ t("settings.shareManagement") }}
             </li></router-link
           >
-          <router-link to="/settings/global" v-if="user?.perm.admin"
+          <router-link to="/settings/addsource" v-if="user?.perm.admin"
+            ><li :class="{ active: $route.path === '/settings/addsource' }">
+              {{ t("settings.sourceManagement") }}
+            </li></router-link
+          >
+          <router-link to="/settings/addmember" v-if="user?.perm.admin"
+            ><li :class="{ active: $route.path === '/settings/addmember' }">
+              {{ t("settings.memberManagement") }}
+            </li></router-link
+          >
+          <router-link to="/settings/runtime" v-if="user?.perm.admin"
+            ><li :class="{ active: $route.path === '/settings/runtime' }">
+              {{ t("settings.runtimeSettings") }}
+            </li></router-link
+          >
+          <!-- <router-link to="/settings/global" v-if="user?.perm.admin"
             ><li :class="{ active: $route.path === '/settings/global' }">
               {{ t("settings.globalSettings") }}
             </li></router-link
-          >
+          > -->
           <router-link to="/settings/users" v-if="user?.perm.admin"
             ><li
               :class="{
@@ -55,6 +72,7 @@ import { useLayoutStore } from "@/stores/layout";
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { name } from "@/utils/constants";
 
 const { t } = useI18n();
 

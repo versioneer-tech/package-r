@@ -9,7 +9,7 @@ import (
 // CopyDir copies a directory from source to dest and all
 // of its sub-directories. It doesn't stop if it finds an error
 // during the copy. Returns an error if any.
-func CopyDir(fs afero.Fs, source, dest string) error {
+func CopyDir(fs afero.Fs, source, dest string, deepLink bool) error {
 	// Get properties of source.
 	srcinfo, err := fs.Stat(source)
 	if err != nil {
@@ -36,13 +36,13 @@ func CopyDir(fs afero.Fs, source, dest string) error {
 
 		if obj.IsDir() {
 			// Create sub-directories, recursively.
-			err = CopyDir(fs, fsource, fdest)
+			err = CopyDir(fs, fsource, fdest, deepLink)
 			if err != nil {
 				errs = append(errs, err)
 			}
 		} else {
 			// Perform the file copy.
-			err = CopyFile(fs, fsource, fdest)
+			err = CopyFile(fs, fsource, fdest, deepLink)
 			if err != nil {
 				errs = append(errs, err)
 			}

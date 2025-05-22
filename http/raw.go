@@ -11,9 +11,9 @@ import (
 
 	"github.com/mholt/archiver/v3"
 
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/fileutils"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/versioneer-tech/package-r/files"
+	"github.com/versioneer-tech/package-r/fileutils"
+	"github.com/versioneer-tech/package-r/users"
 )
 
 func slashClean(name string) string {
@@ -66,12 +66,17 @@ func parseQueryAlgorithm(r *http.Request) (string, archiver.Writer, error) {
 	}
 }
 
-func setContentDisposition(w http.ResponseWriter, r *http.Request, file *files.FileInfo) {
+//nolint:goconst
+func setContentDisposition(w http.ResponseWriter, r *http.Request, finfo *files.FileInfo) {
 	if r.URL.Query().Get("inline") == "true" {
 		w.Header().Set("Content-Disposition", "inline")
 	} else {
 		// As per RFC6266 section 4.3
-		w.Header().Set("Content-Disposition", "attachment; filename*=utf-8''"+url.PathEscape(file.Name))
+		filename := finfo.Name
+		if finfo.Type == "pointer" {
+			filename += ".pointer"
+		}
+		w.Header().Set("Content-Disposition", "attachment; filename*=utf-8''"+url.PathEscape(filename))
 	}
 }
 
@@ -80,7 +85,7 @@ var rawHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) 
 		return http.StatusAccepted, nil
 	}
 
-	file, err := files.NewFileInfo(&files.FileOptions{
+	finfo, err := files.NewFileInfo(&files.FileOptions{
 		Fs:         d.user.Fs,
 		Path:       r.URL.Path,
 		Modify:     d.user.Perm.Modify,
@@ -92,44 +97,47 @@ var rawHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) 
 		return errToStatus(err), err
 	}
 
-	if files.IsNamedPipe(file.Mode) {
-		setContentDisposition(w, r, file)
+	if files.IsNamedPipe(finfo.Mode) {
+		setContentDisposition(w, r, finfo)
 		return 0, nil
 	}
 
-	if !file.IsDir {
-		return rawFileHandler(w, r, file)
+	if !finfo.IsDir {
+		return rawFileHandler(w, r, finfo)
 	}
 
-	return rawDirHandler(w, r, d, file)
+	return rawDirHandler(w, r, d, finfo)
 })
 
-func addFile(ar archiver.Writer, d *data, path, commonPath string) error {
-	if !d.Check(path) {
+func addFile(ar archiver.Writer, d *data, fpath, commonPath string) error {
+	if !d.Check(fpath) {
 		return nil
 	}
 
-	info, err := d.user.Fs.Stat(path)
+	finfo, err := d.user.Fs.Stat(fpath)
 	if err != nil {
 		return err
 	}
 
-	if !info.IsDir() && !info.Mode().IsRegular() {
+	if !finfo.IsDir() && !finfo.Mode().IsRegular() {
 		return nil
 	}
 
-	file, err := d.user.Fs.Open(path)
+	file, err := d.user.Fs.Open(fpath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	if path != commonPath {
-		filename := strings.TrimPrefix(path, commonPath)
+	if fpath != commonPath {
+		filename := strings.TrimPrefix(fpath, commonPath)
 		filename = strings.TrimPrefix(filename, string(filepath.Separator))
+		if _, ok := finfo.(*files.PointerInfo); ok {
+			filename += ".pointer"
+		}
 		err = ar.Write(archiver.File{
 			FileInfo: archiver.FileInfo{
-				FileInfo:   info,
+				FileInfo:   finfo,
 				CustomName: filename,
 			},
 			ReadCloser: file,
@@ -139,14 +147,14 @@ func addFile(ar archiver.Writer, d *data, path, commonPath string) error {
 		}
 	}
 
-	if info.IsDir() {
+	if finfo.IsDir() {
 		names, err := file.Readdirnames(0)
 		if err != nil {
 			return err
 		}
 
 		for _, name := range names {
-			fPath := filepath.Join(path, name)
+			fPath := filepath.Join(fpath, name)
 			err = addFile(ar, d, fPath, commonPath)
 			if err != nil {
 				log.Printf("Failed to archive %s: %v", fPath, err)
@@ -157,8 +165,8 @@ func addFile(ar archiver.Writer, d *data, path, commonPath string) error {
 	return nil
 }
 
-func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.FileInfo) (int, error) {
-	filenames, err := parseQueryFiles(r, file, d.user)
+func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, finfo *files.FileInfo) (int, error) {
+	filenames, err := parseQueryFiles(r, finfo, d.user)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -174,11 +182,16 @@ func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.
 	}
 	defer ar.Close()
 
-	commonDir := fileutils.CommonPrefix(filepath.Separator, filenames...)
+	commonDir := ""
+	if !finfo.IsDir {
+		commonDir = filepath.Dir(finfo.Path)
+	} else {
+		commonDir = fileutils.CommonPrefix(filepath.Separator, filenames...)
+	}
 
 	name := filepath.Base(commonDir)
 	if name == "." || name == "" || name == string(filepath.Separator) {
-		name = file.Name
+		name = finfo.Name
 	}
 	// Prefix used to distinguish a filelist generated
 	// archive from the full directory archive
@@ -198,16 +211,22 @@ func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.
 	return 0, nil
 }
 
-func rawFileHandler(w http.ResponseWriter, r *http.Request, file *files.FileInfo) (int, error) {
-	fd, err := file.Fs.Open(file.Path)
+func rawFileHandler(w http.ResponseWriter, r *http.Request, finfo *files.FileInfo) (int, error) {
+	file, err := finfo.Fs.Open(finfo.Path)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	defer fd.Close()
+	defer file.Close()
 
-	setContentDisposition(w, r, file)
-	w.Header().Add("Content-Security-Policy", `script-src 'none';`)
-	w.Header().Set("Cache-Control", "private")
-	http.ServeContent(w, r, file.Name, file.ModTime, fd)
+	if finfo.Type == "pointer" && (strings.HasSuffix(r.URL.Path, ".pointer") || r.URL.Query().Get("inline") == "true") {
+		buffer := make([]byte, 512) //nolint:gomnd
+		n, _ := file.Read(buffer)
+		http.Redirect(w, r, string(buffer[:n]), http.StatusFound)
+	} else {
+		setContentDisposition(w, r, finfo)
+		w.Header().Add("Content-Security-Policy", `script-src 'none';`)
+		w.Header().Set("Cache-Control", "private")
+		http.ServeContent(w, r, finfo.Name, finfo.ModTime, file)
+	}
 	return 0, nil
 }

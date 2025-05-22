@@ -35,7 +35,8 @@ type ResourceType =
   | "pdf"
   | "text"
   | "blob"
-  | "textImmutable";
+  | "textImmutable"
+  | "pointer";
 
 type DownloadFormat =
   | "zip"

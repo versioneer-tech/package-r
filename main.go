@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/filebrowser/filebrowser/v2/cmd"
+	"github.com/versioneer-tech/package-r/cmd"
 )
 
 func main() {

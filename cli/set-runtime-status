@@ -1,0 +1,34 @@
+#!/bin/bash
+
+if [ -z "$WORKSPACE" ]; then
+  echo "Error: WORKSPACE environment variable is not set." >&2
+  exit 1
+fi
+
+defaultTypes=("vcluster" "registry")
+
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Usage: $0 <type> <status>" >&2
+  exit 1
+fi
+
+TYPE=$1
+STATUS=$2
+
+if [[ ! " ${defaultTypes[@]} " =~ " $TYPE " ]]; then
+  echo "Error: Provided type '$TYPE' is not in default types (${defaultTypes[*]})." >&2
+  exit 1
+fi
+
+kubectl patch workspace "$WORKSPACE" -n workspace --type='json' -p="[{
+  \"op\": \"replace\",
+  \"path\": \"/spec/$TYPE\",
+  \"value\": \"$STATUS\"
+}]"
+
+if [ $? -ne 0 ]; then
+  echo "Error: Failed to update '$TYPE' in resource '$WORKSPACE'." >&2
+  exit 1
+fi
+
+echo "Updated '$TYPE' in resource '$WORKSPACE' to '$STATUS'."

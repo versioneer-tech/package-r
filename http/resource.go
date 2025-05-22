@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,9 +16,9 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/spf13/afero"
 
-	fbErrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/fileutils"
+	fbErrors "github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/files"
+	"github.com/versioneer-tech/package-r/fileutils"
 )
 
 var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
@@ -93,7 +94,9 @@ func resourceDeleteHandler(fileCache FileCache) handleFunc {
 
 func resourcePostHandler(fileCache FileCache) handleFunc {
 	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-		if !d.user.Perm.Create || !d.Check(r.URL.Path) {
+		if d.user.Perm.Share && strings.HasPrefix(r.URL.Path, "/packages/") {
+			log.Printf("Handling Post on %s", r.URL.Path)
+		} else if !d.user.Perm.Create || !d.Check(r.URL.Path) {
 			return http.StatusForbidden, nil
 		}
 
@@ -300,7 +303,13 @@ func patchAction(ctx context.Context, action, src, dst string, d *data, fileCach
 			return fbErrors.ErrPermissionDenied
 		}
 
-		return fileutils.Copy(d.user.Fs, src, dst)
+		return fileutils.Copy(d.user.Fs, src, dst, false)
+	case "deepLink":
+		if !d.user.Perm.Share {
+			return fbErrors.ErrPermissionDenied
+		}
+
+		return fileutils.Copy(d.user.Fs, src, dst, true)
 	case "rename":
 		if !d.user.Perm.Rename {
 			return fbErrors.ErrPermissionDenied

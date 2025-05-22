@@ -14,8 +14,9 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	fbErrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/share"
+	fbErrors "github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/fileutils"
+	"github.com/versioneer-tech/package-r/share"
 )
 
 func withPermShare(fn handleFunc) handleFunc {
@@ -97,7 +98,11 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		return http.StatusInternalServerError, err
 	}
 
-	str := base64.URLEncoding.EncodeToString(bytes)
+	hash := base64.URLEncoding.EncodeToString(bytes)
+
+	if body.Grant == "" {
+		hash = "public-" + hash // optimization so we can pass x-id-token only on necessary routes
+	}
 
 	var expire int64 = 0
 
@@ -123,13 +128,13 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		expire = time.Now().Add(add).Unix()
 	}
 
-	hash, status, err := getSharePasswordHash(body)
+	passwordHash, status, err := getSharePasswordHash(body)
 	if err != nil {
 		return status, err
 	}
 
 	var token string
-	if len(hash) > 0 {
+	if len(passwordHash) > 0 {
 		tokenBuffer := make([]byte, 96) //nolint:gomnd
 		if _, err := rand.Read(tokenBuffer); err != nil {
 			return http.StatusInternalServerError, err
@@ -137,13 +142,25 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		token = base64.URLEncoding.EncodeToString(tokenBuffer)
 	}
 
+	path := r.URL.Path
+	if body.Mode == "indexed" { //nolint:goconst,nolintlint
+		path = "/packages/." + hash
+		if err := fileutils.Copy(d.user.Fs, r.URL.Path, path, true); err != nil {
+			return http.StatusInternalServerError, err
+		}
+	}
+
 	s = &share.Link{
-		Path:         r.URL.Path,
-		Hash:         str,
+		Path:         path,
+		Hash:         hash,
 		Expire:       expire,
+		Description:  body.Description,
+		Creation:     time.Now().Unix(),
 		UserID:       d.user.ID,
-		PasswordHash: string(hash),
+		PasswordHash: string(passwordHash),
 		Token:        token,
+		Grant:        body.Grant,
+		Mode:         body.Mode,
 	}
 
 	if err := d.store.Share.Save(s); err != nil {
@@ -153,6 +170,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	return renderJSON(w, r, s)
 })
 
+//nolint:gocritic
 func getSharePasswordHash(body share.CreateBody) (data []byte, statuscode int, err error) {
 	if body.Password == "" {
 		return nil, 0, nil

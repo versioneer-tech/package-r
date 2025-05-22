@@ -10,6 +10,9 @@
           <tr>
             <th>#</th>
             <th>{{ $t("settings.shareDuration") }}</th>
+            <th>{{ $t("settings.shareDescription") }}</th>
+            <th>{{ $t("settings.shareGrant") }}</th>
+            <th>{{ $t("settings.shareMode") }}</th>
             <th></th>
             <th></th>
           </tr>
@@ -22,6 +25,9 @@
               }}</template>
               <template v-else>{{ $t("permanent") }}</template>
             </td>
+            <td>{{ link.description }}</td>
+            <td>{{ link.grant }}</td>
+            <td>{{ link.mode }}</td>
             <td class="small">
               <button
                 class="action copy-clipboard"
@@ -112,6 +118,29 @@
           v-model.trim="password"
           tabindex="3"
         />
+        <p>{{ $t("settings.shareDescription") }}</p>
+        <input
+          class="input input--block"
+          v-model.trim="description"
+          tabindex="4"
+        />
+        <p>{{ $t("settings.shareGrant") }}</p>
+        <select class="input input--block" v-model="grant" tabindex="5">
+          <option value="">-</option>
+          <option v-for="group in groups" :key="group" :value="group">
+            {{ group }}
+          </option>
+        </select>
+        <p>{{ $t("settings.shareMode") }}</p>
+        <select class="input input--block" v-model="mode" tabindex="5">
+          <option value="">default</option>
+          <option
+            value="indexed"
+            v-if="!this.url.startsWith('/files/packages')"
+          >
+            indexed
+          </option>
+        </select>
       </div>
 
       <div class="card-action">
@@ -120,7 +149,7 @@
           @click="() => switchListing()"
           :aria-label="$t('buttons.cancel')"
           :title="$t('buttons.cancel')"
-          tabindex="5"
+          tabindex="6"
         >
           {{ $t("buttons.cancel") }}
         </button>
@@ -130,7 +159,7 @@
           @click="submit"
           :aria-label="$t('buttons.share')"
           :title="$t('buttons.share')"
-          tabindex="4"
+          tabindex="7"
         >
           {{ $t("buttons.share") }}
         </button>
@@ -146,6 +175,8 @@ import { share as api, pub as pub_api } from "@/api";
 import dayjs from "dayjs";
 import { useLayoutStore } from "@/stores/layout";
 import { copy } from "@/utils/clipboard";
+import { baseURL } from "@/utils/constants";
+import { useAuthStore } from "@/stores/auth";
 
 export default {
   name: "share",
@@ -156,7 +187,11 @@ export default {
       links: [],
       clip: null,
       password: "",
+      description: "",
+      grant: "",
+      mode: "",
       listing: true,
+      groups: [],
     };
   },
   inject: ["$showError", "$showSuccess"],
@@ -173,7 +208,6 @@ export default {
       }
 
       if (this.selectedCount === 0 || this.selectedCount > 1) {
-        // This shouldn't happen.
         return;
       }
 
@@ -186,9 +220,11 @@ export default {
       this.links = links;
       this.sort();
 
-      if (this.links.length == 0) {
+      if (this.links.length === 0) {
         this.listing = false;
       }
+
+      this.fetchGroups();
     } catch (e) {
       this.$showError(e);
     }
@@ -198,7 +234,6 @@ export default {
     copyToClipboard: function (text) {
       copy(text).then(
         () => {
-          // clipboard successfully set
           this.$showSuccess(this.$t("success.linkCopied"));
         },
         () => {
@@ -211,9 +246,23 @@ export default {
         let res = null;
 
         if (!this.time) {
-          res = await api.create(this.url, this.password);
+          res = await api.create(
+            this.url,
+            this.password,
+            this.description,
+            this.grant,
+            this.mode
+          );
         } else {
-          res = await api.create(this.url, this.password, this.time, this.unit);
+          res = await api.create(
+            this.url,
+            this.password,
+            this.description,
+            this.grant,
+            this.mode,
+            this.time,
+            this.unit
+          );
         }
 
         this.links.push(res);
@@ -222,6 +271,9 @@ export default {
         this.time = 0;
         this.unit = "hours";
         this.password = "";
+        this.description = "";
+        this.grant = "";
+        this.mode = "";
 
         this.listing = true;
       } catch (e) {
@@ -234,7 +286,7 @@ export default {
         await api.remove(link.hash);
         this.links = this.links.filter((item) => item.hash !== link.hash);
 
-        if (this.links.length == 0) {
+        if (this.links.length === 0) {
           this.listing = false;
         }
       } catch (e) {
@@ -242,7 +294,9 @@ export default {
       }
     },
     humanTime(time) {
-      return dayjs(time * 1000).fromNow();
+      return dayjs(time * 1000).isAfter("1.1.2000")
+        ? dayjs(time * 1000).fromNow()
+        : "";
     },
     buildLink(share) {
       return api.getShareURL(share);
@@ -263,11 +317,47 @@ export default {
       });
     },
     switchListing() {
-      if (this.links.length == 0 && !this.listing) {
+      if (this.links.length === 0 && !this.listing) {
         this.closeHovers();
       }
 
       this.listing = !this.listing;
+    },
+    fetchGroups() {
+      const ssl = window.location.protocol === "https:";
+      const protocol = ssl ? "wss:" : "ws:";
+      const authStore = useAuthStore();
+      const url = `${protocol}//${window.location.host}${baseURL}/api/command/?auth=${authStore.jwt}`;
+
+      console.log("Fetching groups...");
+      this.groups = []; // Clear groups array before fetching new ones
+      const ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        console.log("WebSocket connected for fetching groups.");
+        ws.send("get-groups");
+      };
+
+      ws.onmessage = (event) => {
+        console.log("WebSocket message received:", event.data);
+        try {
+          const group = event.data;
+          if (group && !this.groups.includes(group)) {
+            this.groups.push(group);
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error during fetch:", error);
+        this.$showError(error);
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket closed after fetching groups.");
+      };
     },
   },
 };

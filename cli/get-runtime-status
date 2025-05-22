@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [ -z "$WORKSPACE" ]; then
+  echo "Error: WORKSPACE environment variable is not set." >&2
+  exit 1
+fi
+
+defaultTypes=("vcluster" "registry")
+
+if [ -n "$1" ]; then
+  TYPE=$1
+  if [[ ! " ${defaultTypes[@]} " =~ " $TYPE " ]]; then
+    echo "Error: Provided type '$TYPE' is not in default types (${defaultTypes[*]})." >&2
+    exit 1
+  fi
+  TYPES=("$TYPE")
+else
+  TYPES=("${defaultTypes[@]}")
+fi
+
+for TYPE in "${TYPES[@]}"; do
+  STATUS=$(kubectl get workspace "$WORKSPACE" -n workspace -o json | jq -r ".spec.$TYPE // \"disabled\"")
+  echo "$TYPE=$STATUS"
+done

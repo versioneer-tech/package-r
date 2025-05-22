@@ -8,7 +8,7 @@ import (
 )
 
 // Copy copies a file or folder from one place to another.
-func Copy(fs afero.Fs, src, dst string) error {
+func Copy(fs afero.Fs, src, dst string, deepLink bool) error {
 	if src = path.Clean("/" + src); src == "" {
 		return os.ErrNotExist
 	}
@@ -32,8 +32,8 @@ func Copy(fs afero.Fs, src, dst string) error {
 	}
 
 	if info.IsDir() {
-		return CopyDir(fs, src, dst)
+		return CopyDir(fs, src, dst, deepLink)
 	}
 
-	return CopyFile(fs, src, dst)
+	return CopyFile(fs, src, dst, deepLink)
 }

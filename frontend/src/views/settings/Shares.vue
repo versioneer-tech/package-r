@@ -10,13 +10,16 @@
         <div class="card-content full" v-if="links.length > 0">
           <table>
             <tr>
-              <th>{{ t("settings.path") }}</th>
-              <th>{{ t("settings.shareDuration") }}</th>
-              <th v-if="authStore.user?.perm.admin">
+              <th class="padded">{{ t("settings.path") }}</th>
+              <th class="padded">{{ t("settings.shareDuration") }}</th>
+              <th class="padded" v-if="authStore.user?.perm.admin">
                 {{ t("settings.username") }}
               </th>
-              <th></th>
-              <th></th>
+              <th class="padded">{{ t("settings.shareDescription") }}</th>
+              <th class="padded">{{ $t("settings.shareGrant") }}</th>
+              <th class="padded">{{ $t("settings.shareMode") }}</th>
+              <th class="padded"></th>
+              <th class="padded"></th>
             </tr>
 
             <tr v-for="link in links" :key="link.hash">
@@ -30,6 +33,11 @@
                 <template v-else>{{ t("permanent") }}</template>
               </td>
               <td v-if="authStore.user?.perm.admin">{{ link.username }}</td>
+              <td>
+                {{ link.description }}
+              </td>
+              <td>{{ link.grant }}</td>
+              <td>{{ link.mode }}</td>
               <td class="small">
                 <button
                   class="action"
@@ -140,10 +148,18 @@ const deleteLink = async (event: Event, link: any) => {
   });
 };
 const humanTime = (time: number) => {
-  return dayjs(time * 1000).fromNow();
+  return dayjs(time * 1000).isAfter("1.1.2000")
+    ? dayjs(time * 1000).fromNow()
+    : "";
 };
 
 const buildLink = (share: Share) => {
   return api.getShareURL(share);
 };
 </script>
+
+<style scoped>
+.padded {
+  padding-right: 30px;
+}
+</style>

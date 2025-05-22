@@ -1,14 +1,16 @@
 package fileutils
 
 import (
+	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/spf13/afero"
 
-	"github.com/filebrowser/filebrowser/v2/files"
+	"github.com/versioneer-tech/package-r/files"
 )
 
 // MoveFile moves file from src to dst.
@@ -19,7 +21,7 @@ func MoveFile(fs afero.Fs, src, dst string) error {
 		return nil
 	}
 	// fallback
-	err := Copy(fs, src, dst)
+	err := Copy(fs, src, dst, false)
 	if err != nil {
 		_ = fs.Remove(dst)
 		return err
@@ -32,7 +34,7 @@ func MoveFile(fs afero.Fs, src, dst string) error {
 
 // CopyFile copies a file from source to dest and returns
 // an error if any.
-func CopyFile(fs afero.Fs, source, dest string) error {
+func CopyFile(fs afero.Fs, source, dest string, deepLink bool) error {
 	// Open the source file.
 	src, err := fs.Open(source)
 	if err != nil {
@@ -45,6 +47,16 @@ func CopyFile(fs afero.Fs, source, dest string) error {
 	err = fs.MkdirAll(filepath.Dir(dest), files.PermDir)
 	if err != nil {
 		return err
+	}
+
+	if deepLink {
+		err = fs.(*afero.BasePathFs).SymlinkIfPossible(source, dest)
+		if err != nil {
+			fmt.Println("Error creating symlink:", err)
+			return err
+		}
+		log.Printf("Created symlink %s -> %s", source, dest)
+		return nil
 	}
 
 	// Create the destination file.

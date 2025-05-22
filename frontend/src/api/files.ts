@@ -178,6 +178,19 @@ export function copy(items: any[], overwrite = false, rename = false) {
   return moveCopy(items, true, overwrite, rename);
 }
 
+export function deepLink(items: any[]) {
+  const promises = [];
+
+  for (const item of items) {
+    const from = item.from;
+    const to = encodeURIComponent(removePrefix(item.to ?? ""));
+    const url = `${from}?action=deepLink&destination=${to}`;
+    promises.push(resourceAction(url, "PATCH"));
+  }
+
+  return Promise.all(promises);
+}
+
 export async function checksum(url: string, algo: ChecksumAlg) {
   const data = await resourceAction(`${url}?checksum=${algo}`, "GET");
   return (await data.json()).checksums[algo];

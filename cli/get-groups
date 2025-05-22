@@ -1,0 +1,3 @@
+#!/bin/bash
+
+kubectl get groups -o json | jq -r '.items[].spec.forProvider.name' | grep ws-

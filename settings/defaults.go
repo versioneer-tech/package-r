@@ -1,8 +1,8 @@
 package settings
 
 import (
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/versioneer-tech/package-r/files"
+	"github.com/versioneer-tech/package-r/users"
 )
 
 // UserDefaults is a type that holds the default values
