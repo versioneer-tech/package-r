@@ -197,7 +197,7 @@ func (pfs *PointerFs) OpenFile(fpath string, flag int, perm os.FileMode) (afero.
 		if relpath == "" {
 			relpath = pinfo.filepath
 		}
-		if strings.HasPrefix(relpath, "/sources/") {
+		if strings.HasPrefix(relpath, "/.sources/") {
 			parts := strings.Split(relpath, "/")
 			if len(parts) > 3 {
 				source := parts[2]
@@ -402,7 +402,7 @@ func (pfs *PointerFs) Stat(fpath string) (os.FileInfo, error) {
 		}
 		lpath, _ := pfs.OsFs.ReadlinkIfPossible(fpath)
 
-		if IsSymlink(linfo.Mode()) || strings.Contains(fpath, "/sources/") && (!pfs.isExtensionWhitelisted(filepath.Ext(fpath)) || info.Size() >= pfs.Threshold) {
+		if IsSymlink(linfo.Mode()) || strings.Contains(fpath, "/.sources/") && (!pfs.isExtensionWhitelisted(filepath.Ext(fpath)) || info.Size() >= pfs.Threshold) {
 			pinfo := &PointerInfo{
 				filename:    linfo.Name(),
 				filepath:    strings.Replace(fpath, pfs.Scope, "", 1),

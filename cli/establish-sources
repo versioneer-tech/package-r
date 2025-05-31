@@ -2,7 +2,7 @@
 
 SECRETS_DIR="/secrets"
 MOUNTS_DIR="/mounts"
-SOURCES_DIR="./sources"
+SOURCES_DIR="./.sources"
 
 mkdir -p "$SOURCES_DIR"
 linked_dirs=()

@@ -58,8 +58,8 @@ Command-line tools like [wget](https://www.gnu.org/software/wget/) simplify the 
 
 `packageR` uses the following directory conventions, initialized via the `init.sh` script (used in the Docker entry point):
 
-- **Packages**: Stored in `/workspace/packages`.
-- **Sources**: Expected to be available under `/sources` (e.g. mounted via tooling like `s3fs` or `rclone`) and automatically linked to `/workspace/sources` if accessible (see secret below).
+- **Packages**: Stored in `/workspace/.packages`.
+- **Sources**: Expected to be available under `/.sources` (e.g. mounted via tooling like `s3fs` or `rclone`) and automatically linked to `/workspace/.sources` if accessible (see secret below).
 - **Credentials**: Expected to be available under `/secrets` as individual files with the following structure:
 
 ```bash
@@ -108,7 +108,7 @@ Or `bucket-b.source` in JSON format:
 ]
 ```
 
-Note: After creating a file in the `~/sources` directory, the entries are parsed, and symbolic links are automatically created. To trigger the creation process again (e.g., after adding entries to the reference files), simply delete the folder associated with the bucket name.
+Note: After creating a file in the `~/.sources` directory, the entries are parsed, and symbolic links are automatically created. To trigger the creation process again (e.g., after adding entries to the reference files), simply delete the folder associated with the bucket name.
 
 `packageR` functionality has been verified on:
 - Ubuntu 22.04

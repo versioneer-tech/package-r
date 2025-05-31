@@ -33,13 +33,6 @@
             show="copy"
           />
           <action
-            v-if="headerButtons.deepLink"
-            id="link-button"
-            icon="link"
-            :label="t('buttons.deepLinkFile')"
-            show="deepLink"
-          />
-          <action
             v-if="headerButtons.move"
             id="move-button"
             icon="forward"
@@ -110,13 +103,6 @@
         icon="content_copy"
         :label="t('buttons.copyFile')"
         show="copy"
-      />
-      <action
-        v-if="headerButtons.deepLink"
-        id="link-button"
-        icon="link"
-        :label="t('buttons.deepLinkFile')"
-        show="deepLink"
       />
       <action
         v-if="headerButtons.move"
@@ -419,7 +405,10 @@ const viewIcon = computed(() => {
 });
 
 function hasWritePermissions(req: any) {
-  if (req?.path.startsWith("/sources/")) {
+  if (req?.path.startsWith("/.sources/")) {
+    return false;
+  }
+  if (req?.path.startsWith("/.packages/")) {
     return false;
   }
   const OWNER_WRITE = 0o200;
@@ -441,10 +430,6 @@ const headerButtons = computed(() => {
     move:
       fileStore.selectedCount > 0 && authStore.user?.perm.rename && canWrite,
     copy: fileStore.selectedCount > 0 && authStore.user?.perm.create,
-    deepLink:
-      fileStore.selectedCount > 0 &&
-      authStore.user?.perm.share &&
-      route.path.indexOf("/sources/") >= 0,
   };
 });
 

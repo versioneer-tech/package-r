@@ -144,7 +144,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 
 	path := r.URL.Path
 	if body.Mode == "indexed" { //nolint:goconst,nolintlint
-		path = "/packages/." + hash
+		path = "/.packages/" + hash
 		if err := fileutils.Copy(d.user.Fs, r.URL.Path, path, true); err != nil {
 			return http.StatusInternalServerError, err
 		}

@@ -94,7 +94,7 @@ func resourceDeleteHandler(fileCache FileCache) handleFunc {
 
 func resourcePostHandler(fileCache FileCache) handleFunc {
 	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-		if d.user.Perm.Share && strings.HasPrefix(r.URL.Path, "/packages/") {
+		if d.user.Perm.Share && strings.HasPrefix(r.URL.Path, "/.packages/") {
 			log.Printf("Handling Post on %s", r.URL.Path)
 		} else if !d.user.Perm.Create || !d.Check(r.URL.Path) {
 			return http.StatusForbidden, nil

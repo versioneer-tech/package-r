@@ -136,7 +136,7 @@
           <option value="">default</option>
           <option
             value="indexed"
-            v-if="!this.url.startsWith('/files/packages')"
+            v-if="!this.url.startsWith('/files/.packages')"
           >
             indexed
           </option>

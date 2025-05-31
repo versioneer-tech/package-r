@@ -12,7 +12,7 @@
         <span>{{ $t("sidebar.home") }}</span>
       </button>
 
-      <div v-if="user.perm.share">
+      <div v-if="this.sources.length > 0">
         <button
           class="action"
           @click="toFiles('sources')"
@@ -22,17 +22,9 @@
           <i class="material-icons">folder</i>
           <span>{{ $t("sidebar.mySources") }}</span>
         </button>
-        <div v-for="source in sources" :key="source.name">
-          <button
-            class="action sub-action"
-            @click="toFiles('sources/' + source.name)"
-            :aria-label="source.name"
-            :title="source.name"
-          >
-            <span>{{ source.name }}</span>
-          </button>
-        </div>
+      </div>
 
+      <div v-if="this.packages.length > 0">
         <button
           class="action"
           @click="toFiles('packages')"
@@ -63,23 +55,6 @@
         >
           <i class="material-icons">note_add</i>
           <span>{{ $t("sidebar.newFile") }}</span>
-        </button>
-      </div>
-
-      <div
-        v-if="
-          user.perm.share &&
-          (req?.path == '/packages/' || req?.path == '/packages')
-        "
-      >
-        <button
-          @click="showHover('newPackage')"
-          class="action"
-          :aria-label="$t('sidebar.newPackage')"
-          :title="$t('sidebar.newPackage')"
-        >
-          <i class="material-icons">add_link</i>
-          <span>{{ $t("sidebar.newPackage") }}</span>
         </button>
       </div>
 
@@ -188,8 +163,9 @@ export default {
   name: "sidebar",
   setup() {
     const usage = reactive(USAGE_DEFAULT);
-    const sources = reactive([]); // Create a reactive sources array
-    return { usage, sources };
+    const sources = reactive([]);
+    const packages = reactive([]);
+    return { usage, sources, packages };
   },
   components: {
     ProgressBar,
@@ -230,18 +206,18 @@ export default {
       }
       return Object.assign(this.usage, usageStats);
     },
-    getSourcenames() {
+    getSources() {
       const ssl = window.location.protocol === "https:";
       const protocol = ssl ? "wss:" : "ws:";
       const authStore = useAuthStore();
       const url = `${protocol}//${window.location.host}${baseURL}/api/command/?auth=${authStore.jwt}`;
 
       try {
-        const websocket = new WebSocket(url); // Create WebSocket connection
+        const websocket = new WebSocket(url);
 
         websocket.onopen = () => {
           console.log("WebSocket connection opened");
-          websocket.send("establish-sources"); // Send command once connection opens
+          websocket.send("establish-sources");
         };
 
         websocket.onmessage = (event) => {
@@ -249,12 +225,54 @@ export default {
           if (event.data) {
             const newSource = { name: event.data };
             const existingIndex = this.sources.findIndex(
-              (source) => source.name === newSource.name
+              (s) => s.name === newSource.name
             );
             if (existingIndex !== -1) {
               this.sources[existingIndex] = newSource;
             } else {
               this.sources.push(newSource);
+            }
+          }
+        };
+
+        websocket.onerror = (error) => {
+          console.error("WebSocket error:", error);
+          this.$showError("WebSocket error occurred");
+        };
+
+        websocket.onclose = () => {
+          console.log("WebSocket connection closed");
+        };
+      } catch (error) {
+        console.error("Error creating WebSocket:", error);
+        this.$showError("An error occurred while creating WebSocket");
+      }
+    },
+    getPackages() {
+      const ssl = window.location.protocol === "https:";
+      const protocol = ssl ? "wss:" : "ws:";
+      const authStore = useAuthStore();
+      const url = `${protocol}//${window.location.host}${baseURL}/api/command/?auth=${authStore.jwt}`;
+
+      try {
+        const websocket = new WebSocket(url);
+
+        websocket.onopen = () => {
+          console.log("WebSocket connection opened");
+          websocket.send("establish-packages");
+        };
+
+        websocket.onmessage = (event) => {
+          console.log("Message received from server:", event.data);
+          if (event.data) {
+            const newPackage = { name: event.data };
+            const existingIndex = this.packages.findIndex(
+              (p) => p.name === newPackage.name
+            );
+            if (existingIndex !== -1) {
+              this.packages[existingIndex] = newPackage;
+            } else {
+              this.packages.push(newPackage);
             }
           }
         };
@@ -285,7 +303,10 @@ export default {
     },
     logout: auth.logout,
     hasWritePermissions(req) {
-      if (req?.path.startsWith("/sources/")) {
+      if (req?.path.startsWith("/.sources/")) {
+        return false;
+      }
+      if (req?.path.startsWith("/.packages/")) {
         return false;
       }
       const OWNER_WRITE = 0o200;
@@ -296,7 +317,7 @@ export default {
   watch: {
     isFiles(newValue) {
       newValue && this.fetchUsage();
-      newValue && this.user.perm.share && this.getSourcenames(); // Call getSourcenames when files are active
+      newValue && this.user.perm.share && this.getSources() && this.getPackages()
     },
     req() {
       // Watch logic for req

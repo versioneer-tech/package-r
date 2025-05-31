@@ -67,7 +67,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		if link.Mode == "indexed" { //nolint:goconst,nolintlint
 			if file.IsDir {
 				// for directories we use the created package (i.e. the folder with deeplinks)
-				basePath = "/packages/." + link.Hash
+				basePath = "/.packages/" + link.Hash
 			} else {
 				// for files we use creation timestamp to resolve specific object version (only works if bucket has versioning enabled)
 				filePath += "#" + strconv.FormatInt(link.Creation, 10)
