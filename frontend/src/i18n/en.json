@@ -100,7 +100,8 @@
     "submit": "Login",
     "username": "Username",
     "usernameTaken": "Username already taken",
-    "wrongCredentials": "Wrong credentials"
+    "wrongCredentials": "Wrong credentials",
+    "notPossible": "Currently not possible"
   },
   "permanent": "Permanent",
   "prompts": {

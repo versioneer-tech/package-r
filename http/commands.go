@@ -11,7 +11,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/filebrowser/filebrowser/v2/runner"
+	"github.com/versioneer-tech/package-r/runner"
 )
 
 const (

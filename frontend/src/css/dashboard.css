@@ -15,7 +15,7 @@ html[dir="rtl"] .dashboard .row {
 .dashboard .row .column {
   display: flex;
   padding: 0 0.5em;
-  width: 50%;
+  width: 100%;
 }
 
 .dashboard .row .column .card {

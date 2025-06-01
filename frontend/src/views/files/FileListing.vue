@@ -1,7 +1,7 @@
 <template>
   <div>
     <header-bar showMenu showLogo>
-      <search />
+      <!--<search />-->
       <title />
       <action
         class="search-button"
@@ -17,6 +17,18 @@
             icon="share"
             :label="t('buttons.share')"
             show="share"
+          />
+          <action
+            v-if="authStore?.user?.perm.create"
+            icon="create_new_folder"
+            :label="t('sidebar.newFolder')"
+            @action="layoutStore.showHover('newDir')"
+          />
+          <action
+            v-if="authStore?.user?.perm.create"
+            icon="note_add"
+            :label="t('sidebar.newFile')"
+            @action="layoutStore.showHover('newFile')"
           />
           <action
             v-if="headerButtons.rename"
@@ -281,7 +293,7 @@ import { useClipboardStore } from "@/stores/clipboard";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 
-import { users, files as api } from "@/api";
+import { users as users_api, files as api } from "@/api";
 import { enableExec } from "@/utils/constants";
 import * as upload from "@/utils/upload";
 import css from "@/utils/css";
@@ -290,7 +302,7 @@ import { Base64 } from "js-base64";
 
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import Action from "@/components/header/Action.vue";
-import Search from "@/components/Search.vue";
+//import Search from "@/components/Search.vue";
 import Item from "@/components/files/ListingItem.vue";
 import {
   computed,
@@ -820,7 +832,7 @@ const sort = async (by: string) => {
 
   try {
     if (authStore.user?.id) {
-      await users.update({ id: authStore.user?.id, sorting: { by, asc } }, [
+      await users_api.update({ id: authStore.user?.id, sorting: { by, asc } }, [
         "sorting",
       ]);
     }
@@ -900,7 +912,7 @@ const switchView = async () => {
       "list") as ViewModeType,
   };
 
-  users.update(data, ["viewMode"]).catch($showError);
+  users_api.update(data, ["viewMode"]).catch($showError);
 
   authStore.updateUser(data);
 

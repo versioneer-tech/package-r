@@ -3,15 +3,17 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/versioneer-tech/package-r/settings"
+	"github.com/versioneer-tech/package-r/users"
 )
 
 func init() {
@@ -77,6 +79,7 @@ func addUserFlags(flags *pflag.FlagSet) {
 	flags.String("locale", "en", "locale for users")
 	flags.String("viewMode", string(users.ListViewMode), "view mode for users")
 	flags.Bool("singleClick", false, "use single clicks only")
+	flags.StringSlice("envs", nil, "A list of environment variables as key=value pairs (e.g. FOO=bar)")
 }
 
 func getViewMode(flags *pflag.FlagSet) users.ViewMode {
@@ -123,6 +126,22 @@ func getUserDefaults(flags *pflag.FlagSet, defaults *settings.UserDefaults, all 
 			defaults.Sorting.By = mustGetString(flags, flag.Name)
 		case "sorting.asc":
 			defaults.Sorting.Asc = mustGetBool(flags, flag.Name)
+		case "envs":
+			envSlice, err := flags.GetStringSlice(flag.Name)
+			checkErr(err)
+
+			envMap := make(map[string]string)
+			for _, kv := range envSlice {
+				parts := strings.SplitN(kv, "=", 2)
+				if len(parts) != 2 {
+					log.Printf("skipping env %q (expected key=value)", kv)
+					continue
+				}
+				key := strings.TrimSpace(parts[0])
+				value := strings.TrimSpace(parts[1])
+				envMap[key] = value
+			}
+			defaults.Envs = &envMap
 		}
 	}
 

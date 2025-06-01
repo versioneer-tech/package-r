@@ -180,9 +180,19 @@ export function copy(items: any[], overwrite = false, rename = false) {
   return moveCopy(items, true, overwrite, rename);
 }
 
-export async function checksum(url: string, algo: ChecksumAlg) {
+export async function checksum(url: string, algo: ChecksumAlg | string) {
   const data = await resourceAction(`${url}?checksum=${algo}`, "GET");
   return (await data.json()).checksums[algo];
+}
+
+export async function presign(url: string) {
+  const data = await resourceAction(`${url}?presign=true`, "GET");
+  return (await data.json()).presignedURL;
+}
+
+export async function preview(url: string) {
+  const data = await resourceAction(`${url}?preview=true`, "GET");
+  return (await data.json()).previewURL;
 }
 
 export function getDownloadURL(file: ResourceItem, inline: any) {

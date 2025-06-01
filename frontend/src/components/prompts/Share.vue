@@ -142,7 +142,7 @@
 <script>
 import { mapActions, mapState } from "pinia";
 import { useFileStore } from "@/stores/file";
-import { share as api, pub as pub_api } from "@/api";
+import { share as share_api, pub as pub_api } from "@/api";
 import dayjs from "dayjs";
 import { useLayoutStore } from "@/stores/layout";
 import { copy } from "@/utils/clipboard";
@@ -182,7 +182,7 @@ export default {
   },
   async beforeMount() {
     try {
-      const links = await api.get(this.url);
+      const links = await share_api.get(this.url);
       this.links = links;
       this.sort();
 
@@ -221,9 +221,14 @@ export default {
         let res = null;
 
         if (!this.time) {
-          res = await api.create(this.url, this.password);
+          res = await share_api.create(this.url, this.password);
         } else {
-          res = await api.create(this.url, this.password, this.time, this.unit);
+          res = await share_api.create(
+            this.url,
+            this.password,
+            this.time,
+            this.unit
+          );
         }
 
         this.links.push(res);
@@ -241,7 +246,7 @@ export default {
     deleteLink: async function (event, link) {
       event.preventDefault();
       try {
-        await api.remove(link.hash);
+        await share_api.remove(link.hash);
         this.links = this.links.filter((item) => item.hash !== link.hash);
 
         if (this.links.length == 0) {
@@ -252,10 +257,12 @@ export default {
       }
     },
     humanTime(time) {
-      return dayjs(time * 1000).fromNow();
+      return dayjs(time * 1000).isAfter("1.1.2020")
+        ? dayjs(time * 1000).fromNow()
+        : "";
     },
     buildLink(share) {
-      return api.getShareURL(share);
+      return share_api.getShareURL(share);
     },
     hasDownloadLink() {
       return (

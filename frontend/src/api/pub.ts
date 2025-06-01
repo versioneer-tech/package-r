@@ -65,6 +65,37 @@ export function download(
   window.open(url);
 }
 
+async function shareAction(url: string, method: ApiMethod, content?: any) {
+  url = removePrefix(url);
+
+  const opts: ApiOpts = {
+    method,
+  };
+
+  if (content) {
+    opts.body = content;
+  }
+
+  const res = await fetchURL(`/api/public/share${url}`, opts);
+
+  return res;
+}
+
+export async function checksum(url: string, algo: ChecksumAlg | string) {
+  const data = await shareAction(`${url}?checksum=${algo}`, "GET");
+  return (await data.json()).checksums[algo];
+}
+
+export async function presign(url: string) {
+  const data = await shareAction(`${url}?presign=true`, "GET");
+  return (await data.json()).presignedURL;
+}
+
+export async function preview(url: string) {
+  const data = await shareAction(`${url}?preview=true`, "GET");
+  return (await data.json()).previewURL;
+}
+
 export function getDownloadURL(res: Resource, inline = false) {
   const params = {
     ...(inline && { inline: "true" }),

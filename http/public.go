@@ -11,8 +11,9 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/share"
+	fbErrors "github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/files"
+	"github.com/versioneer-tech/package-r/share"
 )
 
 var withHashFile = func(fn handleFunc) handleFunc {
@@ -103,10 +104,52 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 		return renderJSON(w, r, file)
 	}
 
+	if checksum := r.URL.Query().Get("checksum"); checksum != "" {
+		err := file.Checksum(checksum)
+		if errors.Is(err, fbErrors.ErrInvalidOption) {
+			return http.StatusBadRequest, nil
+		} else if err != nil {
+			return http.StatusInternalServerError, err
+		}
+
+		// do not waste bandwidth
+		file.Content = ""
+	}
+
+	//nolint:goconst
+	if presign := r.URL.Query().Get("presign"); presign != "false" && presign != "0" && presign != "" {
+		url, err := files.Presign(file.RealPath(), *d.user.Envs)
+		if errors.Is(err, fbErrors.ErrInvalidOption) {
+			return http.StatusBadRequest, nil
+		} else if err != nil {
+			return http.StatusInternalServerError, err
+		}
+		file.PresignedURL = url
+
+		// do not waste bandwidth
+		file.Content = ""
+	}
+
+	if preview := r.URL.Query().Get("preview"); preview != "false" && preview != "0" && preview != "" {
+		err := file.Preview()
+		if errors.Is(err, fbErrors.ErrInvalidOption) {
+			return http.StatusBadRequest, nil
+		} else if err != nil {
+			return http.StatusInternalServerError, err
+		}
+
+		// do not waste bandwidth
+		file.Content = ""
+	}
+
 	return renderJSON(w, r, file)
 })
 
 var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	if !d.user.Perm.Download {
+		return http.StatusForbidden, nil
+	}
+
 	file := d.raw.(*files.FileInfo)
 	if !file.IsDir {
 		return rawFileHandler(w, r, file)

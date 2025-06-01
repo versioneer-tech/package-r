@@ -6,7 +6,7 @@
 
 @media (max-width: 1024px) {
   main {
-    width: calc(100% - 13em);
+    width: calc(100% - 2em);
   }
 }
 
@@ -126,9 +126,9 @@
   header .menu-button {
     display: inherit;
   }
-  header img {
+  /* header img {
     display: none;
-  }
+  } */
   #listing {
     margin-bottom: 5em;
   }

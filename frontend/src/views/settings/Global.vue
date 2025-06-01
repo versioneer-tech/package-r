@@ -230,7 +230,7 @@
 
 <script setup lang="ts">
 import { useLayoutStore } from "@/stores/layout";
-import { settings as api } from "@/api";
+import { settings as settings_api } from "@/api";
 import { enableExec } from "@/utils/constants";
 import UserForm from "@/components/settings/UserForm.vue";
 import Rules from "@/components/settings/Rules.vue";
@@ -328,7 +328,7 @@ const save = async () => {
   }
 
   try {
-    await api.update(newSettings);
+    await settings_api.update(newSettings);
     $showSuccess(t("settings.settingsUpdated"));
   } catch (e: any) {
     $showError(e);
@@ -375,7 +375,7 @@ const formatBytes = (bytes: number) => {
 onMounted(async () => {
   try {
     layoutStore.loading = true;
-    const original: ISettings = await api.get();
+    const original: ISettings = await settings_api.get();
     const newSettings: ISettings = { ...original, commands: {} };
 
     const keys = Object.keys(original.commands) as Array<keyof SettingsCommand>;

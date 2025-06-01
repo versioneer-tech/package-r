@@ -43,7 +43,7 @@
 
 <script setup lang="ts">
 import { useLayoutStore } from "@/stores/layout";
-import { users as api } from "@/api";
+import { users as users_api } from "@/api";
 import Errors from "@/views/Errors.vue";
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -59,7 +59,7 @@ onMounted(async () => {
   layoutStore.loading = true;
 
   try {
-    users.value = await api.getAll();
+    users.value = await users_api.getAll();
   } catch (err) {
     if (err instanceof Error) {
       error.value = err;

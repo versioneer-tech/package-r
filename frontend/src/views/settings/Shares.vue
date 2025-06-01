@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
-import { share as api, users } from "@/api";
+import { share as share_api, users as users_api } from "@/api";
 import dayjs from "dayjs";
 import Errors from "@/views/Errors.vue";
 import { inject, ref, onMounted } from "vue";
@@ -87,10 +87,10 @@ onMounted(async () => {
   layoutStore.loading = true;
 
   try {
-    const newLinks = await api.list();
+    const newLinks = await share_api.list();
     if (authStore.user?.perm.admin) {
       const userMap = new Map<number, string>();
-      for (const user of await users.getAll())
+      for (const user of await users_api.getAll())
         userMap.set(user.id, user.username);
       for (const link of newLinks) {
         if (link.userID && userMap.has(link.userID))
@@ -138,7 +138,7 @@ const deleteLink = async (event: Event, link: any) => {
       layoutStore.closeHovers();
 
       try {
-        api.remove(link.hash);
+        share_api.remove(link.hash);
         links.value = links.value.filter((item) => item.hash !== link.hash);
         $showSuccess(t("settings.shareDeleted"));
       } catch (err) {
@@ -150,10 +150,12 @@ const deleteLink = async (event: Event, link: any) => {
   });
 };
 const humanTime = (time: number) => {
-  return dayjs(time * 1000).fromNow();
+  return dayjs(time * 1000).isAfter("1.1.2020")
+    ? dayjs(time * 1000).fromNow()
+    : "";
 };
 
 const buildLink = (share: Share) => {
-  return api.getShareURL(share);
+  return share_api.getShareURL(share);
 };
 </script>

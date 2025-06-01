@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/filebrowser/filebrowser/v2/files"
+	"github.com/versioneer-tech/package-r/files"
 )
 
 // MoveFile moves file from src to dst.

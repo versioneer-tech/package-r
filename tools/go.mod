@@ -1,4 +1,4 @@
-module github.com/filebrowser/filebrowser/v2/tools
+module github.com/versioneer-tech/package-r/tools
 
 go 1.23
 

@@ -1,11 +1,12 @@
 <template>
   <div id="login" :class="{ recaptcha: recaptcha }">
     <form @submit="submit">
-      <img :src="logoURL" alt="File Browser" />
+      <img :src="logoURL" class="logo-img" title="Home" />
       <h1>{{ name }}</h1>
       <div v-if="error !== ''" class="wrong">{{ error }}</div>
 
       <input
+        v-if="loginPage || createMode"
         autofocus
         class="input input--block"
         type="text"
@@ -14,6 +15,7 @@
         :placeholder="t('login.username')"
       />
       <input
+        v-if="loginPage || createMode"
         class="input input--block"
         type="password"
         v-model="password"
@@ -34,10 +36,46 @@
         :value="createMode ? t('login.signup') : t('login.submit')"
       />
 
-      <p @click="toggleMode" v-if="signup">
-        {{ createMode ? t("login.loginInstead") : t("login.createAnAccount") }}
-      </p>
+      <div id="signup">
+        <p @click="toggleMode" v-if="signup">
+          {{
+            createMode ? t("login.loginInstead") : t("login.createAnAccount")
+          }}
+        </p>
+      </div>
     </form>
+
+    <div id="about">
+      <p>
+        Powered by
+        <a href="https://github.com/versioneer-tech/package-r" target="_blank">
+          <strong>packageR</strong>
+        </a>
+        {{ version }}, built on
+        <a href="https://filebrowser.org" target="_blank">
+          <img
+            src="https://raw.githubusercontent.com/filebrowser/logo/master/banner.png"
+            alt="Filebrowser"
+            class="logo fb-logo"
+          /> </a
+        >, reassembled by
+        <a href="https://versioneer.at" target="_blank">
+          <img
+            src="https://raw.githubusercontent.com/versioneer-inc/versioneer-inc.github.io/master/logo_versioneer_white.png"
+            alt="Versioneer"
+            class="logo versioneer-logo"
+          />
+        </a>
+        and
+        <a href="https://eox.at" target="_blank">
+          <img
+            src="https://eox.at/EOX_Logo.svg"
+            alt="EOX"
+            class="logo eox-logo"
+          />
+        </a>
+      </p>
+    </div>
   </div>
 </template>
 
@@ -50,6 +88,8 @@ import {
   recaptcha,
   recaptchaKey,
   signup,
+  loginPage,
+  version,
 } from "@/utils/constants";
 import { inject, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -108,8 +148,10 @@ const submit = async (event: Event) => {
       } else if (e.status === 403) {
         error.value = t("login.wrongCredentials");
       } else {
-        $showError(e);
+        error.value = t("login.notPossible");
       }
+    } else {
+      $showError(e);
     }
   }
 };

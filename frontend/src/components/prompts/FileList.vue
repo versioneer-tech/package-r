@@ -30,7 +30,6 @@ import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 
 import url from "@/utils/url";
-import { files } from "@/api";
 
 export default {
   name: "file-list",

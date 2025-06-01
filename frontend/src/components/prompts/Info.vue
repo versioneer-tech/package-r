@@ -36,7 +36,7 @@
         </p>
       </template>
 
-      <template v-if="!dir">
+      <template v-if="!dir && user?.perm.download">
         <p>
           <strong>MD5: </strong
           ><code
@@ -82,6 +82,38 @@
           >
         </p>
       </template>
+
+      <template v-if="!dir && user?.presignEnabled">
+        <p>
+          <strong>Presigned URL: </strong>
+          <code>
+            <a
+              :href="presignedURL || 'javascript:void(0)'"
+              @click="presign"
+              @keypress.enter="presign"
+              tabindex="6"
+            >
+              {{ presignedURL || $t("prompts.show") }}
+            </a>
+          </code>
+        </p>
+      </template>
+
+      <template v-if="!dir && user?.previewEnabled">
+        <p>
+          <strong>Preview URL: </strong>
+          <code>
+            <a
+              :href="previewURL || 'javascript:void(0)'"
+              @click="preview"
+              @keypress.enter="preview"
+              tabindex="7"
+            >
+              {{ previewURL || $t("prompts.show") }}
+            </a>
+          </code>
+        </p>
+      </template>
     </div>
 
     <div class="card-action">
@@ -101,6 +133,7 @@
 
 <script>
 import { mapActions, mapState } from "pinia";
+import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { filesize } from "@/utils";
@@ -110,7 +143,17 @@ import { files as api } from "@/api";
 export default {
   name: "info",
   inject: ["$showError"],
+  data() {
+    return {
+      presignedURL: null,
+      previewURL: null,
+    };
+  },
+  mounted() {
+    console.log(this.user);
+  },
   computed: {
+    ...mapState(useAuthStore, ["user"]),
     ...mapState(useFileStore, [
       "req",
       "selected",
@@ -132,10 +175,16 @@ export default {
     },
     humanTime: function () {
       if (this.selectedCount === 0) {
-        return dayjs(this.req.modified).fromNow();
+        return dayjs(this.req.modified).isAfter("1.1.2020")
+          ? dayjs(this.req.modified).fromNow()
+          : "";
       }
 
-      return dayjs(this.req.items[this.selected[0]].modified).fromNow();
+      return dayjs(this.req.items[this.selected[0]].modified).isAfter(
+        "1.1.2020"
+      )
+        ? dayjs(this.req.items[this.selected[0]].modified).fromNow()
+        : "";
     },
     modTime: function () {
       if (this.selectedCount === 0) {
@@ -187,6 +236,48 @@ export default {
       try {
         const hash = await api.checksum(link, algo);
         event.target.textContent = hash;
+      } catch (e) {
+        this.$showError(e);
+      }
+    },
+    async presign(event) {
+      if (typeof this.presignedURL === "string") {
+        if (this.presignedURL.startsWith("http")) {
+          window.open(this.presignedURL, "_blank", "noopener,noreferrer");
+        }
+        return;
+      }
+
+      event.preventDefault();
+
+      const link = this.selectedCount
+        ? this.req.items[this.selected[0]].url
+        : this.$route.path;
+
+      try {
+        const value = await api.presign(link);
+        this.presignedURL = value;
+      } catch (e) {
+        this.$showError(e);
+      }
+    },
+    async preview(event) {
+      if (typeof this.previewURL === "string") {
+        if (this.previewURL.startsWith("http")) {
+          window.open(this.previewURL, "_blank", "noopener,noreferrer");
+        }
+        return;
+      }
+
+      event.preventDefault();
+
+      const link = this.selectedCount
+        ? this.req.items[this.selected[0]].url
+        : this.$route.path;
+
+      try {
+        const value = await api.preview(link);
+        this.previewURL = value;
       } catch (e) {
         this.$showError(e);
       }

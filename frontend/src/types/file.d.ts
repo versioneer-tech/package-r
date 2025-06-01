@@ -9,6 +9,8 @@ interface ResourceBase {
   isSymlink: boolean;
   type: ResourceType;
   url: string;
+  presignedURL?: string;
+  previewURL?: string;
 }
 
 interface Resource extends ResourceBase {

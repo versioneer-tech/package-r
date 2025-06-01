@@ -4,14 +4,14 @@
       <title />
 
       <action
-        v-if="fileStore.selectedCount"
+        v-if="fileStore.selectedCount && authStore.user?.perm.download"
         icon="file_download"
         :label="t('buttons.download')"
         @action="download"
         :counter="fileStore.selectedCount"
       />
       <button
-        v-if="isSingleFile()"
+        v-if="isSingleFile() && authStore.user?.perm.download"
         class="action copy-clipboard"
         :aria-label="t('buttons.copyDownloadLinkToClipboard')"
         :data-title="t('buttons.copyDownloadLinkToClipboard')"
@@ -20,6 +20,7 @@
         <i class="material-icons">content_paste</i>
       </button>
       <action
+        v-if="authStore.user?.perm.download"
         icon="check_circle"
         :label="t('buttons.selectMultiple')"
         @action="toggleMultipleSelection"
@@ -85,28 +86,99 @@
           "
         >
           <div class="share__box__header" style="height: 3em">
-            {{
-              req.isDir
-                ? t("download.downloadFolder")
-                : t("download.downloadFile")
-            }}
+            {{ req.isDir ? t("buttons.folder") : t("buttons.file") }}
           </div>
-          <div
+          <!-- <div
             v-if="!req.isDir"
             class="share__box__element share__box__center share__box__icon"
           >
             <i class="material-icons">{{ icon }}</i>
+          </div> -->
+          <div class="share__box__element">
+            <p>
+              <strong>{{ $t("prompts.displayName") }}:</strong> {{ req.name }}
+            </p>
+            <p>
+              <strong>{{ $t("prompts.size") }}:</strong> {{ humanSize }}
+            </p>
+            <p v-if="!req.isDir" :title="modTime">
+              <strong>{{ $t("prompts.lastModified") }}:</strong> {{ humanTime }}
+            </p>
+            <p v-if="!req.isDir && authStore.user?.perm.download">
+              <strong>MD5: </strong>
+              <code>
+                <a
+                  @click="checksum($event, 'md5')"
+                  @keypress.enter="checksum($event, 'md5')"
+                  tabindex="2"
+                  >{{ $t("prompts.show") }}</a
+                >
+              </code>
+            </p>
+            <p v-if="!req.isDir && authStore.user?.perm.download">
+              <strong>SHA1: </strong>
+              <code>
+                <a
+                  @click="checksum($event, 'sha1')"
+                  @keypress.enter="checksum($event, 'sha1')"
+                  tabindex="3"
+                  >{{ $t("prompts.show") }}</a
+                >
+              </code>
+            </p>
+            <p v-if="!req.isDir && authStore.user?.perm.download">
+              <strong>SHA256: </strong>
+              <code>
+                <a
+                  @click="checksum($event, 'sha256')"
+                  @keypress.enter="checksum($event, 'sha256')"
+                  tabindex="4"
+                  >{{ $t("prompts.show") }}</a
+                >
+              </code>
+            </p>
+            <p v-if="!req.isDir && authStore.user?.perm.download">
+              <strong>SHA512: </strong>
+              <code>
+                <a
+                  @click="checksum($event, 'sha512')"
+                  @keypress.enter="checksum($event, 'sha512')"
+                  tabindex="5"
+                  >{{ $t("prompts.show") }}</a
+                >
+              </code>
+            </p>
+            <p v-if="!req.isDir && authStore.user?.presignEnabled">
+              <strong>Presigned URL: </strong>
+              <code>
+                <a
+                  :href="presignedURL || 'javascript:void(0)'"
+                  @click="presign"
+                  @keypress.enter="presign"
+                  tabindex="6"
+                >
+                  {{ presignedURL || $t("prompts.show") }}
+                </a>
+              </code>
+            </p>
+            <p v-if="!req.isDir && authStore.user?.previewEnabled">
+              <strong>Preview URL: </strong>
+              <code>
+                <a
+                  :href="previewURL || 'javascript:void(0)'"
+                  @click="preview"
+                  @keypress.enter="preview"
+                  tabindex="7"
+                >
+                  {{ previewURL || $t("prompts.show") }}
+                </a>
+              </code>
+            </p>
           </div>
-          <div class="share__box__element" style="height: 3em">
-            <strong>{{ $t("prompts.displayName") }}</strong> {{ req.name }}
-          </div>
-          <div v-if="!req.isDir" class="share__box__element" :title="modTime">
-            <strong>{{ $t("prompts.lastModified") }}:</strong> {{ humanTime }}
-          </div>
-          <div class="share__box__element" style="height: 3em">
-            <strong>{{ $t("prompts.size") }}:</strong> {{ humanSize }}
-          </div>
-          <div class="share__box__element share__box__center">
+          <div
+            class="share__box__element share__box__center"
+            v-if="authStore.user?.perm.download"
+          >
             <a
               target="_blank"
               :href="link"
@@ -129,17 +201,17 @@
                 >{{ t("buttons.openFile") }}
               </div>
             </a>
-            <qrcode-vue
+            <!-- <qrcode-vue
               v-if="req.isDir"
               :value="link"
               :size="100"
               level="M"
-            ></qrcode-vue>
+            ></qrcode-vue> -->
           </div>
-          <div v-if="!req.isDir" class="share__box__element share__box__center">
+          <!-- <div v-if="!req.isDir" class="share__box__element share__box__center">
             <qrcode-vue :value="link" :size="200" level="M"></qrcode-vue>
-          </div>
-          <div
+          </div> -->
+          <!-- <div
             v-if="req.isDir"
             class="share__box__element share__box__header"
             style="height: 3em"
@@ -230,7 +302,7 @@
               >folder
             </i>
             <i v-else class="material-icons">call_to_action</i>
-          </div>
+          </div> -->
         </div>
         <div
           id="shareList"
@@ -297,7 +369,7 @@
 </template>
 
 <script setup lang="ts">
-import { pub as api } from "@/api";
+import { pub as pub_api } from "@/api";
 import { filesize } from "@/utils";
 import dayjs from "dayjs";
 import { Base64 } from "js-base64";
@@ -306,10 +378,11 @@ import HeaderBar from "@/components/header/HeaderBar.vue";
 import Action from "@/components/header/Action.vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Errors from "@/views/Errors.vue";
-import QrcodeVue from "qrcode.vue";
+// import QrcodeVue from "qrcode.vue";
 import Item from "@/components/files/ListingItem.vue";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
+import { useAuthStore } from "@/stores/auth";
 import { computed, inject, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -322,8 +395,8 @@ const password = ref<string>("");
 const attemptedPasswordLogin = ref<boolean>(false);
 const hash = ref<string>("");
 const token = ref<string>("");
-const audio = ref<HTMLAudioElement>();
-const tag = ref<boolean>(false);
+//const audio = ref<HTMLAudioElement>();
+//const tag = ref<boolean>(false);
 
 const $showError = inject<IToastError>("$showError")!;
 const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
@@ -331,6 +404,7 @@ const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
 const { t } = useI18n({});
 
 const route = useRoute();
+const authStore = useAuthStore();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
 
@@ -343,28 +417,30 @@ const req = computed(() => fileStore.req);
 
 // Define computes
 
-const icon = computed(() => {
-  if (req.value === null) return "insert_drive_file";
-  if (req.value.isDir) return "folder";
-  if (req.value.type === "image") return "insert_photo";
-  if (req.value.type === "audio") return "volume_up";
-  if (req.value.type === "video") return "movie";
-  return "insert_drive_file";
-});
+// const icon = computed(() => {
+//   if (req.value === null) return "insert_drive_file";
+//   if (req.value.isDir) return "folder";
+//   if (req.value.type === "image") return "insert_photo";
+//   if (req.value.type === "audio") return "volume_up";
+//   if (req.value.type === "video") return "movie";
+//   return "insert_drive_file";
+// });
 
-const link = computed(() => (req.value ? api.getDownloadURL(req.value) : ""));
-const raw = computed(() => {
-  return req.value
-    ? req.value.items[fileStore.selected[0]].url.replace(
-        /share/,
-        "api/public/dl"
-      ) +
-        "?token=" +
-        token.value
-    : "";
-});
+const link = computed(() =>
+  req.value ? pub_api.getDownloadURL(req.value) : ""
+);
+// const raw = computed(() => {
+//   return req.value
+//     ? req.value.items[fileStore.selected[0]].url.replace(
+//         /share/,
+//         "api/public/dl"
+//       ) +
+//         "?token=" +
+//         token.value
+//     : "";
+// });
 const inlineLink = computed(() =>
-  req.value ? api.getDownloadURL(req.value, true) : ""
+  req.value ? pub_api.getDownloadURL(req.value, true) : ""
 );
 const humanSize = computed(() => {
   if (req.value) {
@@ -375,7 +451,11 @@ const humanSize = computed(() => {
     return "";
   }
 });
-const humanTime = computed(() => dayjs(req.value?.modified).fromNow());
+const humanTime = computed(() =>
+  dayjs(req.value?.modified).isAfter("1.1.2020")
+    ? dayjs(req.value?.modified).fromNow()
+    : ""
+);
 const modTime = computed(() =>
   req.value
     ? new Date(Date.parse(req.value.modified)).toLocaleString()
@@ -384,15 +464,15 @@ const modTime = computed(() =>
 
 // Functions
 const base64 = (name: any) => Base64.encodeURI(name);
-const play = () => {
-  if (tag.value) {
-    audio.value?.pause();
-    tag.value = false;
-  } else {
-    audio.value?.play();
-    tag.value = true;
-  }
-};
+// const play = () => {
+//   if (tag.value) {
+//     audio.value?.pause();
+//     tag.value = false;
+//   } else {
+//     audio.value?.play();
+//     tag.value = true;
+//   }
+// };
 const fetchData = async () => {
   fileStore.reload = false;
   fileStore.selected = [];
@@ -411,7 +491,7 @@ const fetchData = async () => {
   if (url[0] !== "/") url = "/" + url;
 
   try {
-    const file = await api.fetch(url, password.value);
+    const file = await pub_api.fetch(url, password.value);
     file.hash = hash.value;
 
     token.value = file.token || "";
@@ -449,7 +529,7 @@ const download = () => {
   if (!req.value) return false;
 
   if (isSingleFile()) {
-    api.download(
+    pub_api.download(
       null,
       hash.value,
       token.value,
@@ -470,7 +550,7 @@ const download = () => {
         files.push(req.value.items[i].path);
       }
 
-      api.download(format, hash.value, token.value, ...files);
+      pub_api.download(format, hash.value, token.value, ...files);
       return true;
     },
   });
@@ -480,7 +560,7 @@ const download = () => {
 
 const linkSelected = () => {
   return isSingleFile() && req.value
-    ? api.getDownloadURL({
+    ? pub_api.getDownloadURL({
         ...req.value,
         hash: hash.value,
         path: req.value.items[fileStore.selected[0]].path,
@@ -521,6 +601,86 @@ onBeforeUnmount(() => {
   // Destroyed
   window.removeEventListener("keydown", keyEvent);
 });
+
+const presignedURL = ref<string | null>(null);
+const previewURL = ref<string | null>(null);
+
+const checksum = async (event: Event, algo: string) => {
+  event.preventDefault();
+
+  let link: string;
+
+  if (fileStore.selectedCount) {
+    link = req.value?.items[fileStore.selected[0]].url || route.path;
+  } else {
+    link = route.path;
+  }
+
+  try {
+    const hash = await pub_api.checksum(link, algo);
+    (event.target as HTMLElement).textContent = hash;
+  } catch (e) {
+    if (e instanceof Error) {
+      $showError(e);
+    } else {
+      $showError(String(e));
+    }
+  }
+};
+
+const presign = async (event: Event) => {
+  if (
+    typeof presignedURL.value === "string" &&
+    presignedURL.value.startsWith("http")
+  ) {
+    window.open(presignedURL.value, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  event.preventDefault();
+
+  const link = fileStore.selectedCount
+    ? req.value?.items[fileStore.selected[0]].url
+    : route.path;
+
+  try {
+    const value = await pub_api.presign(link || "");
+    presignedURL.value = value;
+  } catch (e) {
+    if (e instanceof Error) {
+      $showError(e);
+    } else {
+      $showError(String(e));
+    }
+  }
+};
+
+const preview = async (event: Event) => {
+  if (
+    typeof previewURL.value === "string" &&
+    previewURL.value.startsWith("http")
+  ) {
+    window.open(previewURL.value, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  event.preventDefault();
+
+  const link = fileStore.selectedCount
+    ? req.value?.items[fileStore.selected[0]].url
+    : route.path;
+
+  try {
+    const value = await pub_api.preview(link || "");
+    previewURL.value = value;
+  } catch (e) {
+    if (e instanceof Error) {
+      $showError(e);
+    } else {
+      $showError(String(e));
+    }
+  }
+};
 </script>
 
 <style scoped>

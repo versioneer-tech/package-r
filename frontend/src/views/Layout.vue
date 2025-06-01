@@ -3,7 +3,7 @@
     <div v-if="uploadStore.getProgress" class="progress">
       <div v-bind:style="{ width: uploadStore.getProgress + '%' }"></div>
     </div>
-    <sidebar></sidebar>
+    <!--<sidebar></sidebar>-->
     <main>
       <router-view></router-view>
       <shell
@@ -22,7 +22,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
 import { useFileStore } from "@/stores/file";
 import { useUploadStore } from "@/stores/upload";
-import Sidebar from "@/components/Sidebar.vue";
+//import Sidebar from "@/components/Sidebar.vue";
 import Prompts from "@/components/prompts/Prompts.vue";
 import Shell from "@/components/Shell.vue";
 import UploadFiles from "@/components/prompts/UploadFiles.vue";

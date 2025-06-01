@@ -13,6 +13,8 @@ interface IUser {
   dateFormat: boolean;
   viewMode: ViewModeType;
   sorting?: Sorting;
+  presignEnabled: boolean;
+  previewEnabled: booelan;
 }
 
 type ViewModeType = "list" | "mosaic" | "mosaic gallery";

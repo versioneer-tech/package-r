@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/filebrowser/filebrowser/v2/auth"
-	"github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/settings"
+	"github.com/versioneer-tech/package-r/auth"
+	"github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/settings"
 )
 
 func init() {
@@ -36,6 +36,7 @@ func addConfigFlags(flags *pflag.FlagSet) {
 
 	flags.String("auth.method", string(auth.MethodJSONAuth), "authentication type")
 	flags.String("auth.header", "", "HTTP header for auth.method=proxy")
+	flags.String("auth.mapper", "", "(optional) HTTP header value mapping strategy for auth.method=proxy")
 	flags.String("auth.command", "", "command for auth.method=hook")
 
 	flags.String("recaptcha.host", "https://www.google.com", "use another host for ReCAPTCHA. recaptcha.net might be useful in China")
@@ -83,7 +84,9 @@ func getAuthentication(flags *pflag.FlagSet, defaults ...interface{}) (settings.
 			checkErr(nerrors.New("you must set the flag 'auth.header' for method 'proxy'"))
 		}
 
-		auther = &auth.ProxyAuth{Header: header}
+		mapper := mustGetString(flags, "auth.mapper")
+
+		auther = &auth.ProxyAuth{Header: header, Mapper: mapper}
 	}
 
 	if method == auth.MethodNoAuth {

@@ -51,7 +51,7 @@
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
-import { users as api, settings } from "@/api";
+import { users as users_api, settings as settings_api } from "@/api";
 import UserForm from "@/components/settings/UserForm.vue";
 import Errors from "@/views/Errors.vue";
 import { computed, inject, onMounted, ref, watch } from "vue";
@@ -90,7 +90,8 @@ const fetchData = async () => {
 
   try {
     if (isNew.value) {
-      const { defaults, createUserDir: _createUserDir } = await settings.get();
+      const { defaults, createUserDir: _createUserDir } =
+        await settings_api.get();
       createUserDir.value = _createUserDir;
       user.value = {
         ...defaults,
@@ -99,12 +100,14 @@ const fetchData = async () => {
         rules: [],
         lockPassword: false,
         id: 0,
+        presignEnabled: false,
+        previewEnabled: false,
       };
     } else {
       const id = Array.isArray(route.params.id)
         ? route.params.id.join("")
         : route.params.id;
-      user.value = { ...(await api.get(parseInt(id))) };
+      user.value = { ...(await users_api.get(parseInt(id))) };
     }
   } catch (err) {
     if (err instanceof Error) {
@@ -124,7 +127,7 @@ const deleteUser = async (e: Event) => {
     return false;
   }
   try {
-    await api.remove(user.value.id);
+    await users_api.remove(user.value.id);
     router.push({ path: "/settings/users" });
     $showSuccess(t("settings.userDeleted"));
   } catch (err) {
@@ -151,11 +154,11 @@ const save = async (event: Event) => {
         ...user.value,
       };
 
-      const loc = await api.create(newUser);
+      const loc = await users_api.create(newUser);
       router.push({ path: loc || "/settings/users" });
       $showSuccess(t("settings.userCreated"));
     } else {
-      await api.update(user.value);
+      await users_api.update(user.value);
 
       if (user.value.id === authStore.user?.id) {
         authStore.updateUser(user.value);

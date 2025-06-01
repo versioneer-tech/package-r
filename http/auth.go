@@ -12,8 +12,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/golang-jwt/jwt/v4/request"
 
-	fbErrors "github.com/filebrowser/filebrowser/v2/errors"
-	"github.com/filebrowser/filebrowser/v2/users"
+	fbErrors "github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/users"
 )
 
 const (
@@ -21,15 +21,17 @@ const (
 )
 
 type userInfo struct {
-	ID           uint              `json:"id"`
-	Locale       string            `json:"locale"`
-	ViewMode     users.ViewMode    `json:"viewMode"`
-	SingleClick  bool              `json:"singleClick"`
-	Perm         users.Permissions `json:"perm"`
-	Commands     []string          `json:"commands"`
-	LockPassword bool              `json:"lockPassword"`
-	HideDotfiles bool              `json:"hideDotfiles"`
-	DateFormat   bool              `json:"dateFormat"`
+	ID             uint              `json:"id"`
+	Locale         string            `json:"locale"`
+	ViewMode       users.ViewMode    `json:"viewMode"`
+	SingleClick    bool              `json:"singleClick"`
+	Perm           users.Permissions `json:"perm"`
+	Commands       []string          `json:"commands"`
+	LockPassword   bool              `json:"lockPassword"`
+	HideDotfiles   bool              `json:"hideDotfiles"`
+	DateFormat     bool              `json:"dateFormat"`
+	PresignEnabled bool              `json:"presignEnabled"`
+	PreviewEnabled bool              `json:"previewEnabled"`
 }
 
 type authToken struct {
@@ -113,6 +115,8 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 		switch {
 		case errors.Is(err, os.ErrPermission):
 			return http.StatusForbidden, nil
+		case errors.Is(err, fbErrors.ErrNotExist):
+			return http.StatusNotFound, nil
 		case err != nil:
 			return http.StatusInternalServerError, err
 		}
@@ -186,15 +190,17 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration) (int, error) {
 	claims := &authToken{
 		User: userInfo{
-			ID:           user.ID,
-			Locale:       user.Locale,
-			ViewMode:     user.ViewMode,
-			SingleClick:  user.SingleClick,
-			Perm:         user.Perm,
-			LockPassword: user.LockPassword,
-			Commands:     user.Commands,
-			HideDotfiles: user.HideDotfiles,
-			DateFormat:   user.DateFormat,
+			ID:             user.ID,
+			Locale:         user.Locale,
+			ViewMode:       user.ViewMode,
+			SingleClick:    user.SingleClick,
+			Perm:           user.Perm,
+			LockPassword:   user.LockPassword,
+			Commands:       user.Commands,
+			HideDotfiles:   user.HideDotfiles,
+			DateFormat:     user.DateFormat,
+			PresignEnabled: user.Envs != nil && (*user.Envs)["BUCKET_NAME"] != "",
+			PreviewEnabled: false, // TBD
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

@@ -192,10 +192,10 @@ router.beforeResolve(async (to, from, next) => {
     }
   }
 
-  if (to.path.endsWith("/login") && authStore.isLoggedIn) {
-    next({ path: "/files/" });
-    return;
-  }
+  // if (to.path.endsWith("/login") && authStore.isLoggedIn) {
+  //   next({ path: "/files/" });
+  //   return;
+  // }
 
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!authStore.isLoggedIn) {

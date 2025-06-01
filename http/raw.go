@@ -11,9 +11,9 @@ import (
 
 	"github.com/mholt/archiver/v3"
 
-	"github.com/filebrowser/filebrowser/v2/files"
-	"github.com/filebrowser/filebrowser/v2/fileutils"
-	"github.com/filebrowser/filebrowser/v2/users"
+	"github.com/versioneer-tech/package-r/files"
+	"github.com/versioneer-tech/package-r/fileutils"
+	"github.com/versioneer-tech/package-r/users"
 )
 
 func slashClean(name string) string {
@@ -77,7 +77,7 @@ func setContentDisposition(w http.ResponseWriter, r *http.Request, file *files.F
 
 var rawHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	if !d.user.Perm.Download {
-		return http.StatusAccepted, nil
+		return http.StatusForbidden, nil
 	}
 
 	file, err := files.NewFileInfo(&files.FileOptions{

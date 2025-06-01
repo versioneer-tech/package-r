@@ -37,7 +37,7 @@
       </form>
     </div>
 
-    <div class="column">
+    <!-- <div class="column">
       <form
         class="card"
         v-if="!authStore.user?.lockPassword"
@@ -73,16 +73,16 @@
           />
         </div>
       </form>
-    </div>
+    </div> -->
   </div>
 </template>
 
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
-import { users as api } from "@/api";
+import { users as users_api } from "@/api";
 import Languages from "@/components/settings/Languages.vue";
-import { computed, inject, onMounted, ref } from "vue";
+import { /*computed,*/ inject, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
 const layoutStore = useLayoutStore();
@@ -92,26 +92,26 @@ const { t } = useI18n();
 const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
 const $showError = inject<IToastError>("$showError")!;
 
-const password = ref<string>("");
-const passwordConf = ref<string>("");
+//const password = ref<string>("");
+//const passwordConf = ref<string>("");
 const hideDotfiles = ref<boolean>(false);
 const singleClick = ref<boolean>(false);
 const dateFormat = ref<boolean>(false);
 const locale = ref<string>("");
 
-const passwordClass = computed(() => {
-  const baseClass = "input input--block";
+// const passwordClass = computed(() => {
+//   const baseClass = "input input--block";
 
-  if (password.value === "" && passwordConf.value === "") {
-    return baseClass;
-  }
+//   if (password.value === "" && passwordConf.value === "") {
+//     return baseClass;
+//   }
 
-  if (password.value === passwordConf.value) {
-    return `${baseClass} input--green`;
-  }
+//   if (password.value === passwordConf.value) {
+//     return `${baseClass} input--green`;
+//   }
 
-  return `${baseClass} input--red`;
-});
+//   return `${baseClass} input--red`;
+// });
 
 onMounted(() => {
   layoutStore.loading = true;
@@ -124,32 +124,32 @@ onMounted(() => {
   return true;
 });
 
-const updatePassword = async (event: Event) => {
-  event.preventDefault();
+// const updatePassword = async (event: Event) => {
+//   event.preventDefault();
 
-  if (
-    password.value !== passwordConf.value ||
-    password.value === "" ||
-    authStore.user === null
-  ) {
-    return;
-  }
+//   if (
+//     password.value !== passwordConf.value ||
+//     password.value === "" ||
+//     authStore.user === null
+//   ) {
+//     return;
+//   }
 
-  try {
-    const data = {
-      ...authStore.user,
-      id: authStore.user.id,
-      password: password.value,
-    };
-    await api.update(data, ["password"]);
-    authStore.updateUser(data);
-    $showSuccess(t("settings.passwordUpdated"));
-  } catch (e: any) {
-    $showError(e);
-  } finally {
-    password.value = passwordConf.value = "";
-  }
-};
+//   try {
+//     const data = {
+//       ...authStore.user,
+//       id: authStore.user.id,
+//       password: password.value,
+//     };
+//     await users_api.update(data, ["password"]);
+//     authStore.updateUser(data);
+//     $showSuccess(t("settings.passwordUpdated"));
+//   } catch (e: any) {
+//     $showError(e);
+//   } finally {
+//     password.value = passwordConf.value = "";
+//   }
+// };
 const updateSettings = async (event: Event) => {
   event.preventDefault();
 
@@ -165,7 +165,7 @@ const updateSettings = async (event: Event) => {
       dateFormat: dateFormat.value,
     };
 
-    await api.update(data, [
+    await users_api.update(data, [
       "locale",
       "hideDotfiles",
       "singleClick",

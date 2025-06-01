@@ -6,8 +6,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/filebrowser/filebrowser/v2/settings"
-	"github.com/filebrowser/filebrowser/v2/storage"
+	"github.com/versioneer-tech/package-r/settings"
+	"github.com/versioneer-tech/package-r/storage"
 )
 
 type modifyRequest struct {
