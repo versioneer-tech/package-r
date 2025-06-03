@@ -88,8 +88,16 @@ const currentView = computed(() => {
   if (user?.perm?.download) {
     return Preview;
   }
-  error.value = new StatusError("preview not allowed", 415)
+
   return null;
+});
+
+watch(currentView, (view) => {
+  if (view === null && fileStore.req && !fileStore.req.isDir) {
+    error.value = new StatusError("preview not allowed", 415);
+  } else {
+    error.value = null;
+  }
 });
 
 // Define hooks
