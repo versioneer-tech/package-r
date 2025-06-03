@@ -2,6 +2,7 @@ package files
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -18,24 +19,61 @@ type S3Connection struct {
 	bucketPrefix string
 }
 
-func (conn *S3Connection) Presign(key string, cutoff int64) (string, error) {
+/*
+Edge Case Coverage for Presign:
+
+| Input path             | bucketNameOverride | Resulting bucket | Resulting key          | Outcome     |
+|------------------------|--------------------|------------------|------------------------|-------------|
+| "/bucket/key1.txt"     | ""                 | "bucket"         | "key1.txt"             | valid       |
+| "/key1.txt"            | "bucket"           | "bucket"         | "key1.txt"             | valid       |
+| "/bucket/key1.txt"     | "bucket"           | "bucket"         | "key1.txt"             | valid       |
+| "/bucket/"             | "bucket"           | "bucket"         | ""                     | invalid     |
+| "/"                    | "bucket"           | "bucket"         | ""                     | invalid     |
+| ""                     | ""                 | -                | -                      | invalid     |
+*/
+//nolint:gocyclo
+func (conn *S3Connection) Presign(path string, cutoff int64) (string, error) {
 	if conn == nil || conn.s3 == nil {
-		return "", fmt.Errorf("presign without valid S3 connection (bucket: %s, key: %s)", conn.bucketName, key)
+		return "", fmt.Errorf("skip presign without valid S3 connection for '%s'", path)
 	}
-	if key == "" {
-		return "", fmt.Errorf("presign with empty key (bucket: %s)", conn.bucketName)
+	var bucket, key string
+	bucketNameOverride := strings.TrimSpace(strings.Trim(conn.bucketName, "/"))
+	trimmedPath := strings.TrimPrefix(path, "/")
+
+	if bucketNameOverride == "" {
+		if trimmedPath == "" {
+			return "", fmt.Errorf("skip presign without valid path for '%s'", path)
+		}
+		segments := strings.Split(trimmedPath, "/")
+		if len(segments) == 0 || segments[0] == "" {
+			return "", fmt.Errorf("skip presign with invalid path for '%s'", path)
+		}
+		bucket = segments[0]
+		key = strings.Join(segments[1:], "/")
+	} else {
+		bucket = bucketNameOverride
+		if trimmedPath == "" {
+			key = ""
+		} else {
+			segments := strings.Split(trimmedPath, "/")
+			if segments[0] == bucketNameOverride {
+				key = strings.Join(segments[1:], "/")
+			} else {
+				key = trimmedPath
+			}
+		}
 	}
 
 	key = strings.TrimPrefix(key, "/")
-	key = strings.TrimPrefix(key, conn.bucketName+"/")
+	if key == "" {
+		return "", fmt.Errorf("skip presign with empty path for '%s'", path)
+	}
 
 	if conn.bucketPrefix != "" {
-		if !strings.HasSuffix(conn.bucketPrefix, "/") {
-			key = conn.bucketPrefix + "/" + key
-		} else {
-			key = conn.bucketPrefix + key
-		}
+		key = strings.TrimSuffix(conn.bucketPrefix, "/") + "/" + key
 	}
+
+	log.Printf("presigning (bucket: '%s', key: '%s')", bucket, key)
 
 	var getObjectInput *s3.GetObjectInput
 
@@ -43,7 +81,7 @@ func (conn *S3Connection) Presign(key string, cutoff int64) (string, error) {
 		cutoffTime := time.Unix(cutoff, 0)
 
 		listObjectVersionsInput := &s3.ListObjectVersionsInput{
-			Bucket: aws.String(conn.bucketName),
+			Bucket: aws.String(bucket),
 			Prefix: aws.String(key),
 		}
 
@@ -57,7 +95,7 @@ func (conn *S3Connection) Presign(key string, cutoff int64) (string, error) {
 				continue
 			}
 			getObjectInput = &s3.GetObjectInput{
-				Bucket:    aws.String(conn.bucketName),
+				Bucket:    aws.String(bucket),
 				Key:       aws.String(key),
 				VersionId: version.VersionId,
 			}
@@ -67,7 +105,7 @@ func (conn *S3Connection) Presign(key string, cutoff int64) (string, error) {
 
 	if getObjectInput == nil {
 		getObjectInput = &s3.GetObjectInput{
-			Bucket: aws.String(conn.bucketName),
+			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
 		}
 	}

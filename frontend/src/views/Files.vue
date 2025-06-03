@@ -35,6 +35,7 @@ import {
 import { files as api } from "@/api";
 import { storeToRefs } from "pinia";
 import { useFileStore } from "@/stores/file";
+import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
 import { useUploadStore } from "@/stores/upload";
 
@@ -50,6 +51,7 @@ import { name } from "../utils/constants";
 const Editor = defineAsyncComponent(() => import("@/views/files/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("@/views/files/Preview.vue"));
 
+const authStore = useAuthStore();
 const layoutStore = useLayoutStore();
 const fileStore = useFileStore();
 const uploadStore = useUploadStore();
@@ -68,20 +70,26 @@ const clean = (path: string) => {
 const error = ref<StatusError | null>(null);
 
 const currentView = computed(() => {
-  if (fileStore.req?.type === undefined) {
+  const req = fileStore.req;
+  const user = authStore.user;
+
+  if (!req || req.type === undefined) {
     return null;
   }
 
-  if (fileStore.req.isDir) {
+  if (req.isDir) {
     return FileListing;
-  } else if (
-    fileStore.req.type === "text" ||
-    fileStore.req.type === "textImmutable"
-  ) {
+  }
+
+  if (req.type === "text" || req.type === "textImmutable") {
     return Editor;
-  } else {
+  }
+
+  if (user?.perm?.download) {
     return Preview;
   }
+  error.value = new StatusError("preview not allowed", 415)
+  return null;
 });
 
 // Define hooks

@@ -10,7 +10,7 @@
         @action="download"
         :counter="fileStore.selectedCount"
       />
-      <button
+      <!-- <button
         v-if="isSingleFile() && authStore.user?.perm.download"
         class="action copy-clipboard"
         :aria-label="t('buttons.copyDownloadLinkToClipboard')"
@@ -18,7 +18,7 @@
         @click="copyToClipboard(linkSelected())"
       >
         <i class="material-icons">content_paste</i>
-      </button>
+      </button> -->
       <action
         v-if="authStore.user?.perm.download"
         icon="check_circle"
@@ -387,7 +387,7 @@ import { computed, inject, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { StatusError } from "@/api/utils";
-import { copy } from "@/utils/clipboard";
+//import { copy } from "@/utils/clipboard";
 
 const error = ref<StatusError | null>(null);
 const showLimit = ref<number>(100);
@@ -399,7 +399,7 @@ const token = ref<string>("");
 //const tag = ref<boolean>(false);
 
 const $showError = inject<IToastError>("$showError")!;
-const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
+//const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
 
 const { t } = useI18n({});
 
@@ -558,6 +558,7 @@ const download = () => {
   return true;
 };
 
+/*
 const linkSelected = () => {
   return isSingleFile() && req.value
     ? pub_api.getDownloadURL({
@@ -589,6 +590,7 @@ const copyToClipboard = (text: string) => {
     }
   );
 };
+*/
 
 onMounted(async () => {
   // Created
@@ -629,11 +631,7 @@ const checksum = async (event: Event, algo: string) => {
 };
 
 const presign = async (event: Event) => {
-  if (
-    typeof presignedURL.value === "string" &&
-    presignedURL.value.startsWith("http")
-  ) {
-    window.open(presignedURL.value, "_blank", "noopener,noreferrer");
+  if (typeof presignedURL.value === "string") {
     return;
   }
 
@@ -656,11 +654,7 @@ const presign = async (event: Event) => {
 };
 
 const preview = async (event: Event) => {
-  if (
-    typeof previewURL.value === "string" &&
-    previewURL.value.startsWith("http")
-  ) {
-    window.open(previewURL.value, "_blank", "noopener,noreferrer");
+  if (typeof previewURL.value === "string") {
     return;
   }
 

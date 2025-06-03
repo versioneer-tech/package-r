@@ -199,7 +199,7 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 			Commands:       user.Commands,
 			HideDotfiles:   user.HideDotfiles,
 			DateFormat:     user.DateFormat,
-			PresignEnabled: user.Envs != nil && (*user.Envs)["BUCKET_NAME"] != "",
+			PresignEnabled: user.Envs != nil && (*user.Envs)["AWS_ACCESS_KEY_ID"] != "",
 			PreviewEnabled: false, // TBD
 		},
 		RegisteredClaims: jwt.RegisteredClaims{

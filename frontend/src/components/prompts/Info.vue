@@ -242,9 +242,6 @@ export default {
     },
     async presign(event) {
       if (typeof this.presignedURL === "string") {
-        if (this.presignedURL.startsWith("http")) {
-          window.open(this.presignedURL, "_blank", "noopener,noreferrer");
-        }
         return;
       }
 
@@ -263,9 +260,6 @@ export default {
     },
     async preview(event) {
       if (typeof this.previewURL === "string") {
-        if (this.previewURL.startsWith("http")) {
-          window.open(this.previewURL, "_blank", "noopener,noreferrer");
-        }
         return;
       }
 

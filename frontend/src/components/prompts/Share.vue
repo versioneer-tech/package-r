@@ -32,7 +32,7 @@
                 <i class="material-icons">content_paste</i>
               </button>
             </td>
-            <td class="small" v-if="hasDownloadLink()">
+            <!-- <td class="small" v-if="hasDownloadLink()">
               <button
                 class="action copy-clipboard"
                 :aria-label="$t('buttons.copyDownloadLinkToClipboard')"
@@ -41,7 +41,7 @@
               >
                 <i class="material-icons">content_paste_go</i>
               </button>
-            </td>
+            </td> -->
             <td class="small">
               <button
                 class="action"

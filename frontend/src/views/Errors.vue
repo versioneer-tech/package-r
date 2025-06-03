@@ -34,6 +34,10 @@ const errors: {
     icon: "gps_off",
     message: "errors.notFound",
   },
+  415: {
+    icon: "info",
+    message: "errors.unsupportedMediaType",
+  },
   500: {
     icon: "error_outline",
     message: "errors.internal",
