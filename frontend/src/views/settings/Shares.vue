@@ -31,7 +31,7 @@
                 <template v-else>{{ t("permanent") }}</template>
               </td>
               <td>{{ link.description }}</td>
-              <td v-if="authStore.user?.perm.admin">{{ link.username }}</td>              
+              <td v-if="authStore.user?.perm.admin">{{ link.username }}</td>
               <td class="small">
                 <button
                   class="action"

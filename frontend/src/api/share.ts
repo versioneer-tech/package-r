@@ -29,7 +29,13 @@ export async function create(
     url += `?expires=${expires}&unit=${unit}`;
   }
   let body = "{}";
-  if (password != "" || expires !== "" || unit !== "hours" || description !== "" || prefix !== "") {
+  if (
+    password != "" ||
+    expires !== "" ||
+    unit !== "hours" ||
+    description !== "" ||
+    prefix !== ""
+  ) {
     body = JSON.stringify({
       password: password,
       expires: expires.toString(), // backend expects string not number

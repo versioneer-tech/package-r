@@ -249,7 +249,7 @@ export default {
         } else {
           res = await share_api.create(
             this.url,
-            this.password,            
+            this.password,
             this.description,
             this.prefix,
             this.time,

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2025.6.3](https://github.com/versioneer-tech/package-r/compare/v2025.6.2...v2025.6.3) (2025-06-11)
+
+- automatically redirect to presignedURL with followRedirect query
+
+- add description and configurable prefix field for share creation
+
+
 ### [2025.6.2](https://github.com/versioneer-tech/package-r/compare/v2025.6.1...v2025.6.2) (2025-06-03)
 
 - Fix: Click on presigned URLs should not open in new window #18

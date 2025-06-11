@@ -163,6 +163,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	return renderJSON(w, r, s)
 })
 
+//nolint:gocritic
 func getSharePasswordHash(body share.CreateBody) (data []byte, statuscode int, err error) {
 	if body.Password == "" {
 		return nil, 0, nil
