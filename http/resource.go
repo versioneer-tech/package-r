@@ -77,6 +77,12 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 		file.Content = ""
 	}
 
+	if r.URL.Query().Get("followRedirect") != "" && file.PresignedURL != "" {
+		// Use HTTP 302 (Found) to redirect to the presigned URL
+		http.Redirect(w, r, file.PresignedURL, http.StatusFound)
+		return http.StatusFound, nil
+	}
+
 	return renderJSON(w, r, file)
 })
 
