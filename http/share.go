@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -81,6 +82,8 @@ var shareDeleteHandler = withPermShare(func(_ http.ResponseWriter, r *http.Reque
 	return errToStatus(err), err
 })
 
+var prefixRegex = regexp.MustCompile(`^[a-z0-9-]+$`)
+
 var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	var s *share.Link
 	var body share.CreateBody
@@ -91,13 +94,19 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		defer r.Body.Close()
 	}
 
+	if body.Prefix != "" {
+		if !prefixRegex.MatchString(body.Prefix) {
+			return http.StatusBadRequest, fmt.Errorf("invalid prefix: %s", body.Prefix)
+		}
+	}
+
 	bytes := make([]byte, 6) //nolint:gomnd
 	_, err := rand.Read(bytes)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 
-	str := base64.URLEncoding.EncodeToString(bytes)
+	str := body.Prefix + base64.URLEncoding.EncodeToString(bytes)
 
 	var expire int64 = 0
 
@@ -141,6 +150,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		Path:         r.URL.Path,
 		Hash:         str,
 		Expire:       expire,
+		Description:  body.Description,
 		UserID:       d.user.ID,
 		PasswordHash: string(hash),
 		Token:        token,

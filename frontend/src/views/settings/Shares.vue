@@ -15,6 +15,7 @@
               <th v-if="authStore.user?.perm.admin">
                 {{ t("settings.username") }}
               </th>
+              <th>{{ t("settings.shareDescription") }}</th>
               <th></th>
               <th></th>
             </tr>
@@ -29,7 +30,8 @@
                 }}</template>
                 <template v-else>{{ t("permanent") }}</template>
               </td>
-              <td v-if="authStore.user?.perm.admin">{{ link.username }}</td>
+              <td>{{ link.description }}</td>
+              <td v-if="authStore.user?.perm.admin">{{ link.username }}</td>              
               <td class="small">
                 <button
                   class="action"

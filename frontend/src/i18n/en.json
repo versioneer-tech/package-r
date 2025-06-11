@@ -223,6 +223,8 @@
     "shareDuration": "Share Duration",
     "shareManagement": "Share Management",
     "shareDeleted": "Share deleted!",
+    "shareDescription": "Description",
+    "sharePrefix": "Prefix",
     "singleClick": "Use single clicks to open files and directories",
     "themes": {
       "default": "System default",

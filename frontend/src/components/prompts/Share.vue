@@ -10,6 +10,7 @@
           <tr>
             <th>#</th>
             <th>{{ $t("settings.shareDuration") }}</th>
+            <th>{{ $t("settings.shareDescription") }}</th>
             <th></th>
             <th></th>
           </tr>
@@ -22,6 +23,7 @@
               }}</template>
               <template v-else>{{ $t("permanent") }}</template>
             </td>
+            <td>{{ link.description }}</td>
             <td class="small">
               <button
                 class="action copy-clipboard"
@@ -112,6 +114,20 @@
           v-model.trim="password"
           tabindex="3"
         />
+        <p>{{ $t("settings.shareDescription") }}</p>
+        <input
+          class="input input--block"
+          v-model.trim="description"
+          tabindex="4"
+        />
+        <p>{{ $t("settings.sharePrefix") }}</p>
+        <input
+          class="input input--block"
+          v-model.trim="prefix"
+          tabindex="5"
+          pattern="^[a-z0-9-]+$"
+          title="Only lowercase letters, numbers, and hyphens are allowed"
+        />
       </div>
 
       <div class="card-action">
@@ -120,7 +136,7 @@
           @click="() => switchListing()"
           :aria-label="$t('buttons.cancel')"
           :title="$t('buttons.cancel')"
-          tabindex="5"
+          tabindex="6"
         >
           {{ $t("buttons.cancel") }}
         </button>
@@ -130,7 +146,7 @@
           @click="submit"
           :aria-label="$t('buttons.share')"
           :title="$t('buttons.share')"
-          tabindex="4"
+          tabindex="7"
         >
           {{ $t("buttons.share") }}
         </button>
@@ -146,6 +162,7 @@ import { share as share_api, pub as pub_api } from "@/api";
 import dayjs from "dayjs";
 import { useLayoutStore } from "@/stores/layout";
 import { copy } from "@/utils/clipboard";
+import { defaultPrefix } from "@/utils/constants";
 
 export default {
   name: "share",
@@ -156,6 +173,8 @@ export default {
       links: [],
       clip: null,
       password: "",
+      description: "",
+      prefix: defaultPrefix,
       listing: true,
     };
   },
@@ -221,11 +240,18 @@ export default {
         let res = null;
 
         if (!this.time) {
-          res = await share_api.create(this.url, this.password);
-        } else {
           res = await share_api.create(
             this.url,
             this.password,
+            this.description,
+            this.prefix
+          );
+        } else {
+          res = await share_api.create(
+            this.url,
+            this.password,            
+            this.description,
+            this.prefix,
             this.time,
             this.unit
           );
@@ -237,6 +263,8 @@ export default {
         this.time = 0;
         this.unit = "hours";
         this.password = "";
+        this.description = "";
+        this.prefix = defaultPrefix;
 
         this.listing = true;
       } catch (e) {
