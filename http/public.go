@@ -142,6 +142,12 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 		file.Content = ""
 	}
 
+	follow, ok := r.URL.Query()["followRedirect"]
+	if ok && !strings.EqualFold(follow[0], "false") && file.PresignedURL != "" {
+		http.Redirect(w, r, file.PresignedURL, http.StatusFound)
+		return http.StatusFound, nil
+	}
+
 	return renderJSON(w, r, file)
 })
 
