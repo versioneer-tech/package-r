@@ -53,7 +53,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 	}
 
 	if presign := r.URL.Query().Get("presign"); presign != "false" && presign != "0" && presign != "" {
-		url, err := files.Presign(file.Path, *d.user.Envs)
+		url, err := files.Presign(file.Path, r.Method, *d.user.Envs)
 		if errors.Is(err, fbErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {
@@ -79,8 +79,9 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 
 	follow, ok := r.URL.Query()["followRedirect"]
 	if ok && !strings.EqualFold(follow[0], "false") && file.PresignedURL != "" {
-		http.Redirect(w, r, file.PresignedURL, http.StatusFound)
-		return http.StatusFound, nil
+		status := http.StatusTemporaryRedirect // 307 to preserve method
+		http.Redirect(w, r, file.PresignedURL, status)
+		return status, nil
 	}
 
 	return renderJSON(w, r, file)

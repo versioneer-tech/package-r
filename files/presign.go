@@ -32,7 +32,7 @@ Edge Case Coverage for Presign:
 | ""                     | ""                 | -                | -                      | invalid     |
 */
 //nolint:gocyclo
-func (conn *S3Connection) Presign(path string, cutoff int64) (string, error) {
+func (conn *S3Connection) Presign(path, method string, cutoff int64) (string, error) {
 	if conn == nil || conn.s3 == nil {
 		return "", fmt.Errorf("skip presign without valid S3 connection for '%s'", path)
 	}
@@ -111,6 +111,8 @@ func (conn *S3Connection) Presign(path string, cutoff int64) (string, error) {
 	}
 
 	req, _ := conn.s3.GetObjectRequest(getObjectInput)
+	req.Operation.HTTPMethod = method
+	req.HTTPRequest.Method = method
 	return req.Presign(7 * 24 * time.Hour)
 }
 
@@ -121,7 +123,7 @@ func getStringOrDefault(values map[string]string, key, defaultValue string) stri
 	return defaultValue
 }
 
-func Presign(path string, envs map[string]string) (string, error) {
+func Presign(path, method string, envs map[string]string) (string, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(
 			getStringOrDefault(envs, "AWS_ACCESS_KEY_ID", os.Getenv("AWS_ACCESS_KEY_ID")),
@@ -142,7 +144,7 @@ func Presign(path string, envs map[string]string) (string, error) {
 		bucketPrefix: getStringOrDefault(envs, "BUCKET_PREFIX", ""),
 	}
 
-	url, err := conn.Presign(path, 0)
+	url, err := conn.Presign(path, method, 0)
 	if err != nil {
 		return "", fmt.Errorf("could not presign object %q: %w", path, err)
 	}

@@ -106,7 +106,19 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		return http.StatusInternalServerError, err
 	}
 
-	str := body.Prefix + base64.URLEncoding.EncodeToString(bytes)
+	flags := 0
+
+	if d.user.Perm.Download {
+		flags |= 0x01 // canDownload
+	}
+	if d.user.Envs != nil && (*d.user.Envs)["AWS_ACCESS_KEY_ID"] != "" {
+		flags |= 0x02 // canPresign
+	}
+	if false {
+		flags |= 0x04 // canPreview
+	}
+
+	str := body.Prefix + base64.URLEncoding.EncodeToString(bytes) + fmt.Sprintf("-%02x", flags)
 
 	var expire int64 = 0
 

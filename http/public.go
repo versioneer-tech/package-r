@@ -118,7 +118,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 	//nolint:goconst
 	if presign := r.URL.Query().Get("presign"); presign != "false" && presign != "0" && presign != "" {
-		url, err := files.Presign(file.RealPath(), *d.user.Envs)
+		url, err := files.Presign(file.RealPath(), r.Method, *d.user.Envs)
 		if errors.Is(err, fbErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {
@@ -144,8 +144,9 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 	follow, ok := r.URL.Query()["followRedirect"]
 	if ok && !strings.EqualFold(follow[0], "false") && file.PresignedURL != "" {
-		http.Redirect(w, r, file.PresignedURL, http.StatusFound)
-		return http.StatusFound, nil
+		status := http.StatusTemporaryRedirect // 307 to preserve method
+		http.Redirect(w, r, file.PresignedURL, status)
+		return status, nil
 	}
 
 	return renderJSON(w, r, file)

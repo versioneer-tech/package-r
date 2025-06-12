@@ -186,13 +186,15 @@ router.beforeResolve(async (to, from, next) => {
   // this will only be null on first route
   if (from.name == null) {
     try {
-      await initAuth();
+      if (to.matched.some((record) => record.meta.requiresAuth)) {
+        await initAuth();
+      }
     } catch (error) {
       console.error(error);
     }
   }
 
-  // if (to.path.endsWith("/login") && authStore.isLoggedIn) {
+  // if (to.path.endsWith("/login"  ) && authStore.isLoggedIn) {
   //   next({ path: "/files/" });
   //   return;
   // }
