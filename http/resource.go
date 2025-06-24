@@ -52,7 +52,8 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 		file.Content = ""
 	}
 
-	if presign := r.URL.Query().Get("presign"); presign != "false" && presign != "0" && presign != "" {
+	presign, ok := r.URL.Query()["presign"]
+	if ok && !strings.EqualFold(presign[0], "false") {
 		url, err := files.Presign(file.Path, r.Method, *d.user.Envs)
 		if errors.Is(err, fbErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
@@ -60,18 +61,6 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 			return http.StatusInternalServerError, err
 		}
 		file.PresignedURL = url
-
-		// do not waste bandwidth
-		file.Content = ""
-	}
-
-	if preview := r.URL.Query().Get("preview"); preview != "false" && preview != "0" && preview != "" {
-		err := file.Preview()
-		if errors.Is(err, fbErrors.ErrInvalidOption) {
-			return http.StatusBadRequest, nil
-		} else if err != nil {
-			return http.StatusInternalServerError, err
-		}
 
 		// do not waste bandwidth
 		file.Content = ""

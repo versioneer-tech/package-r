@@ -224,7 +224,10 @@
     "shareManagement": "Share Management",
     "shareDeleted": "Share deleted!",
     "shareDescription": "Description",
-    "sharePrefix": "Prefix",
+    "hash": "Hash",
+    "catalogName": "Catalog Name",
+    "filterField": "Filter Field",
+    "assetsBaseURL": "Assets BaseURL",
     "singleClick": "Use single clicks to open files and directories",
     "themes": {
       "default": "System default",

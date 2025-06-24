@@ -1,6 +1,6 @@
 module github.com/versioneer-tech/package-r/tools
 
-go 1.23
+go 1.24
 
 require (
 	github.com/golangci/golangci-lint v1.60.3

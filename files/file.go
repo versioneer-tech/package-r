@@ -229,6 +229,31 @@ func (i *FileInfo) RealPath() string {
 	return i.Path
 }
 
+func IsMimeText(mimetype string) bool {
+	if strings.HasPrefix(mimetype, "text/") {
+		return true
+	}
+	switch mimetype {
+	case
+		"application/json",
+		"application/ld+json",
+		"application/x-ndjson",
+		"application/javascript",
+		"application/x-javascript",
+		"application/ecmascript",
+		"application/xml",
+		"application/x-www-form-urlencoded",
+		"application/sql",
+		"application/yaml",
+		"application/x-yaml",
+		"application/graphql",
+		"application/geo+json":
+		return true
+	default:
+		return false
+	}
+}
+
 //nolint:goconst
 func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
 	if IsNamedPipe(i.Mode) {
@@ -242,11 +267,11 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
 
 	mimetype := mime.TypeByExtension(i.Extension)
 
-	var buffer []byte
-	if readHeader {
-		buffer = i.readFirstBytes()
+	if readHeader && mimetype == "" {
+		log.Printf("inferring mime type for %s", i.Path)
 
-		if mimetype == "" {
+		buffer := i.readFirstBytes()
+		if len(buffer) > 0 {
 			mimetype = http.DetectContentType(buffer)
 		}
 	}
@@ -271,7 +296,7 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
 	case strings.HasSuffix(mimetype, "pdf"):
 		i.Type = "pdf"
 		return nil
-	case (strings.HasPrefix(mimetype, "text") || !isBinary(buffer)) && i.Size <= 10*1024*1024: // 10 MB
+	case (IsMimeText(mimetype) /*|| !isBinary(buffer)*/) && i.Size <= 10*1024*1024: // 10 MB
 		i.Type = "text"
 
 		if !modify {
@@ -296,6 +321,10 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
 }
 
 func calculateImageResolution(fSys afero.Fs, filePath string) (*ImageResolution, error) {
+	if true { // perhaps make configurable in future again
+		return nil, nil
+	}
+
 	file, err := fSys.Open(filePath)
 	if err != nil {
 		return nil, err

@@ -19,7 +19,10 @@ export async function create(
   url: string,
   password = "",
   description = "",
-  prefix = "",
+  hash = "",
+  catalogName = "",
+  filtersField = "",
+  assetsBaseURL = "",
   expires = "",
   unit = "hours"
 ) {
@@ -31,17 +34,21 @@ export async function create(
   let body = "{}";
   if (
     password != "" ||
-    expires !== "" ||
-    unit !== "hours" ||
     description !== "" ||
-    prefix !== ""
+    hash !== "" ||
+    catalogName !== "" ||
+    expires !== "" ||
+    unit !== "hours"
   ) {
     body = JSON.stringify({
       password: password,
+      description: description,
+      hash: hash,
+      catalogName: catalogName,
+      filtersField: filtersField,
+      assetsBaseURL: assetsBaseURL,
       expires: expires.toString(), // backend expects string not number
       unit: unit,
-      description: description,
-      prefix: prefix,
     });
   }
   return fetchJSON(url, {

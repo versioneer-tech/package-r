@@ -1,15 +1,11 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "Run Init Script",
-            "type": "shell",
-            "command": "${workspaceFolder}/init.sh",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": []
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "init",
+      "type": "shell",
+      "command": "${workspaceFolder}/init.sh",
+      "problemMatcher": []
+    }
+  ]
 }

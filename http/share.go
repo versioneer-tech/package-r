@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/http"
+	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -82,7 +84,8 @@ var shareDeleteHandler = withPermShare(func(_ http.ResponseWriter, r *http.Reque
 	return errToStatus(err), err
 })
 
-var prefixRegex = regexp.MustCompile(`^[a-z0-9-]+$`)
+// allowed characters: a-z, 0-9, ., -, min length: 1 character, max length: 20 characters
+var hashRegex = regexp.MustCompile(`^[a-z0-9.-]{1,20}$`)
 
 var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	var s *share.Link
@@ -94,36 +97,42 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		defer r.Body.Close()
 	}
 
-	if body.Prefix != "" {
-		if !prefixRegex.MatchString(body.Prefix) {
-			return http.StatusBadRequest, fmt.Errorf("invalid prefix: %s", body.Prefix)
+	hash := body.Hash
+	if hash == "" {
+		const charset = "abcdefghjkmnpqrstuvwxyz23456789" // no 0, O, l, 1, I
+		random := make([]byte, 8)                         //nolint:gomnd
+		for i := range random {
+			n, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+			if err != nil {
+				return http.StatusInternalServerError, err
+			}
+			random[i] = charset[n.Int64()]
+		}
+
+		if strings.Contains(d.settings.ShareLink.DefaultHash, "<random>") {
+			hash = strings.Replace(d.settings.ShareLink.DefaultHash, "<random>", string(random), 1)
+		} else {
+			hash = d.settings.ShareLink.DefaultHash + string(random)
+		}
+	} else {
+		_, err := d.store.Share.GetByHash(hash)
+		if err == nil {
+			return http.StatusConflict, fmt.Errorf("hash already exists: %s", hash)
 		}
 	}
 
-	bytes := make([]byte, 6) //nolint:gomnd
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return http.StatusInternalServerError, err
+	if !hashRegex.MatchString(hash) {
+		return http.StatusBadRequest, fmt.Errorf("invalid hash: %s", hash)
 	}
 
-	flags := 0
-
-	if d.user.Perm.Download {
-		flags |= 0x01 // canDownload
+	catalogURL := ""
+	if d.settings.Catalog.BaseURL != "" && body.CatalogName != "" {
+		catalogURL = path.Join(d.settings.Catalog.BaseURL, r.URL.Path, body.CatalogName)
 	}
-	if d.user.Envs != nil && (*d.user.Envs)["AWS_ACCESS_KEY_ID"] != "" {
-		flags |= 0x02 // canPresign
-	}
-	if false {
-		flags |= 0x04 // canPreview
-	}
-
-	str := body.Prefix + base64.URLEncoding.EncodeToString(bytes) + fmt.Sprintf("-%02x", flags)
 
 	var expire int64 = 0
 
 	if body.Expires != "" {
-		//nolint:govet
 		num, err := strconv.Atoi(body.Expires)
 		if err != nil {
 			return http.StatusInternalServerError, err
@@ -144,13 +153,13 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 		expire = time.Now().Add(add).Unix()
 	}
 
-	hash, status, err := getSharePasswordHash(body)
+	passwordHash, status, err := getSharePasswordHash(body)
 	if err != nil {
 		return status, err
 	}
 
 	var token string
-	if len(hash) > 0 {
+	if len(passwordHash) > 0 {
 		tokenBuffer := make([]byte, 96) //nolint:gomnd
 		if _, err := rand.Read(tokenBuffer); err != nil {
 			return http.StatusInternalServerError, err
@@ -159,13 +168,16 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	}
 
 	s = &share.Link{
-		Path:         r.URL.Path,
-		Hash:         str,
-		Expire:       expire,
-		Description:  body.Description,
-		UserID:       d.user.ID,
-		PasswordHash: string(hash),
-		Token:        token,
+		Path:          r.URL.Path,
+		Hash:          hash,
+		Expire:        expire,
+		Description:   body.Description,
+		CatalogURL:    catalogURL,
+		FiltersField:  body.FiltersField,
+		AssetsBaseURL: body.AssetsBaseURL,
+		UserID:        d.user.ID,
+		PasswordHash:  string(passwordHash),
+		Token:         token,
 	}
 
 	if err := d.store.Share.Save(s); err != nil {

@@ -5,7 +5,7 @@ env:
 
 builds:
   - env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     ldflags:
       - -s -w -X github.com/versioneer-tech/package-r/version.Version={{ .Version }} -X github.com/versioneer-tech/package-r/version.CommitSHA={{ .ShortCommit }}
     main: main.go
@@ -14,9 +14,11 @@ builds:
       - linux
     goarch:
       - amd64
+
 archives:
   - name_template: "{{.Os}}-{{.Arch}}{{if .Arm}}v{{.Arm}}{{end}}-{{ .ProjectName }}"
     format: tar.gz
+
 dockers:
   - dockerfile: Dockerfile
     use: buildx
@@ -35,6 +37,7 @@ dockers:
     extra_files:
       - healthcheck.sh
       - init.sh
+
 docker_manifests:
   - name_template: "ghcr.io/versioneer-tech/package-r:latest"
     image_templates:

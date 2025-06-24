@@ -8,11 +8,15 @@
   --disable-thumbnails \
   --disable-type-detection-by-header \
   --signup=false \
-  --auth.method=proxy \
+  --auth.method=${FB_AUTH_METHOD:-"proxy"} \
   --auth.header=${FB_AUTH_HEADER:-"X-Username"} \
   --auth.mapper=${FB_AUTH_MAPPER:-""} \
   --branding.name ${FB_BRANDING_NAME:-packageR} \
   --branding.files ${FB_BRANDING_FILES:-/package-r} \
+  --sharelink.defaultHash ${FB_SHARELINK_DEFAULT_HASH:-"public-<random>-v1"} \
+  --catalog.baseurl ${FB_CATALOG_BASE_URL:-""} \
+  --catalog.defaultName ${FB_CATALOG_DEFAULT_NAME:-"catalog.v1.parquet"} \
+  --catalog.previewURL ${FB_CATALOG_PREVIEW_URL} \
   --commands "" > /dev/null
 
 envs=\

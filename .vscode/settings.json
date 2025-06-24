@@ -1,5 +1,11 @@
 {
-    "go.formatTool": "goimports",
-    "go.lintTool": "golangci-lint",
-    "makefile.configureOnOpen": false
+  "go.useLanguageServer": true,
+  "go.lintTool": "golangci-lint",
+  "go.lintOnSave": "package",
+  "go.formatTool": "goimports",
+  "go.toolsManagement.autoUpdate": true,
+  "go.testFlags": ["-v"],
+  "go.toolsEnvVars": {
+    "CGO_ENABLED": "1"
+  }
 }

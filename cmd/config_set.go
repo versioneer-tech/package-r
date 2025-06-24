@@ -63,6 +63,14 @@ you want to change. Other options will remain unchanged.`,
 				set.Branding.DisableUsedPercentage = mustGetBool(flags, flag.Name)
 			case "branding.files":
 				set.Branding.Files = mustGetString(flags, flag.Name)
+			case "sharelink.defaultHash":
+				set.ShareLink.DefaultHash = mustGetString(flags, flag.Name)
+			case "catalog.baseurl":
+				set.Catalog.BaseURL = mustGetString(flags, flag.Name)
+			case "catalog.defaultName":
+				set.Catalog.DefaultName = mustGetString(flags, flag.Name)
+			case "catalog.previewURL":
+				set.Catalog.PreviewURL = mustGetString(flags, flag.Name)
 			}
 		})
 

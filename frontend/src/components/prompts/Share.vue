@@ -124,14 +124,28 @@
           v-model.trim="description"
           tabindex="4"
         />
-        <p>{{ $t("settings.sharePrefix") }}</p>
-        <input
-          class="input input--block"
-          v-model.trim="prefix"
-          tabindex="5"
-          pattern="^[a-z0-9-]+$"
-          title="Only lowercase letters, numbers, and hyphens are allowed"
-        />
+        <p>{{ $t("settings.hash") }}</p>
+        <input class="input input--block" v-model.trim="hash" tabindex="5" />
+        <div v-if="catalogBaseURL != ''">
+          <p>{{ $t("settings.catalogName") }}</p>
+          <input
+            class="input input--block"
+            v-model.trim="catalogName"
+            tabindex="6"
+          />
+          <p>{{ $t("settings.filterField") }}</p>
+          <input
+            class="input input--block"
+            v-model.trim="filterField"
+            tabindex="7"
+          />
+          <p>{{ $t("settings.assetsBaseURL") }}</p>
+          <input
+            class="input input--block"
+            v-model.trim="assetsBaseURL"
+            tabindex="8"
+          />
+        </div>
       </div>
 
       <div class="card-action">
@@ -162,11 +176,30 @@
 <script>
 import { mapActions, mapState } from "pinia";
 import { useFileStore } from "@/stores/file";
+import { useAuthStore } from "@/stores/auth";
 import { share as share_api, pub as pub_api } from "@/api";
 import dayjs from "dayjs";
 import { useLayoutStore } from "@/stores/layout";
 import { copy } from "@/utils/clipboard";
-import { defaultPrefix } from "@/utils/constants";
+import {
+  shareLinkDefaultHash,
+  catalogBaseURL,
+  catalogDefaultName,
+} from "@/utils/constants";
+
+function defaultHash(length = 8) {
+  const chars = "abcdefghjkmnpqrstuvwxyz23456789"; // no 0, O, l, 1, I
+  let random = "";
+  for (let i = 0; i < length; i++) {
+    random += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  if (shareLinkDefaultHash.includes("<random>")) {
+    return shareLinkDefaultHash.replace("<random>", random);
+  } else {
+    return shareLinkDefaultHash + random;
+  }
+}
 
 export default {
   name: "share",
@@ -178,12 +211,17 @@ export default {
       clip: null,
       password: "",
       description: "",
-      prefix: defaultPrefix,
+      hash: defaultHash(),
+      catalogBaseURL: catalogBaseURL,
+      catalogName: catalogDefaultName,
+      filterField: "",
+      assetsBaseURL: "",
       listing: true,
     };
   },
   inject: ["$showError", "$showSuccess"],
   computed: {
+    ...mapState(useAuthStore, ["user"]),
     ...mapState(useFileStore, [
       "req",
       "selected",
@@ -241,6 +279,26 @@ export default {
     },
     submit: async function () {
       try {
+        const hashPattern = /^[a-z0-9\-]+$/;
+        if (this.hash !== "" && !hashPattern.test(this.hash)) {
+          this.$showError(
+            "Invalid hash - only lowercase letters, numbers and hyphens are allowed!"
+          );
+          return;
+        }
+
+        const catalogNamePattern = /^[a-z0-9.\-]+$/;
+        if (
+          this.catalogBaseURL != "" &&
+          this.catalogName !== "" &&
+          !catalogNamePattern.test(this.catalogName)
+        ) {
+          this.$showError(
+            "Invalid catalog name - only lowercase letters, numbers, dots and hyphens are allowed!"
+          );
+          return;
+        }
+
         let res = null;
 
         if (!this.time) {
@@ -248,14 +306,21 @@ export default {
             this.url,
             this.password,
             this.description,
-            this.prefix
+            this.hash,
+            this.catalogName,
+            this.filterField,
+            this.assetsBaseURL
           );
         } else {
           res = await share_api.create(
             this.url,
             this.password,
             this.description,
-            this.prefix,
+            this.hash,
+            this.catalogName,
+            this.catalogName,
+            this.filterField,
+            this.assetsBaseURL,
             this.time,
             this.unit
           );
@@ -268,7 +333,10 @@ export default {
         this.unit = "hours";
         this.password = "";
         this.description = "";
-        this.prefix = defaultPrefix;
+        this.hash = defaultHash();
+        this.catalogName = catalogDefaultName;
+        this.filterField = "";
+        this.assetsBaseURL = "";
 
         this.listing = true;
       } catch (e) {

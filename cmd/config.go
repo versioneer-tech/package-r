@@ -49,6 +49,11 @@ func addConfigFlags(flags *pflag.FlagSet) {
 	flags.String("branding.files", "", "path to directory with images and custom styles")
 	flags.Bool("branding.disableExternal", false, "disable external links such as GitHub links")
 	flags.Bool("branding.disableUsedPercentage", false, "disable used disk percentage graph")
+
+	flags.String("sharelink.defaultHash", "", "(optional) hash of share link, supports templating via <random>")
+	flags.String("catalog.baseurl", "", "(optional) base url of catalog")
+	flags.String("catalog.defaultName", "", "(optional) default catalog name")
+	flags.String("catalog.previewURL", "", "(optional) preview URL")
 }
 
 //nolint:gocyclo

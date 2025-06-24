@@ -205,7 +205,7 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpirationTime)),
-			Issuer:    "File Browser",
+			Issuer:    "packageR",
 		},
 	}
 

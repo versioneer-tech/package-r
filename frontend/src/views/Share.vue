@@ -1,7 +1,7 @@
 <template>
   <div>
-    <header-bar showMenu showLogo>
-      <title />
+    <header-bar showLogo>
+      <title>{{ name }}</title>
 
       <action
         v-if="fileStore.selectedCount && canDownload"
@@ -387,6 +387,7 @@ import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { StatusError } from "@/api/utils";
 //import { copy } from "@/utils/clipboard";
+import { name, catalogPreviewURL } from "@/utils/constants";
 
 const error = ref<StatusError | null>(null);
 const showLimit = ref<number>(100);
@@ -475,6 +476,10 @@ const fetchData = async () => {
   fileStore.reload = false;
   fileStore.selected = [];
   fileStore.multiple = false;
+
+  presignedURL.value = null;
+  previewURL.value = null;
+
   layoutStore.closeHovers();
 
   // Set loading to true and reset the error.
@@ -595,15 +600,19 @@ onMounted(async () => {
   hash.value = route.params.path[0];
   window.addEventListener("keydown", keyEvent);
   await fetchData();
-  const lastTwo = hash.value.slice(-2);
 
-  if (/^[0-9a-fA-F]{2}$/.test(lastTwo)) {
-    const flags = parseInt(lastTwo, 16);
+  canDownload.value = false;
 
-    canDownload.value = (flags & 0x01) !== 0;
-    canPresign.value = (flags & 0x02) !== 0;
-    canPreview.value = (flags & 0x04) !== 0;
+  const lastDotIndex = hash.value.lastIndexOf(".");
+  if (lastDotIndex !== -1) {
+    const afterDot = hash.value.slice(lastDotIndex + 1);
+    if (afterDot.includes("d")) {
+      canDownload.value = true;
+    }
   }
+
+  canPresign.value = true; // TBD
+  canPreview.value = catalogPreviewURL !== "";
 });
 
 onBeforeUnmount(() => {
