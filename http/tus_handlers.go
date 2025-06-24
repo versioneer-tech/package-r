@@ -14,6 +14,7 @@ import (
 	"github.com/versioneer-tech/package-r/files"
 )
 
+//nolint:goconst
 func tusPostHandler() handleFunc {
 	return withUser(func(_ http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		file, err := files.NewFileInfo(&files.FileOptions{

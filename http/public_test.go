@@ -71,7 +71,7 @@ func TestPublicShareHandlerAuthentication(t *testing.T) {
 				}
 
 				t.Cleanup(func() {
-					if err := db.Close(); err != nil { //nolint:govet
+					if err := db.Close(); err != nil {
 						t.Errorf("failed to close db: %v", err)
 					}
 				})

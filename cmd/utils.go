@@ -72,7 +72,7 @@ func dbExists(path string) (bool, error) {
 		d := filepath.Dir(path)
 		_, err = os.Stat(d)
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(d, 0700); err != nil { //nolint:govet,gomnd
+			if err := os.MkdirAll(d, 0700); err != nil {
 				return false, err
 			}
 			return false, nil
@@ -93,6 +93,7 @@ func python(fn pythonFunc, cfg pythonConfig) cobraFunc {
 		}
 		exists, err := dbExists(path)
 
+		//nolint:gocritic
 		if err != nil {
 			panic(err)
 		} else if exists && cfg.noDB {
@@ -114,6 +115,7 @@ func python(fn pythonFunc, cfg pythonConfig) cobraFunc {
 	}
 }
 
+//nolint:goconst
 func marshal(filename string, data interface{}) error {
 	fd, err := os.Create(filename)
 	checkErr(err)

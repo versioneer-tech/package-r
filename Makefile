@@ -5,7 +5,9 @@ LDFLAGS += -w -s \
 	-X "$(MODULE)/version.Version=$(VERSION)" \
 	-X "$(MODULE)/version.CommitSHA=$(VERSION_HASH)"
 
-## Build:
+# ------------------------------------------------------------------------------
+# Build Targets
+# ------------------------------------------------------------------------------
 
 .PHONY: build
 build: | build-frontend build-backend ## Build everything
@@ -19,7 +21,9 @@ build-backend: ## Build backend
 	$Q CGO_ENABLED=1 \
 	$(go) build -ldflags '$(LDFLAGS)' -o filebrowser
 
-## Tests:
+# ------------------------------------------------------------------------------
+# Test Targets
+# ------------------------------------------------------------------------------
 
 .PHONY: test
 test: | test-frontend test-backend ## Run all tests
@@ -32,7 +36,9 @@ test-frontend: ## Run frontend tests
 test-backend: ## Run backend tests
 	$Q $(go) test -v ./...
 
-## Linting:
+# ------------------------------------------------------------------------------
+# Lint Targets
+# ------------------------------------------------------------------------------
 
 .PHONY: lint
 lint: lint-frontend lint-backend ## Run all linters
@@ -45,22 +51,22 @@ lint-frontend: ## Run frontend linters
 lint-backend: | $(golangci-lint) ## Run backend linters
 	$Q $(golangci-lint) run -v
 
-.PHONY: lint-commits
-lint-commits: $(commitlint) ## Run commit linters
-	$Q ./scripts/commitlint.sh
-
+.PHONY: fmt
 fmt: $(goimports) ## Format Go source files
 	$Q $(goimports) -local $(MODULE) -w $$(find . -type f -name '*.go' -not -path "./vendor/*")
 
+# ------------------------------------------------------------------------------
+# Clean Targets
+# ------------------------------------------------------------------------------
+
+.PHONY: clean
 clean: clean-tools ## Clean all build artifacts
 
-## Release:
+# ------------------------------------------------------------------------------
+# Help Target
+# ------------------------------------------------------------------------------
 
-.PHONY: bump-version
-bump-version: $(standard-version) ## Bump app version
-	$Q ./scripts/bump_version.sh
-
-## Help:
+.PHONY: help
 help: ## Show this help
 	@echo ''
 	@echo 'Usage:'

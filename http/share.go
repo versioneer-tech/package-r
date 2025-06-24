@@ -100,7 +100,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	hash := body.Hash
 	if hash == "" {
 		const charset = "abcdefghjkmnpqrstuvwxyz23456789" // no 0, O, l, 1, I
-		random := make([]byte, 8)                         //nolint:gomnd
+		random := make([]byte, 8)
 		for i := range random {
 			n, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
 			if err != nil {
@@ -160,7 +160,7 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 
 	var token string
 	if len(passwordHash) > 0 {
-		tokenBuffer := make([]byte, 96) //nolint:gomnd
+		tokenBuffer := make([]byte, 96)
 		if _, err := rand.Read(tokenBuffer); err != nil {
 			return http.StatusInternalServerError, err
 		}
@@ -187,7 +187,6 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	return renderJSON(w, r, s)
 })
 
-//nolint:gocritic
 func getSharePasswordHash(body share.CreateBody) (data []byte, statuscode int, err error) {
 	if body.Password == "" {
 		return nil, 0, nil

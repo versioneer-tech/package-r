@@ -113,8 +113,8 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 	file := cf.File
 
 	if file.IsDir {
-		file.Listing.Sorting = files.Sorting{By: "name", Asc: false}
-		file.Listing.ApplySort()
+		file.Sorting = files.Sorting{By: "name", Asc: false}
+		file.ApplySort()
 		return renderJSON(w, r, file)
 	}
 
@@ -161,11 +161,10 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 				return http.StatusInternalServerError, err
 			}
 
-			scheme := "http"
-			if r.TLS != nil {
-				scheme = "https"
+			scheme := "https"
+			if strings.HasPrefix(r.Host, "localhost") {
+				scheme = "http"
 			}
-
 			file.PreviewURL = d.settings.Catalog.PreviewURL + scheme + "://" + r.Host + "/api/public/catalog/" + r.URL.Path // TBD consider configurable base path
 
 			// do not waste bandwidth

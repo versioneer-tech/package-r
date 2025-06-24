@@ -90,7 +90,6 @@ func getViewMode(flags *pflag.FlagSet) users.ViewMode {
 	return viewMode
 }
 
-//nolint:gocyclo
 func getUserDefaults(flags *pflag.FlagSet, defaults *settings.UserDefaults, all bool) {
 	visit := func(flag *pflag.Flag) {
 		switch flag.Name {

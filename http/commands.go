@@ -48,7 +48,7 @@ var commandsHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *d
 	var raw string
 
 	for {
-		_, msg, err := conn.ReadMessage() //nolint:govet
+		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			wsErr(conn, r, http.StatusInternalServerError, err)
 			return 0, nil
@@ -62,14 +62,14 @@ var commandsHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *d
 
 	command, err := runner.ParseCommand(d.settings, raw)
 	if err != nil {
-		if err := conn.WriteMessage(websocket.TextMessage, []byte(err.Error())); err != nil { //nolint:govet
+		if err := conn.WriteMessage(websocket.TextMessage, []byte(err.Error())); err != nil {
 			wsErr(conn, r, http.StatusInternalServerError, err)
 		}
 		return 0, nil
 	}
 
 	if !d.server.EnableExec || !d.user.CanExecute(command[0]) {
-		if err := conn.WriteMessage(websocket.TextMessage, cmdNotAllowed); err != nil { //nolint:govet
+		if err := conn.WriteMessage(websocket.TextMessage, cmdNotAllowed); err != nil {
 			wsErr(conn, r, http.StatusInternalServerError, err)
 		}
 

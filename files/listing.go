@@ -17,7 +17,7 @@ type Listing struct {
 
 // ApplySort applies the sort order using .Order and .Sort
 //
-//nolint:goconst
+
 func (l Listing) ApplySort() {
 	// Check '.Order' to know how to sort
 	if !l.Sorting.Asc {

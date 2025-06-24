@@ -175,7 +175,7 @@ func (s *Service) Resize(ctx context.Context, in io.Reader, width, height int, o
 	case ResizeModeFill:
 		img = imaging.Fill(img, width, height, imaging.Center, config.quality.resampleFilter())
 	case ResizeModeFit:
-		fallthrough //nolint:gocritic
+		fallthrough
 	default:
 		img = imaging.Fit(img, width, height, config.quality.resampleFilter())
 	}
@@ -207,7 +207,7 @@ func getEmbeddedThumbnail(in io.Reader) ([]byte, io.Reader, error) {
 
 	offset := 0
 	offsets := []int{12, 30}
-	head := make([]byte, 0xffff) //nolint:gomnd
+	head := make([]byte, 0xffff)
 
 	_, err := r.Read(head)
 	if err != nil {

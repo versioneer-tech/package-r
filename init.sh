@@ -16,7 +16,7 @@
   --sharelink.defaultHash ${FB_SHARELINK_DEFAULT_HASH:-"public-<random>-v1"} \
   --catalog.baseurl ${FB_CATALOG_BASE_URL:-""} \
   --catalog.defaultName ${FB_CATALOG_DEFAULT_NAME:-"catalog.v1.parquet"} \
-  --catalog.previewURL ${FB_CATALOG_PREVIEW_URL} \
+  --catalog.previewURL ${FB_CATALOG_PREVIEW_URL:-""} \
   --commands "" > /dev/null
 
 envs=\

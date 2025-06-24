@@ -20,9 +20,9 @@ var catalogHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d
 		return http.StatusBadRequest, nil
 	}
 
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
+	scheme := "https"
+	if strings.HasPrefix(r.Host, "localhost") {
+		scheme = "http"
 	}
 	assetsURL := scheme + "://" + r.Host + "/api/public/share/" + parts[0] // TBD consider configurable base path
 

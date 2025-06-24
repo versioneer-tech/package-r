@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/golang-jwt/jwt/v4/request"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v5/request"
 
 	fbErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/users"
@@ -79,7 +79,7 @@ func withUser(fn handleFunc) handleFunc {
 			return http.StatusUnauthorized, nil
 		}
 
-		expired := !tk.VerifyExpiresAt(time.Now().Add(time.Hour), true)
+		expired := tk.ExpiresAt == nil || !tk.ExpiresAt.After(time.Now().Add(time.Hour))
 		updated := tk.IssuedAt != nil && tk.IssuedAt.Unix() < d.store.Users.LastUpdate(tk.User.ID)
 
 		if expired || updated {

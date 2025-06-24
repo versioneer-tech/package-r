@@ -63,6 +63,7 @@ func rewriteAssetHrefs(entry map[string]interface{}, baseURL, presignedURL strin
 	}
 }
 
+//nolint:gocyclo
 func QueryCatalogParquet(ctx context.Context, catalogPath, filterField, baseURL, requestPath, assetsURL string) (map[string]interface{}, error) {
 	query := fmt.Sprintf(`
 SELECT *
@@ -174,9 +175,7 @@ WHERE COALESCE((CAST(assets AS JSON)->'$.%s'->>'href'), '') LIKE '%s%%%%'
 			delete(entry, "repository")
 		}
 
-		if _, ok := entry["links"]; ok {
-			delete(entry, "links")
-		}
+		delete(entry, "links")
 
 		delete(entry, "href")
 

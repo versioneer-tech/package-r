@@ -56,7 +56,6 @@ func addConfigFlags(flags *pflag.FlagSet) {
 	flags.String("catalog.previewURL", "", "(optional) preview URL")
 }
 
-//nolint:gocyclo
 func getAuthentication(flags *pflag.FlagSet, defaults ...interface{}) (settings.AuthMethod, auth.Auther) {
 	method := settings.AuthMethod(mustGetString(flags, "auth.method"))
 
@@ -193,5 +192,5 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 
 	b, err := json.MarshalIndent(auther, "", "  ")
 	checkErr(err)
-	fmt.Printf("\nAuther configuration (raw):\n\n%s\n\n", string(b))
+	fmt.Printf("\nAuthor configuration (raw):\n\n%s\n\n", string(b))
 }

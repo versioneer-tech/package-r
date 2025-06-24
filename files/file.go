@@ -90,7 +90,7 @@ func NewFileInfo(opts *FileOptions) (*FileInfo, error) {
 
 	if opts.Expand {
 		if file.IsDir {
-			if err := file.readListing(opts.Checker, opts.ReadHeader); err != nil { //nolint:govet
+			if err := file.readListing(opts.Checker, opts.ReadHeader); err != nil {
 				return nil, err
 			}
 			return file, nil
@@ -296,7 +296,7 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
 	case strings.HasSuffix(mimetype, "pdf"):
 		i.Type = "pdf"
 		return nil
-	case (IsMimeText(mimetype) /*|| !isBinary(buffer)*/) && i.Size <= 10*1024*1024: // 10 MB
+	case IsMimeText(mimetype) && i.Size <= 10*1024*1024: // 10 MB
 		i.Type = "text"
 
 		if !modify {
@@ -355,7 +355,7 @@ func (i *FileInfo) readFirstBytes() []byte {
 	}
 	defer reader.Close()
 
-	buffer := make([]byte, 512) //nolint:gomnd
+	buffer := make([]byte, 512)
 	n, err := reader.Read(buffer)
 	if err != nil && !errors.Is(err, io.EOF) {
 		log.Print(err)

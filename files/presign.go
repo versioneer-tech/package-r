@@ -31,7 +31,7 @@ Edge Case Coverage for Presign:
 | "/"                    | "bucket"           | "bucket"         | ""                     | invalid     |
 | ""                     | ""                 | -                | -                      | invalid     |
 */
-//nolint:gocyclo
+
 func (conn *S3Connection) Presign(path, method string, cutoff int64) (string, error) {
 	if conn == nil || conn.s3 == nil {
 		return "", fmt.Errorf("skip presign without valid S3 connection for '%s'", path)
