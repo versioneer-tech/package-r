@@ -9,8 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v4"
-
+	"github.com/golang-jwt/jwt/v5"
 	fbErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/settings"
 	"github.com/versioneer-tech/package-r/users"

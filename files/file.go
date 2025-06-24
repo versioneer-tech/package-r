@@ -296,7 +296,7 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
 	case strings.HasSuffix(mimetype, "pdf"):
 		i.Type = "pdf"
 		return nil
-	case (IsMimeText(mimetype) /*|| !isBinary(buffer)*/) && i.Size <= 10*1024*1024: // 10 MB
+	case IsMimeText(mimetype) && i.Size <= 10*1024*1024: // 10 MB
 		i.Type = "text"
 
 		if !modify {
