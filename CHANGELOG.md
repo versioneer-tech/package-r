@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2025.7.1-rc3](https://github.com/versioneer-tech/package-r/compare/v2025.7.1-rc2...v2025.7.1-rc3) (2025-06-24)
+
+### [2025.7.1-rc2](https://github.com/versioneer-tech/package-r/compare/v2025.7.1-rc1...v2025.7.1-rc2) (2025-06-24)
+
+### [2025.7.1-rc1](https://github.com/versioneer-tech/package-r/compare/v2025.6.4...v2025.7.1-rc1) (2025-06-24)
+
 ### [2025.6.4](https://github.com/versioneer-tech/package-r/compare/v2025.6.3...v2025.6.4) (2025-06-12)
 
 - support presign for HEAD method, ensure method is preserved during redirect (307 instead of 302)
