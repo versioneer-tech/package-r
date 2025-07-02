@@ -139,9 +139,6 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 			return http.StatusInternalServerError, err
 		}
 		file.PresignedURL = url
-
-		// do not waste bandwidth
-		file.Content = ""
 	}
 
 	follow, ok := r.URL.Query()["followRedirect"]
@@ -166,9 +163,6 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 				scheme = "http"
 			}
 			file.PreviewURL = d.settings.Catalog.PreviewURL + scheme + "://" + r.Host + "/api/public/catalog/" + r.URL.Path // TBD consider configurable base path
-
-			// do not waste bandwidth
-			file.Content = ""
 		}
 	}
 

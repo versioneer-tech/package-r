@@ -8,7 +8,8 @@
 
     <breadcrumbs base="/files" />
     <errors v-if="error" :errorCode="error.status" />
-    <component v-else-if="currentView" :is="currentView"></component>
+    <component v-else-if="currentView && currentView !== IframeRenderer" :is="currentView"></component>
+    <IframeRenderer v-else-if="currentView === IframeRenderer" :src="fileStore.req?.presignedURL" />
     <div v-else-if="currentView !== null">
       <h2 class="message delayed">
         <div class="spinner">
@@ -31,6 +32,8 @@ import {
   onUnmounted,
   ref,
   watch,
+  defineComponent,
+  h,
 } from "vue";
 import { files as api } from "@/api";
 import { storeToRefs } from "pinia";
@@ -60,7 +63,6 @@ const { reload } = storeToRefs(fileStore);
 const { error: uploadError } = storeToRefs(uploadStore);
 
 const route = useRoute();
-
 const { t } = useI18n({});
 
 const clean = (path: string) => {
@@ -68,6 +70,62 @@ const clean = (path: string) => {
 };
 
 const error = ref<StatusError | null>(null);
+
+const IframeRenderer = defineComponent({
+  name: "IframeRenderer",
+  props: {
+    src: {
+      type: String,
+      required: false,
+    },
+  },
+  setup(props) {
+    const loadError = ref(false);
+    const checked = ref(false);
+
+    const probePresignedURL = async () => {
+      if (!props.src) {
+        loadError.value = true;
+        checked.value = true;
+        return;
+      }
+
+      try {
+        const res = await fetch(props.src, {
+          method: "GET",
+          headers: {
+            Range: "bytes=0-0",
+          },
+        });
+
+        if (!res.ok) {
+          console.warn("Presigned URL probe failed with status:", res.status);
+          loadError.value = true;
+        }
+      } catch (e) {
+        console.warn("Presigned URL probe failed:", e);
+        loadError.value = true;
+      } finally {
+        checked.value = true;
+      }
+    };
+
+    onMounted(probePresignedURL);
+
+    return () =>
+      !checked.value
+        ? h("div", { style: "text-align: center; padding: 2em;" }, "Loading...")
+        : !props.src || loadError.value
+        ? h(Errors, { errorCode: 415 })
+        : h("div", { style: "padding: 1em;" }, [
+            h("iframe", {
+              src: props.src,
+              style: "width: 100%; height: 80vh; border: none;",
+              loading: "lazy",
+            }),
+          ]);
+  },
+});
 
 const currentView = computed(() => {
   const req = fileStore.req;
@@ -85,8 +143,16 @@ const currentView = computed(() => {
     return Editor;
   }
 
-  if (user?.perm?.download) {
+  if (req.type === "pdf" || req.type === "image" || req.type === "audio" || req.type === "video") {
     return Preview;
+  }
+
+  if (req.type === "tiff") {
+    return IframeRenderer; // TBD
+  }
+
+  if (req.type === "parquet") {
+    return IframeRenderer; // TBD
   }
 
   return null;
@@ -159,7 +225,11 @@ const fetchData = async () => {
   if (url === "") url = "/";
   if (url[0] !== "/") url = "/" + url;
   try {
+    if (!url.endsWith("/")) {
+      url += url.includes("?") ? "&presign" : "?presign";
+    }    
     const res = await api.fetch(url);
+    console.log(res)
 
     if (clean(res.path) !== clean(`/${[...route.params.path].join("/")}`)) {
       throw new Error("Data Mismatch!");
