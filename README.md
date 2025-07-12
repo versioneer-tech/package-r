@@ -8,11 +8,25 @@
 It allows users to browse data items mounted from object storage, enrich them with metadata and share them via direct, secure presigned URLs, without proxying data through the application server.
 
 ## Table of Contents
+- [Backround](#backround)
 - [Key Features](#key-features)
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
+
+## Backround
+
+PackageR is a tool built on Filebrowser and lets you manage all kinds of data formats in a single web interface. It was created to solve the problem of having to struggle with different storage options and editing tools for different data types, which often complicates workflows for teams and individual users.
+
+With packageR, you can access text files (e.g. Markdown, JSON, YAML), binary files (e.g. Excel tables, ZIP archives, images, high‑resolution satellite imagery), complex data packages (such as scientific archives with RO‑Crate metadata), and other modern formats (e.g., Parquet, Cloud Optimized GeoTIFF, and Zarr)- all without switching between separate applications.
+
+Smaller files open directly in a lightweight inline editor in your browser, while larger or proprietary formats (i.e., files that require specific software to open, such as Excel or Photoshop) are offered via signed download URLs so you can open them in your preferred desktop software.
+
+For cloud-native and packaged data, packageR provides in-browser previews and partial access where possible — supporting formats like Parquet, Cloud‑Optimized GeoTIFF (COG), and Zarr. When metadata is available (e.g., RO‑Crate metadata.json, manifest files), it is displayed without requiring a full download, while direct links to raw archives remain available for full access when needed.
+
+By unifying these capabilities in one intuitive interface, packageR minimizes load times and unnecessary indirection, and supports the FAIR principles - keeping your data findable, accessible, interoperable, and reusable. Whether you’re glancing at a single file or conducting large‑scale analyses, Package‑R saves you time and reduces complexity.
+
 
 ## Key Features
 <a name="key-features"></a>
