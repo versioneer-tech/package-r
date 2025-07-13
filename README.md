@@ -3,34 +3,46 @@
 # packageR
 <a name="introduction"></a>
 
-**packageR** is a lightweight tool built on top of a fork of [File Browser](https://github.com/filebrowser/filebrowser/), designed to turn large-scale object storage systems into browsable catalogs, making it easy to view and share data packages. It is developed by [Versioneer](https://versioneer.at) and [EOX](https://eox.at).
-
-It allows users to browse data items mounted from object storage, enrich them with metadata and share them via direct, secure presigned URLs, without proxying data through the application server.
+`packageR` enables users to browse and explore data items mounted from object storage, enrich them with metadata, and curate shareable data packages. Data access is provided directly via secure, presigned URLs—without routing through the application server. `packageR` is developed by [Versioneer](https://versioneer.at) and [EOX](https://eox.at).
 
 ## Table of Contents
+- [Background](#background)
 - [Key Features](#key-features)
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
 
+## Background
+
+`packageR` is a lightweight tool built on top of a fork of [File Browser](https://github.com/filebrowser/filebrowser/), designed to manage diverse data formats through a single, intuitive web interface. It addresses the common challenge of juggling different storage systems and editing tools for various data types—streamlining workflows for individuals and teams alike.
+
+- For structured text formats such as Markdown, JSON, and YAML—commonly used for documentation, configuration, and metadata — `packageR` offers an integrated browser-based editor.
+
+- For binary content, including very large files, `packageR` can generate secure, temporary download links (presigned URLs) directly connected to underlying object storage, enabling users to download and open them in their preferred desktop applications. In addition `packageR` provides in-browser previews and selective access to modern, cloud-optimized data formats such as Parquet, Cloud-Optimized GeoTIFF (COG), and Zarr (Upcoming). When available, metadata is displayed without requiring a full download. Direct links to full raw archives are also provided for comprehensive access.
+
+Building on File Browser’s sharing functionality, `packageR` promotes a packaging-oriented approach over traditional file-based workflows to simplify complex data handling and support scalable, cloud-native analysis. It supports modern catalog formats such as the [STAC GeoParquet Specification](https://github.com/stac-utils/stac-geoparquet/blob/main/spec/stac-geoparquet-spec.md), allowing metadata to be embedded directly within Parquet files and previewed using tools like [STAC Browser](https://github.com/radiantearth/stac-browser).
+
 ## Key Features
 <a name="key-features"></a>
 
-- **Presigned URL Sharing**: Securely shares data items by generating presigned URLs for objects stored in systems like AWS S3, GCS, Azure Blob, or MinIO. `packageR` achieves this by browsing a local filesystem path (configured via `FB_ROOT`) which is a mount of your object storage (e.g., via FUSE, K8s CSI drivers). When a data item is accessed, `packageR` uses the provided AWS-compatible credentials to generate a direct download URL, avoiding the need to proxy data through the application server.
-- **Metadata bundling**: Supports enhancing of datasets with descriptive metadata, attestations, UI hints, and documentation. This facilitates verifiable distribution and integration with external graphical tools.
-- **Stateless Operation**: Operates without managing internal application state, aside from the share links themselves. All configurations are applied declaratively at startup.
-- **External Authentication**: Leverages proxy-based authentication methods, such as OIDC headers or JWT claims, complemented by a lightweight role mapping system.
-- **File Browser Compatibility**: Builds upon the core File Browser user interface and plugin architecture, introducing opinionated enhancements tailored for cloud-native environments.
-- **UI Customization**: Offers basic UI branding, such as setting a custom application name (via `FB_BRANDING_NAME`). More advanced visual customizations can be achieved by overriding static assets in a custom Docker image.
+- **Streamlined Data Package Generation**: Curate arbitrary data packages of any size containing both binary and text content. Share them via download links, optionally protected and with customizable expiration settings.
+
+- **Rich Previews**: Inline viewers support modern, streamable data formats such as Parquet, Cloud-Optimized GeoTIFF (COG), and Zarr—enabling easy preview and interactive exploration directly in the browser.
+
+- **Presigned URL Sharing**: Securely share data items by generating presigned URLs for objects stored in systems like AWS S3, GCS, Azure Blob, or MinIO. `packageR` works by browsing a local filesystem path (configured via `FB_ROOT`), which represents a mount of your object storage (e.g., via FUSE or Kubernetes CSI drivers). When a data item is accessed, `packageR` uses AWS-compatible credentials to generate a direct download link directly connected to underlying object storage system—bypassing the `packageR` application.
+
+- **Metadata Bundling**: Enhance datasets with rich metadata, attestations, UI hints, and documentation. This enables verifiable data distribution and smooth integration with external graphical tools.
+
+- **Stateless Operation**: Runs without managing internal application state (aside from share links). All configurations are applied declaratively at startup.
+
+- **External Authentication**: Supports proxy-based authentication mechanisms such as OIDC headers or JWT claims, and includes a lightweight role-mapping system for access control.
+
+- **UI Customization**: Allows basic user interface branding (e.g., setting a custom application name via `FB_BRANDING_NAME`). For more advanced customization, static assets can be overridden in a custom Docker image.
+
 
 ## Configuration
 <a name="configuration"></a>
-
-> ⚠️ **Important Notice**  
-> As of the latest rebase on **31 May 2025**, the repository was aligned with the latest upstream changes and underwent a cleanup of obsolete configuration options as well as the removal of outdated issues.  
-> This was done to reduce confusion caused by outdated guidance and to ensure that all relevant information is now accurately reflected in the `packageR` documentation.
-
 
 All settings are injected via environment variables:
 
@@ -83,7 +95,7 @@ docker run --rm -it \
   -e AWS_REGION=<my-region> \
   -e BUCKET_NAME=<my-bucket> \
   -p 8080:8080 \
-  package-r:v2025.6.2
+  package-r:latest
 ```
 
 This setup allows `packageR` to list and share data items from the bucket mount, generating secure presigned URLs pointing to the corresponding objects on the bucket.
