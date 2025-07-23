@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "openseadragon": "^5.0.1",
+    "parquet-wasm": "^0.6.1"
+  }
+}

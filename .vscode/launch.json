@@ -10,8 +10,8 @@
       "preLaunchTask": "init",
       "env": {
         "CGO_ENABLED": "1",        
-        "FB_PASSWORD": "1234!",
-        "FB_ROOT": "/workspace",
+        "FB_PASSWORD": "123",
+        "FB_ROOT": "/workspace"
       }
     }
   ]

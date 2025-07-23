@@ -8,7 +8,7 @@
   --disable-thumbnails \
   --disable-type-detection-by-header \
   --signup=false \
-  --auth.method=${FB_AUTH_METHOD:-"proxy"} \
+  --auth.method=${FB_AUTH_METHOD:-"json"} \
   --auth.header=${FB_AUTH_HEADER:-"X-Username"} \
   --auth.mapper=${FB_AUTH_MAPPER:-""} \
   --branding.name ${FB_BRANDING_NAME:-packageR} \

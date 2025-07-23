@@ -8,8 +8,18 @@
 
     <breadcrumbs base="/files" />
     <errors v-if="error" :errorCode="error.status" />
-    <component v-else-if="currentView && currentView !== IframeRenderer" :is="currentView"></component>
-    <IframeRenderer v-else-if="currentView === IframeRenderer" :src="fileStore.req?.presignedURL" />
+
+    <component
+      v-else-if="currentView && currentView !== IframeRenderer"
+      :is="currentView"
+      :url="fileStore.req?.presignedURL"
+    />
+
+    <IframeRenderer
+      v-else-if="currentView === IframeRenderer"
+      :src="fileStore.req?.presignedURL"
+    />
+
     <div v-else-if="currentView !== null">
       <h2 class="message delayed">
         <div class="spinner">
@@ -22,6 +32,7 @@
     </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import {
@@ -42,6 +53,8 @@ import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
 import { useUploadStore } from "@/stores/upload";
 
+import TiffRenderer from '@/renderers/TiffRenderer.vue';
+import ParquetRenderer from '@/renderers/ParquetRenderer.vue';
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Errors from "@/views/Errors.vue";
@@ -148,17 +161,20 @@ const currentView = computed(() => {
   }
 
   if (req.type === "tiff") {
-    return IframeRenderer; // TBD
+    return TiffRenderer;
   }
 
   if (req.type === "parquet") {
-    return IframeRenderer; // TBD
+    return ParquetRenderer;
   }
 
   return null;
 });
 
 watch(currentView, (view) => {
+  console.log("xxx")
+  console.log(fileStore.req)
+  console.log (view)
   if (view === null && fileStore.req && !fileStore.req.isDir) {
     error.value = new StatusError("preview not allowed", 415);
   } else {
