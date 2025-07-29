@@ -61,9 +61,6 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 			return http.StatusInternalServerError, err
 		}
 		file.PresignedURL = url
-
-		// do not waste bandwidth
-		file.Content = ""
 	}
 
 	follow, ok := r.URL.Query()["followRedirect"]

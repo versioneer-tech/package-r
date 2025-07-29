@@ -9,9 +9,9 @@
       "program": "${workspaceFolder}/main.go",
       "preLaunchTask": "init",
       "env": {
-        "CGO_ENABLED": "1",        
+        "CGO_ENABLED": "1",
         "FB_PASSWORD": "1234!",
-        "FB_ROOT": "/workspace",
+        "FB_ROOT": "/workspace"
       }
     }
   ]

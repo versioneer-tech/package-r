@@ -196,6 +196,10 @@ export async function preview(url: string) {
 }
 
 export function getDownloadURL(file: ResourceItem, inline: any) {
+  if (file.presignedURL) {
+    return file.presignedURL;
+  }
+
   const params = {
     ...(inline && { inline: "true" }),
   };
@@ -204,6 +208,10 @@ export function getDownloadURL(file: ResourceItem, inline: any) {
 }
 
 export function getPreviewURL(file: ResourceItem, size: string) {
+  if (file.presignedURL) {
+    return file.presignedURL;
+  }
+
   const params = {
     inline: "true",
     key: Date.parse(file.modified),

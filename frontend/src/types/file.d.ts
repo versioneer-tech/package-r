@@ -36,6 +36,8 @@ type ResourceType =
   | "image"
   | "pdf"
   | "text"
+  | "tiff"
+  | "parquet"
   | "blob"
   | "textImmutable";
 

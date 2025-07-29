@@ -284,6 +284,9 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
 	case strings.HasPrefix(mimetype, "audio"):
 		i.Type = "audio"
 		return nil
+	case strings.HasSuffix(mimetype, "tiff"):
+		i.Type = "tiff"
+		return nil
 	case strings.HasPrefix(mimetype, "image"):
 		i.Type = "image"
 		resolution, err := calculateImageResolution(i.Fs, i.Path)
@@ -295,6 +298,9 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
 		return nil
 	case strings.HasSuffix(mimetype, "pdf"):
 		i.Type = "pdf"
+		return nil
+	case strings.HasSuffix(mimetype, "parquet"):
+		i.Type = "parquet"
 		return nil
 	case IsMimeText(mimetype) && i.Size <= 10*1024*1024: // 10 MB
 		i.Type = "text"

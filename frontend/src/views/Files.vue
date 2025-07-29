@@ -8,7 +8,13 @@
 
     <breadcrumbs base="/files" />
     <errors v-if="error" :errorCode="error.status" />
-    <component v-else-if="currentView" :is="currentView"></component>
+
+    <component
+      v-else-if="currentView"
+      :is="currentView"
+      :url="fileStore.req?.presignedURL"
+    />
+
     <div v-else-if="currentView !== null">
       <h2 class="message delayed">
         <div class="spinner">
@@ -35,10 +41,11 @@ import {
 import { files as api } from "@/api";
 import { storeToRefs } from "pinia";
 import { useFileStore } from "@/stores/file";
-import { useAuthStore } from "@/stores/auth";
+//import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
 import { useUploadStore } from "@/stores/upload";
 
+import TiffRenderer from "@/renderers/TiffRenderer.vue";
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Errors from "@/views/Errors.vue";
@@ -51,7 +58,7 @@ import { name } from "../utils/constants";
 const Editor = defineAsyncComponent(() => import("@/views/files/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("@/views/files/Preview.vue"));
 
-const authStore = useAuthStore();
+//const authStore = useAuthStore();
 const layoutStore = useLayoutStore();
 const fileStore = useFileStore();
 const uploadStore = useUploadStore();
@@ -60,7 +67,6 @@ const { reload } = storeToRefs(fileStore);
 const { error: uploadError } = storeToRefs(uploadStore);
 
 const route = useRoute();
-
 const { t } = useI18n({});
 
 const clean = (path: string) => {
@@ -71,7 +77,7 @@ const error = ref<StatusError | null>(null);
 
 const currentView = computed(() => {
   const req = fileStore.req;
-  const user = authStore.user;
+  //const user = authStore.user;
 
   if (!req || req.type === undefined) {
     return null;
@@ -85,9 +91,22 @@ const currentView = computed(() => {
     return Editor;
   }
 
-  if (user?.perm?.download) {
+  if (
+    req.type === "pdf" ||
+    req.type === "image" ||
+    req.type === "audio" ||
+    req.type === "video"
+  ) {
     return Preview;
   }
+
+  if (req.type === "tiff") {
+    return TiffRenderer;
+  }
+
+  // if (req.type === "parquet") {
+  //   return ParquetRenderer;
+  // }
 
   return null;
 });
@@ -159,7 +178,11 @@ const fetchData = async () => {
   if (url === "") url = "/";
   if (url[0] !== "/") url = "/" + url;
   try {
+    if (!url.endsWith("/")) {
+      url += url.includes("?") ? "&presign" : "?presign";
+    }
     const res = await api.fetch(url);
+    console.log(res);
 
     if (clean(res.path) !== clean(`/${[...route.params.path].join("/")}`)) {
       throw new Error("Data Mismatch!");
