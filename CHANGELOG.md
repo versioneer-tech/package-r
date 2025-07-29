@@ -2,7 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [2025.7.1-rc4](https://github.com/versioneer-tech/package-r/compare/v2025.6.4...v2025.7.1-rc4) (2025-06-24)
+### [2025.7.1](https://github.com/versioneer-tech/package-r/compare/v2025.7.1-rc4...v2025.6.4) (2025-07-29)
+
+- go 1.24.4 and library updates
+
+- arrow/duckdb support for catalog functionality via parquet
+
+- preview support using presigned URLs, specific TiffRenderer using geotiff.js for COGs/Tiffs
 
 ### [2025.6.4](https://github.com/versioneer-tech/package-r/compare/v2025.6.3...v2025.6.4) (2025-06-12)
 
@@ -13,7 +19,6 @@ All notable changes to this project will be documented in this file. See [standa
 - automatically redirect to presignedURL with followRedirect query
 
 - add description and configurable prefix field for share creation
-
 
 ### [2025.6.2](https://github.com/versioneer-tech/package-r/compare/v2025.6.1...v2025.6.2) (2025-06-03)
 
