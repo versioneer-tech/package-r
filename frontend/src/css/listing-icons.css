@@ -18,6 +18,9 @@
 .file-icons [data-type="image"] i::before {
   content: "image";
 }
+.file-icons [data-type="tiff"] i::before {
+  content: "image";
+}
 .file-icons [data-type="pdf"] i::before {
   content: "description";
 }

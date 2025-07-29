@@ -211,7 +211,7 @@ export function getPreviewURL(file: ResourceItem, size: string) {
   if (file.presignedURL) {
     return file.presignedURL;
   }
-  
+
   const params = {
     inline: "true",
     key: Date.parse(file.modified),

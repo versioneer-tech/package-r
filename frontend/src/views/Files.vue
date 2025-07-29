@@ -10,14 +10,9 @@
     <errors v-if="error" :errorCode="error.status" />
 
     <component
-      v-else-if="currentView && currentView !== IframeRenderer"
+      v-else-if="currentView"
       :is="currentView"
       :url="fileStore.req?.presignedURL"
-    />
-
-    <IframeRenderer
-      v-else-if="currentView === IframeRenderer"
-      :src="fileStore.req?.presignedURL"
     />
 
     <div v-else-if="currentView !== null">
@@ -33,7 +28,6 @@
   </div>
 </template>
 
-
 <script setup lang="ts">
 import {
   computed,
@@ -43,18 +37,15 @@ import {
   onUnmounted,
   ref,
   watch,
-  defineComponent,
-  h,
 } from "vue";
 import { files as api } from "@/api";
 import { storeToRefs } from "pinia";
 import { useFileStore } from "@/stores/file";
-import { useAuthStore } from "@/stores/auth";
+//import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
 import { useUploadStore } from "@/stores/upload";
 
-import TiffRenderer from '@/renderers/TiffRenderer.vue';
-import ParquetRenderer from '@/renderers/ParquetRenderer.vue';
+import TiffRenderer from "@/renderers/TiffRenderer.vue";
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Errors from "@/views/Errors.vue";
@@ -67,7 +58,7 @@ import { name } from "../utils/constants";
 const Editor = defineAsyncComponent(() => import("@/views/files/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("@/views/files/Preview.vue"));
 
-const authStore = useAuthStore();
+//const authStore = useAuthStore();
 const layoutStore = useLayoutStore();
 const fileStore = useFileStore();
 const uploadStore = useUploadStore();
@@ -84,65 +75,9 @@ const clean = (path: string) => {
 
 const error = ref<StatusError | null>(null);
 
-const IframeRenderer = defineComponent({
-  name: "IframeRenderer",
-  props: {
-    src: {
-      type: String,
-      required: false,
-    },
-  },
-  setup(props) {
-    const loadError = ref(false);
-    const checked = ref(false);
-
-    const probePresignedURL = async () => {
-      if (!props.src) {
-        loadError.value = true;
-        checked.value = true;
-        return;
-      }
-
-      try {
-        const res = await fetch(props.src, {
-          method: "GET",
-          headers: {
-            Range: "bytes=0-0",
-          },
-        });
-
-        if (!res.ok) {
-          console.warn("Presigned URL probe failed with status:", res.status);
-          loadError.value = true;
-        }
-      } catch (e) {
-        console.warn("Presigned URL probe failed:", e);
-        loadError.value = true;
-      } finally {
-        checked.value = true;
-      }
-    };
-
-    onMounted(probePresignedURL);
-
-    return () =>
-      !checked.value
-        ? h("div", { style: "text-align: center; padding: 2em;" }, "Loading...")
-        : !props.src || loadError.value
-        ? h(Errors, { errorCode: 415 })
-        : h("div", { style: "padding: 1em;" }, [
-            h("iframe", {
-              src: props.src,
-              style: "width: 100%; height: 80vh; border: none;",
-              loading: "lazy",
-            }),
-          ]);
-  },
-});
-
 const currentView = computed(() => {
   const req = fileStore.req;
-  const user = authStore.user;
+  //const user = authStore.user;
 
   if (!req || req.type === undefined) {
     return null;
@@ -156,7 +91,12 @@ const currentView = computed(() => {
     return Editor;
   }
 
-  if (req.type === "pdf" || req.type === "image" || req.type === "audio" || req.type === "video") {
+  if (
+    req.type === "pdf" ||
+    req.type === "image" ||
+    req.type === "audio" ||
+    req.type === "video"
+  ) {
     return Preview;
   }
 
@@ -164,17 +104,14 @@ const currentView = computed(() => {
     return TiffRenderer;
   }
 
-  if (req.type === "parquet") {
-    return ParquetRenderer;
-  }
+  // if (req.type === "parquet") {
+  //   return ParquetRenderer;
+  // }
 
   return null;
 });
 
 watch(currentView, (view) => {
-  console.log("xxx")
-  console.log(fileStore.req)
-  console.log (view)
   if (view === null && fileStore.req && !fileStore.req.isDir) {
     error.value = new StatusError("preview not allowed", 415);
   } else {
@@ -243,9 +180,9 @@ const fetchData = async () => {
   try {
     if (!url.endsWith("/")) {
       url += url.includes("?") ? "&presign" : "?presign";
-    }    
+    }
     const res = await api.fetch(url);
-    console.log(res)
+    console.log(res);
 
     if (clean(res.path) !== clean(`/${[...route.params.path].join("/")}`)) {
       throw new Error("Data Mismatch!");
