@@ -100,6 +100,55 @@ docker run --rm -it \
 
 This setup allows `packageR` to list and share data items from the bucket mount, generating secure presigned URLs pointing to the corresponding objects on the bucket.
 
+### Kubernetes - Bucket Mount Health
+
+If you deploy on Kubernetes with a bucket-backed PVC (for example via a CSI FUSE mount), the mount can become stale. A typical error is:
+
+    Transport endpoint is not connected
+
+You can verify this by execing into the pod:
+
+``` bash
+stat /workspace
+```
+
+If the mount is broken, it will return:
+
+    stat: cannot statx '/workspace': Transport endpoint is not connected
+
+To mitigate this, add readiness and liveness probes that check the
+mount:
+
+``` yaml
+readinessProbe:
+  exec:
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        out="$( (stat /workspace >/dev/null) 2>&1 || true )"
+        if echo "$out" | grep -qi "Transport endpoint is not connected"; then
+          exit 1
+        fi
+        exit 0
+  periodSeconds: 10
+
+livenessProbe:
+  exec:
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        out="$( (stat /workspace >/dev/null) 2>&1 || true )"
+        if echo "$out" | grep -qi "Transport endpoint is not connected"; then
+          exit 1
+        fi
+        exit 0
+  periodSeconds: 20
+```
+
+Note: restarting the container may not fix a stale FUSE mount. In that case the pod must be recreated.
+
 ## Contributing
 <a name="contributing"></a>
 
