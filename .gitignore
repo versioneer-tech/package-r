@@ -26,6 +26,7 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw*
+*.code*
 bin/
 build/
 

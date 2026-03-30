@@ -2,7 +2,7 @@ module github.com/versioneer-tech/package-r
 
 go 1.24
 
-toolchain go1.24.4
+toolchain go1.24.13
 
 require (
 	github.com/asdine/storm/v3 v3.2.1

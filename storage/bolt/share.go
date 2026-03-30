@@ -65,7 +65,11 @@ func (s shareBackend) Gets(path string, id uint) ([]*share.Link, error) {
 }
 
 func (s shareBackend) Save(l *share.Link) error {
-	return s.db.Save(l)
+	err := s.db.Save(l)
+	if errors.Is(err, storm.ErrAlreadyExists) {
+		return fbErrors.ErrExist
+	}
+	return err
 }
 
 func (s shareBackend) Delete(hash string) error {

@@ -5,6 +5,12 @@
       "label": "init",
       "type": "shell",
       "command": "${workspaceFolder}/init.sh",
+      "options": {
+        "env": {
+          "FB_PASSWORD": "1234!",
+          "FB_DEFAULT_SHARES": "public-images=/images/"
+        }
+      },
       "problemMatcher": []
     }
   ]

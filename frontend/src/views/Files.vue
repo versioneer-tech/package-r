@@ -1,7 +1,9 @@
 <template>
   <div>
     <header-bar
-      v-if="error || fileStore.req?.type === null"
+      v-if="
+        error || fileStore.req?.type === null || fileStore.req?.type == 'tiff'
+      "
       showMenu
       showLogo
     />

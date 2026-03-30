@@ -53,6 +53,7 @@ All settings are injected via environment variables:
 | `FB_BASEURL`                                   | (Optional) Override base URL if not served from root path.                                                   |
 | `FB_AUTH_HEADER`                               | HTTP header name from which to extract user identity/role (e.g., `X-Forwarded-User`, `X-Id-Token`).          |
 | `FB_AUTH_MAPPER`                               | Mapping strategy for the auth header: `""` (raw), `".<claim>"` (from JSON/JWT), or `<static>`.               |
+| `FB_DEFAULT_SHARES`                            | (Optional) Default permanent shares created at startup using `hash=path;hash=path` and owned by `admin`.     |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`  | Credentials for the S3-compatible object storage, used for signing presigned URLs.                           |
 | `AWS_ENDPOINT_URL` / `AWS_REGION`              | Object storage endpoint URL and region configuration.                                                        |
 | `BUCKET_NAME`                                  | (Optional) Name of the target object storage bucket.                                                         |
@@ -89,6 +90,7 @@ docker run --rm -it \
   -v /workspace:/workspace \
   -e FB_ROOT=/workspace/<my-bucket> \
   -e FB_BRANDING_NAME=Workspace \
+  -e FB_DEFAULT_SHARES='public-my-bucket=/<my-bucket>/public' \
   -e AWS_ACCESS_KEY_ID=<my-key> \
   -e AWS_SECRET_ACCESS_KEY=<my-secret> \
   -e AWS_ENDPOINT_URL=<my-endpoint> \
@@ -99,6 +101,8 @@ docker run --rm -it \
 ```
 
 This setup allows `packageR` to list and share data items from the bucket mount, generating secure presigned URLs pointing to the corresponding objects on the bucket.
+
+If you want startup-created default shares, set `FB_DEFAULT_SHARES` as a semicolon-separated list.
 
 ### Kubernetes - Bucket Mount Health
 
