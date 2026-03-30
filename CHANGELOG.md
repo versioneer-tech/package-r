@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2026.3.1](https://github.com/versioneer-tech/package-r/compare/v2025.7.1...v2026.3.1) (2026-03-30)
+
 ### [2025.7.1](https://github.com/versioneer-tech/package-r/compare/v2025.7.1-rc4...v2025.6.4) (2025-07-29)
 
 - go 1.24.4 and library updates
