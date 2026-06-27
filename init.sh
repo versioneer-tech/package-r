@@ -62,7 +62,7 @@ log_presign_mode() {
 
 print_filebrowser_banner() {
   log "================================================================"
-  log "run via ./filebrowser -d ${FB_DATABASE} -p ${FB_SERVER_PORT:-8080}"
+  log "Start via ./filebrowser -p ${FB_SERVER_PORT:-8080}"
   log "================================================================"
 }
 

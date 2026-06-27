@@ -39,6 +39,7 @@ dist/
 
 # Project-local generated files
 /filebrowser
+root/
 
 # Frontend build and test artifacts
 /frontend/dist/*

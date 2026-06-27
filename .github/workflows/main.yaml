@@ -116,7 +116,7 @@ jobs:
     needs: [lint, test]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
-      contents: read
+      contents: write
       pages: write
       id-token: write
     environment:
@@ -131,6 +131,8 @@ jobs:
           cache-dependency-glob: docs/requirements.txt
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+      - name: Generate use-case docs
+        run: python3 scripts/render_usecases.py
       - name: Build MkDocs
         run: uv run --with-requirements docs/requirements.txt mkdocs build --strict
       - name: Set up Git identity
@@ -142,5 +144,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git fetch origin gh-pages --depth=1 || true
-          uv run mike deploy --branch gh-pages "${GITHUB_REF_NAME}" latest --update-alias --push
-          uv run mike set-default --branch gh-pages latest --push
+          uv run --with-requirements docs/requirements.txt mike deploy --branch gh-pages "${GITHUB_REF_NAME}" latest --update-alias --push
+          uv run --with-requirements docs/requirements.txt mike set-default --branch gh-pages latest --push
