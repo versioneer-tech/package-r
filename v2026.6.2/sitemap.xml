@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://package-r.versioneer.at/v2026.6.2/</loc>
+         <lastmod>2026-06-27</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/v2026.6.2/configuration/</loc>
+         <lastmod>2026-06-27</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/v2026.6.2/features/</loc>
+         <lastmod>2026-06-27</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/v2026.6.2/usage/</loc>
+         <lastmod>2026-06-27</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/v2026.6.2/generated/usecases/catalog-stac/</loc>
+         <lastmod>2026-06-27</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/v2026.6.2/generated/usecases/public-sharing/</loc>
+         <lastmod>2026-06-27</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/v2026.6.2/generated/usecases/quickstart/</loc>
+         <lastmod>2026-06-27</lastmod>
+    </url>
+</urlset>
