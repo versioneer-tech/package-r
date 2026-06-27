@@ -3,6 +3,9 @@ project_name: package-r
 env:
   - GO111MODULE=on
 
+release:
+  disable: "{{ if .Prerelease }}true{{ else }}false{{ end }}"
+
 builds:
   - env:
       - CGO_ENABLED=1

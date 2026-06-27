@@ -133,10 +133,14 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Build MkDocs
         run: uv run --with-requirements docs/requirements.txt mkdocs build --strict
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: site
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Set up Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Publish docs to GitHub Pages (gh-pages via mike)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch origin gh-pages --depth=1 || true
+          uv run mike deploy --branch gh-pages "${GITHUB_REF_NAME}" latest --update-alias --push
+          uv run mike set-default --branch gh-pages latest --push
