@@ -16,6 +16,57 @@ import (
 	"github.com/versioneer-tech/package-r/users"
 )
 
+func TestPublicShareBypassesGeneratedUserDirBaseRules(t *testing.T) {
+	root := t.TempDir()
+	writePresignTestFile(t, root, "home/bob/data.txt")
+
+	db, err := storm.Open(filepath.Join(t.TempDir(), "filebrowser.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	store, err := bolt.NewStorage(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	set := &settings.Settings{
+		Key: []byte("test-key"),
+	}
+	if err := store.Settings.Save(set); err != nil {
+		t.Fatal(err)
+	}
+
+	user := &users.User{Username: "alice", Password: "password", Scope: "/"}
+	set.ApplyUserDefaults(user)
+	if err := store.Users.Save(user); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := store.Share.Save(&share.Link{
+		Hash:   "public-share",
+		Path:   "/home/bob",
+		UserID: user.ID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{Root: root})
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/api/public/share/public-share/data.txt", http.NoBody)
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected public share to bypass generated user-dir rules, got status %d", recorder.Code)
+	}
+}
+
 func TestPublicShareHandlerAuthentication(t *testing.T) {
 	t.Skip("skipping test temporarily")
 	t.Parallel()

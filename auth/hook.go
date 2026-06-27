@@ -157,17 +157,10 @@ func (a *HookAuth) SaveUser() (*users.User, error) {
 
 		// create user with the provided credentials
 		d := &users.User{
-			Username:     a.Cred.Username,
-			Password:     pass,
-			Scope:        a.Settings.Defaults.Scope,
-			Locale:       a.Settings.Defaults.Locale,
-			ViewMode:     a.Settings.Defaults.ViewMode,
-			SingleClick:  a.Settings.Defaults.SingleClick,
-			Sorting:      a.Settings.Defaults.Sorting,
-			Perm:         a.Settings.Defaults.Perm,
-			Commands:     a.Settings.Defaults.Commands,
-			HideDotfiles: a.Settings.Defaults.HideDotfiles,
+			Username: a.Cred.Username,
+			Password: pass,
 		}
+		a.Settings.ApplyUserDefaults(d)
 		u = a.GetUser(d)
 
 		userHome, err := a.Settings.MakeUserDir(u.Username, u.Scope, a.Server.Root)
@@ -231,6 +224,9 @@ func (a *HookAuth) GetUser(d *users.User) *users.User {
 		},
 		Commands:     a.Fields.GetArray("user.commands", d.Commands),
 		HideDotfiles: a.Fields.GetBoolean("user.hideDotfiles", d.HideDotfiles),
+		DateFormat:   d.DateFormat,
+		Envs:         d.Envs,
+		Rules:        d.Rules,
 		Perm:         perms,
 		LockPassword: true,
 	}

@@ -23,10 +23,16 @@ type data struct {
 	store    *storage.Storage
 	user     *users.User
 	raw      interface{}
+
+	skipUserDirBaseRules bool
 }
 
 // Check implements rules.Checker.
 func (d *data) Check(path string) bool {
+	if d.user.Perm.Admin {
+		return true
+	}
+
 	if d.user.HideDotfiles && rules.MatchHidden(path) {
 		return false
 	}
@@ -39,6 +45,9 @@ func (d *data) Check(path string) bool {
 	}
 
 	for _, rule := range d.user.Rules {
+		if d.skipUserDirBaseRules && d.settings.IsGeneratedUserDirBaseRule(d.user.Username, rule) {
+			continue
+		}
 		if rule.Matches(path) {
 			allow = rule.Allow
 		}

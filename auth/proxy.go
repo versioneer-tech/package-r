@@ -133,7 +133,7 @@ func (a ProxyAuth) createUser(usr users.Store, setting *settings.Settings, srv *
 		Password:     hashedRandomPassword,
 		LockPassword: true,
 	}
-	setting.Defaults.Apply(user)
+	setting.ApplyUserDefaults(user)
 
 	var userHome string
 	userHome, err = setting.MakeUserDir(user.Username, user.Scope, srv.Root)

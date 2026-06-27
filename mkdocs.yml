@@ -1,0 +1,49 @@
+# Copyright 2026, Versioneer (https://versioneer.at)
+# SPDX-License-Identifier: Apache-2.0
+
+site_name: packageR
+site_url: https://package-r.versioneer.at/
+repo_url: https://github.com/versioneer-tech/package-r
+repo_name: versioneer-tech/package-r
+copyright: "Copyright &copy; 2026, Versioneer"
+nav:
+  - Home:
+    - Overview: index.md
+    - Features: features.md
+    - Configuration: configuration.md
+    - Usage: usage.md
+  - Walkthroughs:
+    - Quickstart: generated/usecases/quickstart.md
+    - Public Sharing: generated/usecases/public-sharing.md
+    - Catalog and STAC: generated/usecases/catalog-stac.md
+plugins:
+  - search
+  - mike
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+theme:
+  name: material
+  language: en
+  logo: imgs/logo.png
+  favicon: imgs/favicon.ico
+  features:
+    - content.code.copy
+    - navigation.footer
+    - search.suggest
+    - toc.follow
+    - toc.permalink
+  palette:
+    - scheme: default
+      primary: white
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/versioneer-tech/package-r
+      name: package-r on GitHub
+    - icon: fontawesome/solid/copyright
+      link: https://versioneer.at
+      name: Versioneer
+  version:
+    provider: mike

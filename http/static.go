@@ -47,7 +47,6 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 		"EnableExec":            d.server.EnableExec,
 		"TusSettings":           d.settings.Tus,
 		"ShareLinkDefaultHash":  d.settings.ShareLink.DefaultHash,
-		"CatalogBaseURL":        d.settings.Catalog.BaseURL,
 		"CatalogDefaultName":    d.settings.Catalog.DefaultName,
 		"CatalogPreviewURL":     d.settings.Catalog.PreviewURL,
 	}

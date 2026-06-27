@@ -126,7 +126,7 @@
         />
         <p>{{ $t("settings.hash") }}</p>
         <input class="input input--block" v-model.trim="hash" tabindex="5" />
-        <div v-if="catalogBaseURL != ''">
+        <div v-if="catalogName != ''">
           <p>{{ $t("settings.catalogName") }}</p>
           <input
             class="input input--block"
@@ -183,7 +183,6 @@ import { useLayoutStore } from "@/stores/layout";
 import { copy } from "@/utils/clipboard";
 import {
   shareLinkDefaultHash,
-  catalogBaseURL,
   catalogDefaultName,
 } from "@/utils/constants";
 
@@ -212,7 +211,6 @@ export default {
       password: "",
       description: "",
       hash: defaultHash(),
-      catalogBaseURL: catalogBaseURL,
       catalogName: catalogDefaultName,
       filterField: "",
       assetsBaseURL: "",
@@ -287,14 +285,15 @@ export default {
           return;
         }
 
-        const catalogNamePattern = /^[a-z0-9.\-]+$/;
+        const catalogNamePattern = /^[a-z0-9./-]+$/;
         if (
-          this.catalogBaseURL != "" &&
           this.catalogName !== "" &&
-          !catalogNamePattern.test(this.catalogName)
+          (!catalogNamePattern.test(this.catalogName) ||
+            this.catalogName.startsWith("/") ||
+            this.catalogName.split("/").includes(".."))
         ) {
           this.$showError(
-            "Invalid catalog name - only lowercase letters, numbers, dots and hyphens are allowed!"
+            "Invalid catalog name - use a relative path inside the shared folder."
           );
           return;
         }

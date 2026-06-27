@@ -153,7 +153,7 @@ var signupHandler = func(_ http.ResponseWriter, r *http.Request, d *data) (int, 
 		Username: info.Username,
 	}
 
-	d.settings.Defaults.Apply(user)
+	d.settings.ApplyUserDefaults(user)
 
 	pwd, err := users.HashPwd(info.Password)
 	if err != nil {
@@ -199,7 +199,7 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 			Commands:       user.Commands,
 			HideDotfiles:   user.HideDotfiles,
 			DateFormat:     user.DateFormat,
-			PresignEnabled: user.Envs != nil && (*user.Envs)["AWS_ACCESS_KEY_ID"] != "",
+			PresignEnabled: true,
 			PreviewEnabled: false, // TBD
 		},
 		RegisteredClaims: jwt.RegisteredClaims{

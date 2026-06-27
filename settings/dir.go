@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/spf13/afero"
+
+	"github.com/versioneer-tech/package-r/version"
 )
 
 var (
@@ -21,13 +23,15 @@ var (
 // MakeUserDir makes the user directory according to settings.
 func (s *Settings) MakeUserDir(username, userScope, serverRoot string) (string, error) {
 	userScope = strings.TrimSpace(userScope)
-	if userScope == "" && s.CreateUserDir {
-		username = cleanUsername(username)
+	generatedUserDir := false
+	if s.CreateUserDir && (userScope == "" || userScope == ".") {
+		username = CleanUsername(username)
 		if username == "" || username == "-" || username == "." {
 			log.Printf("create user: invalid user for home dir creation: [%s]", username)
 			return "", errors.New("invalid user for home dir creation")
 		}
-		userScope = path.Join(s.UserHomeBasePath, username)
+		userScope = path.Join(s.userHomeBasePath(), username)
+		generatedUserDir = true
 	}
 
 	userScope = path.Join("/", userScope)
@@ -36,10 +40,17 @@ func (s *Settings) MakeUserDir(username, userScope, serverRoot string) (string, 
 	if err := fs.MkdirAll(userScope, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to create user home dir: [%s]: %w", userScope, err)
 	}
+	if generatedUserDir {
+		content := fmt.Sprintf("created by package-r v%s automatically - please keep!", version.Version)
+		if err := afero.WriteFile(fs, path.Join(userScope, ".keep"), []byte(content), 0644); err != nil {
+			return "", fmt.Errorf("failed to create user home dir marker: [%s]: %w", userScope, err)
+		}
+	}
 	return userScope, nil
 }
 
-func cleanUsername(s string) string {
+// CleanUsername makes a username safe for use as one path segment.
+func CleanUsername(s string) string {
 	// Remove any trailing space to avoid ending on -
 	s = strings.Trim(s, " ")
 	s = strings.ReplaceAll(s, "..", "")

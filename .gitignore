@@ -1,40 +1,48 @@
-*.db
-*.bak
-_old
-rice-box.go
-.idea/
-/filebrowser
-/dist
-/duckdb
-
+# OS files
 .DS_Store
-node_modules
 
-# local env files
+# Environment files
 .env.local
 .env.*.local
 
-# Log files
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Editor directories and files
-.idea
+# Editor and IDE files
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw*
 *.code*
+
+# Dependencies
+node_modules/
+
+# Python
+__pycache__/
+
+# Databases and backups
+*.db
+*.bak
+
+# Build outputs
 bin/
 build/
+dist/
+/dist
+/site/
+/docs/generated/
 
-# Vue distributable files
+# Project-local generated files
+/filebrowser
+
+# Frontend build and test artifacts
 /frontend/dist/*
 !/frontend/dist/.gitkeep
-
-# Playwright files
 /frontend/test-results/
 /frontend/playwright-report/
 /frontend/playwright/.cache/

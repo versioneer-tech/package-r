@@ -1,17 +1,20 @@
 package files
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/aws"             //nolint:staticcheck
+	"github.com/aws/aws-sdk-go/aws/credentials" //nolint:staticcheck
+	"github.com/aws/aws-sdk-go/aws/session"     //nolint:staticcheck
+	"github.com/aws/aws-sdk-go/service/s3"      //nolint:staticcheck
 )
+
+var ErrMissingS3Credentials = errors.New("missing S3 credentials")
 
 type S3Connection struct {
 	s3           *s3.S3
@@ -124,10 +127,16 @@ func getStringOrDefault(values map[string]string, key, defaultValue string) stri
 }
 
 func Presign(path, method string, envs map[string]string) (string, error) {
+	accessKeyID := getStringOrDefault(envs, "AWS_ACCESS_KEY_ID", os.Getenv("AWS_ACCESS_KEY_ID"))
+	secretAccessKey := getStringOrDefault(envs, "AWS_SECRET_ACCESS_KEY", os.Getenv("AWS_SECRET_ACCESS_KEY"))
+	if strings.TrimSpace(accessKeyID) == "" || strings.TrimSpace(secretAccessKey) == "" {
+		return "", ErrMissingS3Credentials
+	}
+
 	sess, err := session.NewSession(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(
-			getStringOrDefault(envs, "AWS_ACCESS_KEY_ID", os.Getenv("AWS_ACCESS_KEY_ID")),
-			getStringOrDefault(envs, "AWS_SECRET_ACCESS_KEY", os.Getenv("AWS_SECRET_ACCESS_KEY")),
+			accessKeyID,
+			secretAccessKey,
 			"",
 		),
 		Endpoint:         aws.String(getStringOrDefault(envs, "AWS_ENDPOINT_URL", os.Getenv("AWS_ENDPOINT_URL"))),

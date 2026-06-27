@@ -1,166 +1,73 @@
 <img src="https://raw.githubusercontent.com/versioneer-tech/package-r-design/main/logo.png" height="40"/>
 
 # packageR
-<a name="introduction"></a>
 
-`packageR` enables users to browse and explore data items mounted from object storage, enrich them with metadata, and curate shareable data packages. Data access is provided directly via secure, presigned URLs—without routing through the application server. `packageR` is developed by [Versioneer](https://versioneer.at) and [EOX](https://eox.at).
+`packageR` is a File Browser-derived application designed for data that lives in object
+storage but is made visible to packageR as a regular file tree (e.g. via FUSE).
 
-## Table of Contents
-- [Background](#background)
-- [Key Features](#key-features)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
+packageR uses that filesystem view for browsing, inspection, and curation, then
+adds presigned URL access, streaming previews, public STAC catalog endpoints,
+and more. See the [feature summary](https://package-r.versioneer.at/features/)
+and follow the walkthroughs for
+[public sharing](https://package-r.versioneer.at/generated/usecases/public-sharing/)
+and [catalog handling via STAC](https://package-r.versioneer.at/generated/usecases/catalog-stac/).
 
-## Background
+Full documentation is available at
+[package-r.versioneer.at](https://package-r.versioneer.at/), including the necessary
+[configuration](https://package-r.versioneer.at/configuration/) for runtime
+environment variables and bootstrap settings.
 
-`packageR` is a lightweight tool built on top of a fork of [File Browser](https://github.com/filebrowser/filebrowser/), designed to manage diverse data formats through a single, intuitive web interface. It addresses the common challenge of juggling different storage systems and editing tools for various data types—streamlining workflows for individuals and teams alike.
+## Getting Started
 
-- For structured text formats such as Markdown, JSON, and YAML—commonly used for documentation, configuration, and metadata — `packageR` offers an integrated browser-based editor.
-
-- For binary content, including very large files, `packageR` can generate secure, temporary download links (presigned URLs) directly connected to underlying object storage, enabling users to download and open them in their preferred desktop applications. In addition `packageR` provides in-browser previews and selective access to modern, cloud-optimized data formats such as Parquet, Cloud-Optimized GeoTIFF (COG), and Zarr (Upcoming). When available, metadata is displayed without requiring a full download. Direct links to full raw archives are also provided for comprehensive access.
-
-Building on File Browser’s sharing functionality, `packageR` promotes a packaging-oriented approach over traditional file-based workflows to simplify complex data handling and support scalable, cloud-native analysis. It supports modern catalog formats such as the [STAC GeoParquet Specification](https://github.com/stac-utils/stac-geoparquet/blob/main/spec/stac-geoparquet-spec.md), allowing metadata to be embedded directly within Parquet files and previewed using tools like [STAC Browser](https://github.com/radiantearth/stac-browser).
-
-## Key Features
-<a name="key-features"></a>
-
-- **Streamlined Data Package Generation**: Curate arbitrary data packages of any size containing both binary and text content. Share them via download links, optionally protected and with customizable expiration settings.
-
-- **Rich Previews**: Inline viewers support modern, streamable data formats such as Parquet, Cloud-Optimized GeoTIFF (COG), and Zarr—enabling easy preview and interactive exploration directly in the browser.
-
-- **Presigned URL Sharing**: Securely share data items by generating presigned URLs for objects stored in systems like AWS S3, GCS, Azure Blob, or MinIO. `packageR` works by browsing a local filesystem path (configured via `FB_ROOT`), which represents a mount of your object storage (e.g., via FUSE or Kubernetes CSI drivers). When a data item is accessed, `packageR` uses AWS-compatible credentials to generate a direct download link directly connected to underlying object storage system—bypassing the `packageR` application.
-
-- **Metadata Bundling**: Enhance datasets with rich metadata, attestations, UI hints, and documentation. This enables verifiable data distribution and smooth integration with external graphical tools.
-
-- **Stateless Operation**: Runs without managing internal application state (aside from share links). All configurations are applied declaratively at startup.
-
-- **External Authentication**: Supports proxy-based authentication mechanisms such as OIDC headers or JWT claims, and includes a lightweight role-mapping system for access control.
-
-- **UI Customization**: Allows basic user interface branding (e.g., setting a custom application name via `FB_BRANDING_NAME`). For more advanced customization, static assets can be overridden in a custom Docker image.
-
-
-## Configuration
-<a name="configuration"></a>
-
-All settings are injected via environment variables:
-
-| Variable                                       | Description                                                                                                  |
-|------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| `FB_ROOT`                                      | Path inside the container (this should be your mounted object storage).                                      |
-| `FB_BRANDING_NAME`                             | Custom name for the application displayed in the UI.                                                         |
-| `FB_BASEURL`                                   | (Optional) Override base URL if not served from root path.                                                   |
-| `FB_AUTH_HEADER`                               | HTTP header name from which to extract user identity/role (e.g., `X-Forwarded-User`, `X-Id-Token`).          |
-| `FB_AUTH_MAPPER`                               | Mapping strategy for the auth header: `""` (raw), `".<claim>"` (from JSON/JWT), or `<static>`.               |
-| `FB_DEFAULT_SHARES`                            | (Optional) Default permanent shares created at startup using `hash=path;hash=path` and owned by `admin`.     |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`  | Credentials for the S3-compatible object storage, used for signing presigned URLs.                           |
-| `AWS_ENDPOINT_URL` / `AWS_REGION`              | Object storage endpoint URL and region configuration.                                                        |
-| `BUCKET_NAME`                                  | (Optional) Name of the target object storage bucket.                                                         |
-| `BUCKET_PREFIX`                                | (Optional) Path prefix within the target object storage bucket.                                              |
-
-## Usage
-<a name="usage"></a>
-
-If you have mounted an object storage bucket locally (e.g., via FUSE, `s3fs`, or a CSI driver) to a folder on your host machine such as:
-
-```
-/workspace/my-bucket
-```
-
-You should configure `packageR` to use this path as its browsing root by setting:
+Build the local `filebrowser` binary from the repository root:
 
 ```bash
--e FB_ROOT=/workspace/my-bucket
+make build
 ```
 
-When running in Docker, make sure to also mount the corresponding host folder into the container:
+Start packageR with a public share and local test data:
 
 ```bash
--v /workspace:/workspace
+./init.sh --add-shares public-share=/public --add-test-data /public --serve
 ```
 
-This makes `/workspace/my-bucket` available inside the container as `/workspace/my-bucket`.
-
-### Example
+In another terminal, check the public package and STAC catalog endpoints:
 
 ```bash
-docker run --rm -it \
-  -u 1000:1000 \
-  -v /workspace:/workspace \
-  -e FB_ROOT=/workspace/<my-bucket> \
-  -e FB_BRANDING_NAME=Workspace \
-  -e FB_DEFAULT_SHARES='public-my-bucket=/<my-bucket>/public' \
-  -e AWS_ACCESS_KEY_ID=<my-key> \
-  -e AWS_SECRET_ACCESS_KEY=<my-secret> \
-  -e AWS_ENDPOINT_URL=<my-endpoint> \
-  -e AWS_REGION=<my-region> \
-  -e BUCKET_NAME=<my-bucket> \
-  -p 8080:8080 \
-  package-r:latest
+BASE_URL="${BASE_URL:-http://127.0.0.1:${FB_SERVER_PORT:-8080}}"
+ITEM_ID=67793f0b9478720001790586
+
+curl -sS "$BASE_URL/api/public/catalog/public-share"
+curl -sS "$BASE_URL/api/public/catalog/public-share/openaerialmap-assets/$ITEM_ID/thumbnail.png"
+curl -sSI "$BASE_URL/api/public/share/public-share/openaerialmap-assets/$ITEM_ID/thumbnail.png?presign=true&followRedirect=true"
 ```
 
-This setup allows `packageR` to list and share data items from the bucket mount, generating secure presigned URLs pointing to the corresponding objects on the bucket.
-
-If you want startup-created default shares, set `FB_DEFAULT_SHARES` as a semicolon-separated list.
-
-### Kubernetes - Bucket Mount Health
-
-If you deploy on Kubernetes with a bucket-backed PVC (for example via a CSI FUSE mount), the mount can become stale. A typical error is:
-
-    Transport endpoint is not connected
-
-You can verify this by execing into the pod:
-
-``` bash
-stat /workspace
-```
-
-If the mount is broken, it will return:
-
-    stat: cannot statx '/workspace': Transport endpoint is not connected
-
-To mitigate this, add readiness and liveness probes that check the
-mount:
-
-``` yaml
-readinessProbe:
-  exec:
-    command:
-      - /bin/sh
-      - -lc
-      - |
-        out="$( (stat /workspace >/dev/null) 2>&1 || true )"
-        if echo "$out" | grep -qi "Transport endpoint is not connected"; then
-          exit 1
-        fi
-        exit 0
-  periodSeconds: 10
-
-livenessProbe:
-  exec:
-    command:
-      - /bin/sh
-      - -lc
-      - |
-        out="$( (stat /workspace >/dev/null) 2>&1 || true )"
-        if echo "$out" | grep -qi "Transport endpoint is not connected"; then
-          exit 1
-        fi
-        exit 0
-  periodSeconds: 20
-```
-
-Note: restarting the container may not fix a stale FUSE mount. In that case the pod must be recreated.
+The local sample is not backed by object storage, so presign checks return
+packageR/File Browser URLs. See the
+[Quickstart](https://package-r.versioneer.at/generated/usecases/quickstart/)
+docs page for the full walkthrough.
 
 ## Contributing
-<a name="contributing"></a>
 
-We aim to stay aligned with the [Filebrowser](https://github.com/filebrowser/filebrowser) upstream project. To achieve this, we regularly rebase our `main` branch onto the latest upstream changes.
+packageR is fork-derived from
+[File Browser](https://github.com/filebrowser/filebrowser). We aim to stay
+aligned with upstream where practical, so packageR-specific changes should stay
+narrow and easy to rebase.
 
-This rebase-based workflow helps us avoid divergence and maintain compatibility. While we acknowledge that rebasing rewrites history and removes merge traces, we consider this trade-off acceptable to keep our integration clean and manageable.
+Contributors should base work on the current `main` branch and rebase changes
+before opening a pull request.
 
-If you're contributing, please base your work on the current `main` branch and rebase your changes before opening a pull request.
+Run the backend tests from the repository root:
+
+```bash
+go test -v ./...
+```
+
+For documentation changes, build the docs locally:
+
+```bash
+uv run --with-requirements docs/requirements.txt mkdocs build --strict
+```
 
 ## License
 

@@ -18,10 +18,10 @@ import (
 var HashPattern = regexp.MustCompile(`^[a-z0-9.-]{1,20}$`)
 
 type LinkOptions struct {
-	Path           string
-	UserID         uint
-	DefaultHash    string
-	CatalogBaseURL string
+	Path        string
+	UserID      uint
+	DefaultHash string
+	Root        string
 }
 
 func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
@@ -45,8 +45,11 @@ func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
 	}
 
 	catalogURL := ""
-	if opts.CatalogBaseURL != "" && body.CatalogName != "" {
-		catalogURL = path.Join(opts.CatalogBaseURL, opts.Path, body.CatalogName)
+	if body.CatalogName != "" {
+		catalogURL, err = CatalogPath(opts.Root, opts.Path, body.CatalogName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Link{
@@ -61,6 +64,22 @@ func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
 		PasswordHash:  passwordHash,
 		Token:         token,
 	}, nil
+}
+
+func CatalogPath(root, sharePath, catalogName string) (string, error) {
+	if catalogName == "" {
+		return "", nil
+	}
+	if strings.HasPrefix(catalogName, "/") {
+		return "", fmt.Errorf("catalog name must be relative: %s", catalogName)
+	}
+
+	cleanName := path.Clean(catalogName)
+	if cleanName == "." || cleanName == ".." || strings.HasPrefix(cleanName, "../") {
+		return "", fmt.Errorf("catalog name must stay within the shared tree: %s", catalogName)
+	}
+
+	return path.Join(root, sharePath, cleanName), nil
 }
 
 func resolveHash(hash string, defaultHash string) (string, error) {

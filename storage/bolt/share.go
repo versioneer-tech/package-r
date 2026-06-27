@@ -72,6 +72,14 @@ func (s shareBackend) Save(l *share.Link) error {
 	return err
 }
 
+func (s shareBackend) Update(l *share.Link) error {
+	err := s.db.Update(l)
+	if errors.Is(err, storm.ErrNotFound) {
+		return fbErrors.ErrNotExist
+	}
+	return err
+}
+
 func (s shareBackend) Delete(hash string) error {
 	err := s.db.DeleteStruct(&share.Link{Hash: hash})
 	if errors.Is(err, storm.ErrNotFound) {

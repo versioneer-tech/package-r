@@ -20,7 +20,7 @@ var (
 func InitDuckDB() {
 	dbOnce.Do(func() {
 		log.Println("Initializing global DuckDB connection")
-		connector, err := duckdb.NewConnector("duckdb", nil)
+		connector, err := duckdb.NewConnector("", nil)
 		if err != nil {
 			dbErr = fmt.Errorf("duckdb connector error: %w", err)
 			return

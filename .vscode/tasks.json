@@ -8,7 +8,9 @@
       "options": {
         "env": {
           "FB_PASSWORD": "1234!",
-          "FB_DEFAULT_SHARES": "public-images=/images/"
+          "FB_DEFAULT_SHARES": "public-share=/public",
+          "FB_ALLOW_SHARING": "true",
+          "FB_ALLOW_CHANGING": "true"
         }
       },
       "problemMatcher": []

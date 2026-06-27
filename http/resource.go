@@ -54,7 +54,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 
 	presign, ok := r.URL.Query()["presign"]
 	if ok && !strings.EqualFold(presign[0], "false") {
-		url, err := files.Presign(file.Path, r.Method, *d.user.Envs)
+		url, err := presignOrLocalURL(file.Path, r.Method, d.user.Envs, localRawURL(r, file.Path))
 		if errors.Is(err, fbErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {

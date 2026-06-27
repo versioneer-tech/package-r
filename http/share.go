@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
-	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -126,8 +125,12 @@ var sharePostHandler = withPermShare(func(w http.ResponseWriter, r *http.Request
 	}
 
 	catalogURL := ""
-	if d.settings.Catalog.BaseURL != "" && body.CatalogName != "" {
-		catalogURL = path.Join(d.settings.Catalog.BaseURL, r.URL.Path, body.CatalogName)
+	if body.CatalogName != "" {
+		var catalogErr error
+		catalogURL, catalogErr = share.CatalogPath(d.server.Root, r.URL.Path, body.CatalogName)
+		if catalogErr != nil {
+			return http.StatusBadRequest, catalogErr
+		}
 	}
 
 	var expire int64 = 0

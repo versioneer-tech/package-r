@@ -37,7 +37,7 @@
       />
 
       <div id="signup">
-        <p @click="toggleMode" v-if="signup">
+        <p @click="toggleMode" v-if="signup && loginPage">
           {{
             createMode ? t("login.loginInstead") : t("login.createAnAccount")
           }}

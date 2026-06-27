@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"path"
 	"strings"
 )
 
@@ -38,7 +39,54 @@ func isZeroBBox(bbox []float64) bool {
 	return len(bbox) == 4 && bbox[0] == 0 && bbox[1] == 0 && bbox[2] == 0 && bbox[3] == 0
 }
 
-func rewriteAssetHrefs(entry map[string]interface{}, baseURL, presignedURL string) {
+func isRelativeAssetHref(href string) bool {
+	return href != "" && !strings.HasPrefix(href, "/") && !strings.Contains(href, "://")
+}
+
+func relativeAssetPrefix(sharePath, requestPath string) string {
+	cleanSharePath := path.Clean("/" + strings.TrimPrefix(sharePath, "/"))
+	cleanRequestPath := path.Clean("/" + strings.TrimPrefix(requestPath, "/"))
+	if cleanRequestPath == "/" {
+		return ""
+	}
+
+	if cleanSharePath == "/" {
+		return strings.TrimPrefix(cleanRequestPath, "/")
+	}
+
+	if cleanRequestPath == cleanSharePath {
+		return ""
+	}
+	if strings.HasPrefix(cleanRequestPath, cleanSharePath+"/") {
+		return strings.TrimPrefix(cleanRequestPath, cleanSharePath+"/")
+	}
+
+	shareEntryPath := "/" + path.Base(cleanSharePath)
+	if cleanRequestPath == shareEntryPath {
+		return ""
+	}
+	if strings.HasPrefix(cleanRequestPath, shareEntryPath+"/") {
+		return strings.TrimPrefix(cleanRequestPath, shareEntryPath+"/")
+	}
+
+	return strings.TrimPrefix(cleanRequestPath, "/")
+}
+
+func assetHrefMatches(href, packagePrefix, relativePrefix string) bool {
+	if isRelativeAssetHref(href) {
+		if relativePrefix == "" {
+			return true
+		}
+		return href == relativePrefix || strings.HasPrefix(href, strings.TrimRight(relativePrefix, "/")+"/")
+	}
+
+	if packagePrefix == "" {
+		return true
+	}
+	return strings.HasPrefix(href, packagePrefix)
+}
+
+func rewriteAssetHrefs(entry map[string]interface{}, baseURL, publicSharePrefix, presignedURL string) {
 	assetsRaw, ok := entry["assets"]
 	if !ok {
 		return
@@ -54,22 +102,73 @@ func rewriteAssetHrefs(entry map[string]interface{}, baseURL, presignedURL strin
 			continue
 		}
 		href, ok := asset["href"].(string)
-		if !ok || !strings.HasPrefix(href, baseURL) {
+		if !ok {
 			continue
 		}
-		relativePath := strings.TrimPrefix(href, baseURL)
+
+		relativePath := ""
+		switch {
+		case isRelativeAssetHref(href):
+			relativePath = path.Join(publicSharePrefix, href)
+		case baseURL != "" && strings.HasPrefix(href, baseURL):
+			relativePath = strings.TrimPrefix(href, baseURL)
+		case baseURL == "" && strings.HasPrefix(href, "/"):
+			relativePath = href
+		default:
+			continue
+		}
+
+		relativePath = strings.TrimLeft(relativePath, "/")
 		newHref := strings.TrimRight(presignedURL, "/") + "/" + relativePath + "?presign&followRedirect"
 		asset["href"] = newHref
 	}
 }
 
+func hasAssetHrefPrefix(entry map[string]interface{}, packagePrefix, relativePrefix string) bool {
+	assetsRaw, ok := entry["assets"]
+	if !ok {
+		return false
+	}
+	assets, ok := assetsRaw.(map[string]interface{})
+	if !ok {
+		return false
+	}
+
+	for _, v := range assets {
+		asset, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		href, ok := asset["href"].(string)
+		if ok && assetHrefMatches(href, packagePrefix, relativePrefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func sqlString(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
+}
+
 //nolint:gocyclo
-func QueryCatalogParquet(ctx context.Context, catalogPath, filterField, baseURL, requestPath, assetsURL string) (map[string]interface{}, error) {
+func QueryCatalogParquet(ctx context.Context, catalogPath, filterField, baseURL, requestPath, assetsURL, sharePath string) (map[string]interface{}, error) {
+	packagePrefix := path.Join(baseURL, requestPath)
+	relativePrefix := relativeAssetPrefix(sharePath, requestPath)
+
 	query := fmt.Sprintf(`
 SELECT *
-FROM read_parquet('%s')
-WHERE COALESCE((CAST(assets AS JSON)->'$.%s'->>'href'), '') LIKE '%s%%%%'
-`, catalogPath, filterField, baseURL+requestPath)
+FROM read_parquet(%s)
+`, sqlString(catalogPath))
+	if filterField != "" {
+		query = fmt.Sprintf(`
+SELECT *
+FROM read_parquet(%s)
+WHERE
+  COALESCE((CAST(assets AS JSON)->%s->>'href'), '') LIKE %s
+  OR COALESCE((CAST(assets AS JSON)->%s->>'href'), '') LIKE %s
+`, sqlString(catalogPath), sqlString("$."+filterField), sqlString(packagePrefix+"%"), sqlString("$."+filterField), sqlString(relativePrefix+"%"))
+	}
 
 	log.Printf("Query: %s", query)
 
@@ -104,6 +203,10 @@ WHERE COALESCE((CAST(assets AS JSON)->'$.%s'->>'href'), '') LIKE '%s%%%%'
 		entry := make(map[string]interface{}, len(cols))
 		for i, col := range cols {
 			entry[col] = tryParseJSON(values[i])
+		}
+
+		if filterField == "" && !hasAssetHrefPrefix(entry, packagePrefix, relativePrefix) {
+			continue
 		}
 
 		if _, ok := entry["type"]; !ok {
@@ -179,7 +282,7 @@ WHERE COALESCE((CAST(assets AS JSON)->'$.%s'->>'href'), '') LIKE '%s%%%%'
 
 		delete(entry, "href")
 
-		rewriteAssetHrefs(entry, baseURL, assetsURL)
+		rewriteAssetHrefs(entry, baseURL, "", assetsURL)
 
 		results = append(results, entry)
 	}

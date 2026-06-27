@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/afero"
@@ -18,6 +17,7 @@ import (
 
 type catalogedFile struct {
 	File          *files.FileInfo
+	SharePath     string
 	CatalogURL    string
 	FilterField   string
 	AssetsBaseURL string
@@ -42,6 +42,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		}
 
 		d.user = user
+		d.skipUserDirBaseRules = true
 
 		file, err := files.NewFileInfo(&files.FileOptions{
 			Fs:         d.user.Fs,
@@ -63,7 +64,6 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		filePath := ""
 
 		if file.IsDir {
-			basePath = filepath.Dir(basePath)
 			filePath = ifPath
 		}
 
@@ -84,6 +84,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 
 		d.raw = &catalogedFile{
 			File:          file,
+			SharePath:     link.Path,
 			CatalogURL:    link.CatalogURL,
 			FilterField:   link.FiltersField,
 			AssetsBaseURL: link.AssetsBaseURL,
@@ -132,7 +133,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 	presign, ok := r.URL.Query()["presign"]
 	if ok && !strings.EqualFold(presign[0], "false") {
-		url, err := files.Presign(file.RealPath(), r.Method, *d.user.Envs)
+		url, err := presignOrLocalURL(file.RealPath(), r.Method, d.user.Envs, localPublicDownloadURL(r))
 		if errors.Is(err, fbErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {

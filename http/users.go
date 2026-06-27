@@ -129,6 +129,7 @@ var userPostHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
+	d.settings.ApplyUserDirBaseRules(req.Data)
 
 	userHome, err := d.settings.MakeUserDir(req.Data.Username, req.Data.Scope, d.server.Root)
 	if err != nil {

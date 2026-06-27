@@ -3,6 +3,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"path"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -34,10 +36,38 @@ var sharesAddCmd = &cobra.Command{
 		}
 		checkErr(err)
 
+		body := share.CreateBody{
+			Hash:        args[1],
+			Description: "default share",
+		}
+		settings, err := d.store.Settings.Get()
+		checkErr(err)
+		server, err := d.store.Settings.GetServer()
+		checkErr(err)
+
+		opts := share.LinkOptions{
+			Path:   args[2],
+			UserID: owner.ID,
+			Root:   server.Root,
+		}
+		if settings.Catalog.DefaultName != "" {
+			body.CatalogName = settings.Catalog.DefaultName
+			body.AssetsBaseURL = defaultShareAssetsBaseURL(args[2])
+		}
+
+		link, err := share.NewLink(body, opts)
+		checkErr(err)
+
 		existingByHash, err := d.store.Share.GetByHash(args[1])
 		switch {
 		case err == nil:
 			if existingByHash.UserID == owner.ID && existingByHash.Path == args[2] {
+				if shouldApplyDefaultCatalog(existingByHash, link) {
+					existingByHash.CatalogURL = link.CatalogURL
+					existingByHash.FiltersField = link.FiltersField
+					existingByHash.AssetsBaseURL = link.AssetsBaseURL
+					checkErr(d.store.Share.Update(existingByHash))
+				}
 				printShares([]*share.Link{existingByHash})
 				return
 			}
@@ -58,17 +88,24 @@ var sharesAddCmd = &cobra.Command{
 			checkErr(err)
 		}
 
-		link, err := share.NewLink(share.CreateBody{
-			Hash:        args[1],
-			Description: "default share",
-		}, share.LinkOptions{
-			Path:   args[2],
-			UserID: owner.ID,
-		})
-		checkErr(err)
-
 		err = d.store.Share.Save(link)
 		checkErr(err)
 		printShares([]*share.Link{link})
 	}, pythonConfig{}),
+}
+
+func defaultShareAssetsBaseURL(sharePath string) string {
+	cleanSharePath := path.Clean("/" + strings.TrimPrefix(sharePath, "/"))
+	parent := path.Dir(cleanSharePath)
+	if parent == "/" || parent == "." {
+		return ""
+	}
+	return parent
+}
+
+func shouldApplyDefaultCatalog(existing, target *share.Link) bool {
+	return target.CatalogURL != "" &&
+		existing.CatalogURL == "" &&
+		existing.FiltersField == "" &&
+		existing.AssetsBaseURL == ""
 }

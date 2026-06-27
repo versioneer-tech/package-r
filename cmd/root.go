@@ -104,8 +104,8 @@ The precedence of the configuration values are as follows:
 - defaults
 
 The environment variables are prefixed by "FB_" followed by the option
-name in caps. So to set "database" via an env variable, you should
-set FB_DATABASE.
+name in caps, with dots and dashes replaced by underscores. So to set
+"database" via an env variable, you should set FB_DATABASE.
 
 Also, if the database path doesn't exist, File Browser will enter into
 the quick setup mode and a new database will be bootstrapped and a new
@@ -391,7 +391,7 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 		LockPassword: false,
 	}
 
-	set.Defaults.Apply(user)
+	set.ApplyUserDefaults(user)
 	user.Perm.Admin = true
 
 	err = d.store.Users.Save(user)
@@ -412,7 +412,7 @@ func initConfig() {
 
 	v.SetEnvPrefix("FB")
 	v.AutomaticEnv()
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 
 	if err := v.ReadInConfig(); err != nil {
 		var configParseError v.ConfigParseError

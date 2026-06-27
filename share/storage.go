@@ -14,6 +14,7 @@ type StorageBackend interface {
 	GetPermanent(path string, id uint) (*Link, error)
 	Gets(path string, id uint) ([]*Link, error)
 	Save(s *Link) error
+	Update(s *Link) error
 	Delete(hash string) error
 }
 
@@ -112,6 +113,11 @@ func (s *Storage) Gets(path string, id uint) ([]*Link, error) {
 // Save wraps a StorageBackend.Save
 func (s *Storage) Save(l *Link) error {
 	return s.back.Save(l)
+}
+
+// Update wraps a StorageBackend.Update
+func (s *Storage) Update(l *Link) error {
+	return s.back.Update(l)
 }
 
 // Delete wraps a StorageBackend.Delete

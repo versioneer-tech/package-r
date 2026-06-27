@@ -26,7 +26,7 @@ var catalogHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d
 	}
 	assetsURL := scheme + "://" + r.Host + "/api/public/share/" + parts[0] // TBD consider configurable base path
 
-	result, err := catalog.QueryCatalogParquet(r.Context(), cf.CatalogURL, cf.FilterField, cf.AssetsBaseURL, cf.File.Path, assetsURL)
+	result, err := catalog.QueryCatalogParquet(r.Context(), cf.CatalogURL, cf.FilterField, cf.AssetsBaseURL, cf.File.Path, assetsURL, cf.SharePath)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
