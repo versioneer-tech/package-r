@@ -19,6 +19,7 @@ usecase_build_backend
 export FB_ROOT="${FB_ROOT:-/workspace}"
 export FB_DATABASE="${FB_DATABASE:-/db/bolt.db}"
 export FB_SERVER_PORT="${FB_SERVER_PORT:-8888}"
+export FB_CATALOG_PREVIEW_URL="${FB_CATALOG_PREVIEW_URL:-https://radiantearth.github.io/stac-browser/#/external/}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:$FB_SERVER_PORT}"
 ITEM_ID="${ITEM_ID:-67793f0b9478720001790586}"
 PUBLIC_SHARE_HASH="${PUBLIC_SHARE_HASH:-public-share}"
@@ -77,4 +78,25 @@ expected_path = f"/api/public/share/{expected_share}/openaerialmap-assets/{expec
 assert expected_path in thumbnail, thumbnail
 assert "presign" in thumbnail, thumbnail
 assert "followRedirect" in thumbnail, thumbnail
+PY
+
+# A public share can also expose a catalog preview URL. The configured prefix
+# can point to STAC Browser or another external catalog viewer, while packageR
+# supplies the public catalog endpoint as the target URL.
+
+# docs: text ![Public share catalog preview URL](../../imgs/screenshots/public-share-preview-url.png)
+preview_json="$FB_ROOT/catalog-stac-preview.json"
+curl -fsS "$BASE_URL/api/public/share/$PUBLIC_SHARE_HASH/openaerialmap-assets/$ITEM_ID/thumbnail.png?preview=true" \
+  --output "$preview_json"
+python3 - "$FB_CATALOG_PREVIEW_URL" "$PUBLIC_SHARE_HASH" "$ITEM_ID" "$preview_json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+preview_base, expected_share, expected_item, preview_path = sys.argv[1:]
+preview = json.loads(Path(preview_path).read_text())
+preview_url = preview["previewURL"]
+expected_path = f"/api/public/catalog/{expected_share}/openaerialmap-assets/{expected_item}/thumbnail.png"
+assert preview_url.startswith(preview_base), preview_url
+assert expected_path in preview_url, preview_url
 PY

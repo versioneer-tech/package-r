@@ -21,6 +21,11 @@ build-backend: | build-frontend ## Build backend and embed the current frontend 
 	$Q CGO_ENABLED=1 \
 	$(go) build -ldflags '$(LDFLAGS)' -o filebrowser
 
+.PHONY: build-backend-dev
+build-backend-dev: ## Build backend with filesystem frontend assets for local/dev harnesses
+	$Q CGO_ENABLED=1 \
+	$(go) build -tags dev -ldflags '$(LDFLAGS)' -o filebrowser
+
 # ------------------------------------------------------------------------------
 # Test Targets
 # ------------------------------------------------------------------------------
@@ -34,7 +39,7 @@ test-frontend: ## Run frontend tests
 
 .PHONY: test-frontend-e2e
 test-frontend-e2e: ## Run frontend Playwright tests
-	$Q $(MAKE) build-backend
+	$Q $(MAKE) build-backend-dev
 	$Q cd frontend && PACKAGE_R_PLAYWRIGHT_BUILD=false pnpm exec playwright test --project=chromium
 
 .PHONY: test-backend

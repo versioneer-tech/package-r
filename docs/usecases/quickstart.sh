@@ -37,6 +37,12 @@ usecase_start_server "$BASE_URL/api/public/share/$PUBLIC_SHARE_HASH/"
 
 # In another terminal, run the checks below.
 
+# The prepared `/public` sample data is visible in the authenticated file
+# browser UI, and the public share exposes the same files without login.
+#
+# docs: text ![Authenticated package data listing](../../imgs/screenshots/authenticated-public-listing.png)
+# docs: text ![packageR public share directory](../../imgs/screenshots/public-share-directory.png)
+
 # Check the public STAC catalog.
 catalog_json="$FB_ROOT/quickstart-catalog.json"
 curl -fsS "$BASE_URL/api/public/catalog/$PUBLIC_SHARE_HASH" \
@@ -75,3 +81,8 @@ curl -fsSL \
   --output "$FB_ROOT/quickstart-thumbnail.png"
 cmp "tests/data/openaerialmap-assets/$ITEM_ID/thumbnail.png" \
   "$FB_ROOT/quickstart-thumbnail.png"
+
+# Authenticated users can also open normal browser previews for previewable
+# files in the mounted workspace.
+#
+# docs: text ![Authenticated image preview](../../imgs/screenshots/authenticated-image-preview.png)

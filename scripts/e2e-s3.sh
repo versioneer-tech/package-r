@@ -14,11 +14,8 @@ AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-package-r-e2e}"
 AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-package-r-e2e-secret}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
 RCLONE_BIN="${RCLONE_BIN:-rclone}"
-RCLONE_DOCKER_IMAGE="${RCLONE_DOCKER_IMAGE:-rclone/rclone:1.74.3}"
-RCLONE_USE_DOCKER="${RCLONE_USE_DOCKER:-auto}"
 
 tmp_dir=""
-rclone_container=""
 rclone_log=""
 rclone_pid=""
 filebrowser_pid=""
@@ -33,9 +30,6 @@ cleanup() {
   fi
   if [ -n "$rclone_pid" ]; then
     kill "$rclone_pid" >/dev/null 2>&1 || true
-  fi
-  if [ -n "$rclone_container" ]; then
-    docker rm -f "$rclone_container" >/dev/null 2>&1 || true
   fi
   if [ "${PACKAGE_R_E2E_KEEP_TMP:-false}" = "true" ] && [ -n "$tmp_dir" ]; then
     log "keeping temp directory: $tmp_dir"
@@ -89,7 +83,7 @@ ensure_filebrowser_binary() {
 
   FB_FILEBROWSER_BIN="$ROOT_DIR/filebrowser"
   log "building filebrowser backend at $FB_FILEBROWSER_BIN"
-  (cd "$ROOT_DIR" && make build-backend)
+  (cd "$ROOT_DIR" && make build-backend-dev)
 }
 
 rclone_version_line() {
@@ -116,48 +110,18 @@ rclone_version_supports_query_presign() {
   [ "$major" -gt 1 ] || { [ "$major" -eq 1 ] && [ "$minor" -ge 74 ]; }
 }
 
-choose_rclone_runner() {
-  should_use_docker=false
+require_compatible_rclone() {
+  require_command "$RCLONE_BIN"
 
-  case "$RCLONE_USE_DOCKER" in
-    true)
-      should_use_docker=true
-      return
-      ;;
-    false | auto)
-      ;;
-    *)
-      log "unknown RCLONE_USE_DOCKER: $RCLONE_USE_DOCKER"
-      exit 2
-      ;;
-  esac
-
-  if command -v "$RCLONE_BIN" >/dev/null 2>&1; then
-    version_line="$(rclone_version_line || true)"
-    if rclone_version_supports_query_presign "$version_line"; then
-      return
-    fi
-    if [ "$RCLONE_USE_DOCKER" = "false" ]; then
-      log "using local ${version_line:-rclone}; this e2e is only known to pass with rclone >= 1.74"
-      return
-    fi
-    log "local ${version_line:-rclone} is older than the presigned-query-compatible rclone version tested here; using $RCLONE_DOCKER_IMAGE"
-    should_use_docker=true
-    return
+  version_line="$(rclone_version_line || true)"
+  if ! rclone_version_supports_query_presign "$version_line"; then
+    log "local ${version_line:-rclone} is too old; install rclone >= 1.74 or set RCLONE_BIN"
+    exit 1
   fi
-
-  if [ "$RCLONE_USE_DOCKER" = "false" ]; then
-    require_command "$RCLONE_BIN"
-  fi
-  log "local rclone not found; using $RCLONE_DOCKER_IMAGE"
-  should_use_docker=true
+  log "using local ${version_line:-rclone}"
 }
 
 show_rclone_logs() {
-  if [ -n "$rclone_container" ]; then
-    docker logs "$rclone_container" >&2 || true
-    return
-  fi
   if [ -n "$rclone_log" ] && [ -f "$rclone_log" ]; then
     sed -n '1,160p' "$rclone_log" >&2 || true
   fi
@@ -170,26 +134,13 @@ start_local_rclone() {
   mkdir -p "$s3_root/$BUCKET_NAME/public"
   cp -R "$ROOT_DIR/tests/data/." "$s3_root/$BUCKET_NAME/public/"
 
-  choose_rclone_runner
-  if [ "$should_use_docker" = "true" ]; then
-    require_command docker
-    rclone_container="package-r-e2e-rclone-$$"
-    log "starting rclone S3 server ($RCLONE_DOCKER_IMAGE) on $AWS_ENDPOINT_URL"
-    docker run --rm -d \
-      --name "$rclone_container" \
-      -p "127.0.0.1:${S3_PORT}:9000" \
-      -v "$s3_root:/data" \
-      "$RCLONE_DOCKER_IMAGE" serve s3 /data \
-      --addr :9000 \
-      --auth-key "$AWS_ACCESS_KEY_ID,$AWS_SECRET_ACCESS_KEY" >"$tmp_dir/rclone.container"
-  else
-    rclone_log="$tmp_dir/rclone.log"
-    log "starting rclone S3 server with $RCLONE_BIN on $AWS_ENDPOINT_URL"
-    "$RCLONE_BIN" serve s3 "$s3_root" \
-      --addr "127.0.0.1:${S3_PORT}" \
-      --auth-key "$AWS_ACCESS_KEY_ID,$AWS_SECRET_ACCESS_KEY" >"$rclone_log" 2>&1 &
-    rclone_pid=$!
-  fi
+  require_compatible_rclone
+  rclone_log="$tmp_dir/rclone.log"
+  log "starting rclone S3 server with $RCLONE_BIN on $AWS_ENDPOINT_URL"
+  "$RCLONE_BIN" serve s3 "$s3_root" \
+    --addr "127.0.0.1:${S3_PORT}" \
+    --auth-key "$AWS_ACCESS_KEY_ID,$AWS_SECRET_ACCESS_KEY" >"$rclone_log" 2>&1 &
+  rclone_pid=$!
 
   if ! wait_for_http "$AWS_ENDPOINT_URL" "rclone S3"; then
     show_rclone_logs

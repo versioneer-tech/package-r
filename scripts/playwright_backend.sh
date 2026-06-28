@@ -67,11 +67,12 @@ export FB_AUTH_METHOD="${FB_AUTH_METHOD:-json}"
 export FB_PASSWORD="${FB_PASSWORD:-admin}"
 export FB_ALLOW_SHARING="${FB_ALLOW_SHARING:-true}"
 export FB_ALLOW_CHANGING="${FB_ALLOW_CHANGING:-true}"
+export FB_CATALOG_PREVIEW_URL="${FB_CATALOG_PREVIEW_URL:-https://radiantearth.github.io/stac-browser/#/external/}"
 export FB_FILEBROWSER_BIN="${FB_FILEBROWSER_BIN:-$repo_root/filebrowser}"
 
 if [ ! -x "$FB_FILEBROWSER_BIN" ] || [ "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}" = "true" ]; then
   export GOCACHE="${GOCACHE:-/tmp/package-r-go-build}"
-  make build-backend
+  make build-backend-dev
 fi
 
 ./init.sh --add-shares public-share=/public --add-test-data /public
