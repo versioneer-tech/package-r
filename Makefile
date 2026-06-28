@@ -34,7 +34,8 @@ test-frontend: ## Run frontend tests
 
 .PHONY: test-frontend-e2e
 test-frontend-e2e: ## Run frontend Playwright tests
-	$Q cd frontend && pnpm install --frozen-lockfile && pnpm exec playwright test --project=chromium
+	$Q $(MAKE) build-backend
+	$Q cd frontend && PACKAGE_R_PLAYWRIGHT_BUILD=false pnpm exec playwright test --project=chromium
 
 .PHONY: test-backend
 test-backend: ## Run backend tests
