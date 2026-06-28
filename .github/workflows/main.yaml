@@ -88,6 +88,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version: 1.26.4
+      - run: make test-usecases
+  test-production-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
         with:
           package_json_file: "frontend/package.json"
@@ -99,7 +107,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: 1.26.4
-      - run: make test-usecases
+      - run: make test-production-build
   test-e2e-s3:
     runs-on: ubuntu-latest
     steps:
@@ -109,19 +117,19 @@ jobs:
           go-version: 1.26.4
       - name: Install rclone
         env:
-          RCLONE_VERSION: "1.74.3"
+          RCLONE_RELEASE_VERSION: "1.74.3"
         run: |
           mkdir -p tools/bin /tmp/package-r-rclone
           curl -fsSL --retry 5 --retry-delay 2 --retry-connrefused \
             -o /tmp/package-r-rclone/rclone.zip \
-            "https://github.com/rclone/rclone/releases/download/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-amd64.zip"
+            "https://github.com/rclone/rclone/releases/download/v${RCLONE_RELEASE_VERSION}/rclone-v${RCLONE_RELEASE_VERSION}-linux-amd64.zip"
           unzip -q /tmp/package-r-rclone/rclone.zip -d /tmp/package-r-rclone
-          install -m 0755 "/tmp/package-r-rclone/rclone-v${RCLONE_VERSION}-linux-amd64/rclone" tools/bin/rclone
+          install -m 0755 "/tmp/package-r-rclone/rclone-v${RCLONE_RELEASE_VERSION}-linux-amd64/rclone" tools/bin/rclone
           tools/bin/rclone version
       - run: RCLONE_BIN="$PWD/tools/bin/rclone" make test-e2e-s3
   test:
     runs-on: ubuntu-latest
-    needs: [test-frontend, test-frontend-e2e, test-backend, test-usecases, test-e2e-s3]
+    needs: [test-frontend, test-frontend-e2e, test-backend, test-usecases, test-production-build, test-e2e-s3]
     steps:
       - run: echo "done"
 

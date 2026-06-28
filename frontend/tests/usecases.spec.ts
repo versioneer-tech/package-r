@@ -8,24 +8,48 @@ const publicShareThumbnailPath = `/share/${publicShare}/${thumbnailPath}`;
 const catalogPreviewBaseURL =
   "https://radiantearth.github.io/stac-browser/#/external/";
 const screenshotOptions = { animations: "disabled", caret: "hide" } as const;
+const stableRelativeTime = "a few seconds ago";
+const stableScreenshotStyle = `
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+`;
 
 async function prepareStableScreenshot(page: Page) {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.addStyleTag({
-    content: `
-      *,
-      *::before,
-      *::after {
-        animation-duration: 0s !important;
-        animation-delay: 0s !important;
-        transition-duration: 0s !important;
-        transition-delay: 0s !important;
+  await page.addInitScript((content) => {
+    const style = document.createElement("style");
+    style.textContent = content;
+    document.documentElement.appendChild(style);
+  }, stableScreenshotStyle);
+  await page.addStyleTag({ content: stableScreenshotStyle });
+}
+
+async function normalizeRelativeTimes(page: Page) {
+  await page.evaluate((relativeTime) => {
+    for (const time of document.querySelectorAll("time")) {
+      time.textContent = relativeTime;
+    }
+
+    for (const paragraph of document.querySelectorAll("p[title]")) {
+      const strong = paragraph.querySelector("strong");
+      if (!strong || !strong.textContent?.toLowerCase().includes("last")) {
+        continue;
       }
-      time {
-        visibility: hidden !important;
+
+      for (const node of Array.from(paragraph.childNodes)) {
+        if (node !== strong) {
+          node.remove();
+        }
       }
-    `,
-  });
+      paragraph.append(` ${relativeTime}`);
+    }
+  }, stableRelativeTime);
 }
 
 async function loginAsAdmin(page: Page) {
@@ -76,6 +100,7 @@ test.describe("packageR use-case UI", () => {
 
     await expect(page.getByLabel("openaerialmap-assets")).toBeVisible();
     await expect(page.getByLabel("catalog.parquet")).toBeVisible();
+    await normalizeRelativeTimes(page);
     await expect(page.locator("#listing").first()).toHaveScreenshot(
       "authenticated-public-listing.png",
       screenshotOptions
@@ -103,6 +128,7 @@ test.describe("packageR use-case UI", () => {
 
     await expect(page.getByText("openaerialmap-assets")).toBeVisible();
     await expect(page.getByText("catalog.parquet")).toBeVisible();
+    await normalizeRelativeTimes(page);
     await expect(page.locator(".share").first()).toHaveScreenshot(
       "public-share-directory.png",
       screenshotOptions
@@ -120,6 +146,7 @@ test.describe("packageR use-case UI", () => {
     await expect(infoBox).toContainText(
       `/api/public/dl/${publicShare}/${thumbnailPath}`
     );
+    await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
       "public-share-presign.png",
       screenshotOptions
@@ -138,6 +165,7 @@ test.describe("packageR use-case UI", () => {
     await expect(infoBox).toContainText(
       `/api/public/catalog/${publicShare}/${thumbnailPath}`
     );
+    await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
       "public-share-preview-url.png",
       screenshotOptions
@@ -170,6 +198,7 @@ test.describe("packageR use-case UI", () => {
     await expect(modal).toContainText(
       `/api/raw/public/openaerialmap-assets/${itemId}/thumbnail.png`
     );
+    await normalizeRelativeTimes(page);
     await expect(modal).toHaveScreenshot(
       "authenticated-file-info-presign.png",
       screenshotOptions

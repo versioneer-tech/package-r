@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$script_dir/package_r_harness.sh"
+
 usecase_repo_root() {
-  local script_dir
-  script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-  CDPATH= cd -- "$script_dir/.." && pwd
+  package_r_repo_root
 }
 
 usecase_init() {
@@ -37,33 +38,22 @@ usecase_build_backend() {
 usecase_start_server() {
   local wait_url=$1
   mkdir -p "$(dirname -- "$PACKAGE_R_USECASE_SERVER_LOG")"
-  "$FB_FILEBROWSER_BIN" -a "$FB_ADDRESS" -p "$FB_SERVER_PORT" >"$PACKAGE_R_USECASE_SERVER_LOG" 2>&1 &
-  PACKAGE_R_USECASE_SERVER_PID=$!
+  package_r_start_filebrowser "$FB_FILEBROWSER_BIN" "$FB_ADDRESS" "$FB_SERVER_PORT" "$PACKAGE_R_USECASE_SERVER_LOG"
+  PACKAGE_R_USECASE_SERVER_PID=$PACKAGE_R_STARTED_PID
   usecase_wait_for_url "$wait_url"
 }
 
 usecase_wait_for_url() {
   local url=$1
-  local attempt
-  for attempt in {1..100}; do
-    if curl -fsS "$url" >/dev/null 2>&1; then
-      return
-    fi
-    if [ -n "${PACKAGE_R_USECASE_SERVER_PID:-}" ] &&
-      ! kill -0 "$PACKAGE_R_USECASE_SERVER_PID" 2>/dev/null; then
-      cat "$PACKAGE_R_USECASE_SERVER_LOG" >&2 || true
-      return 1
-    fi
-    sleep 0.1
-  done
-  cat "$PACKAGE_R_USECASE_SERVER_LOG" >&2 || true
-  printf 'Timed out waiting for %s\n' "$url" >&2
-  return 1
+
+  PACKAGE_R_LOG_PREFIX=usecase \
+    PACKAGE_R_WAIT_STATUS=200 \
+    PACKAGE_R_WAIT_ATTEMPTS=100 \
+    PACKAGE_R_WAIT_DELAY=0.1 \
+    PACKAGE_R_CURL_TIMEOUT=2 \
+    package_r_wait_for_http "$url" "use-case server" "$PACKAGE_R_USECASE_SERVER_LOG" "${PACKAGE_R_USECASE_SERVER_PID:-}"
 }
 
 usecase_cleanup() {
-  if [ -n "${PACKAGE_R_USECASE_SERVER_PID:-}" ]; then
-    kill "$PACKAGE_R_USECASE_SERVER_PID" 2>/dev/null || true
-    wait "$PACKAGE_R_USECASE_SERVER_PID" 2>/dev/null || true
-  fi
+  package_r_kill_pid "${PACKAGE_R_USECASE_SERVER_PID:-}"
 }

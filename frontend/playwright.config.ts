@@ -75,7 +75,7 @@ export default defineConfig({
   webServer: [
     {
       command: "FB_SERVER_PORT=8888 ../scripts/playwright_backend.sh",
-      url: "http://127.0.0.1:8888/api/public/share/public-share/",
+      url: "http://127.0.0.1:8888/health",
       reuseExistingServer: !process.env.CI,
       timeout: 180 * 1000,
     },

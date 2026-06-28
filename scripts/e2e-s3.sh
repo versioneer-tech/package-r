@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/package_r_harness.sh"
 
-MODE="${PACKAGE_R_E2E_MODE:-local-rclone}"
+ROOT_DIR="$(package_r_repo_root)"
+
 FB_ADDRESS="${FB_ADDRESS:-127.0.0.1}"
 FB_SERVER_PORT="${FB_SERVER_PORT:-8888}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:${FB_SERVER_PORT}}"
@@ -25,12 +27,8 @@ log() {
 }
 
 cleanup() {
-  if [ -n "$filebrowser_pid" ]; then
-    kill "$filebrowser_pid" >/dev/null 2>&1 || true
-  fi
-  if [ -n "$rclone_pid" ]; then
-    kill "$rclone_pid" >/dev/null 2>&1 || true
-  fi
+  package_r_kill_pid "$filebrowser_pid"
+  package_r_kill_pid "$rclone_pid"
   if [ "${PACKAGE_R_E2E_KEEP_TMP:-false}" = "true" ] && [ -n "$tmp_dir" ]; then
     log "keeping temp directory: $tmp_dir"
     return
@@ -46,20 +44,6 @@ require_command() {
     log "missing required command: $1"
     exit 127
   fi
-}
-
-wait_for_http() {
-  url=$1
-  label=$2
-  for _ in $(seq 1 120); do
-    code="$(curl -sS -o /dev/null -w '%{http_code}' "$url" 2>/dev/null || true)"
-    if [ "$code" != "000" ]; then
-      return 0
-    fi
-    sleep 0.25
-  done
-  log "timed out waiting for $label at $url"
-  return 1
 }
 
 json_field() {
@@ -121,12 +105,6 @@ require_compatible_rclone() {
   log "using local ${version_line:-rclone}"
 }
 
-show_rclone_logs() {
-  if [ -n "$rclone_log" ] && [ -f "$rclone_log" ]; then
-    sed -n '1,160p' "$rclone_log" >&2 || true
-  fi
-}
-
 start_local_rclone() {
   S3_PORT="${S3_PORT:-19000}"
   AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL:-http://127.0.0.1:${S3_PORT}}"
@@ -142,8 +120,12 @@ start_local_rclone() {
     --auth-key "$AWS_ACCESS_KEY_ID,$AWS_SECRET_ACCESS_KEY" >"$rclone_log" 2>&1 &
   rclone_pid=$!
 
-  if ! wait_for_http "$AWS_ENDPOINT_URL" "rclone S3"; then
-    show_rclone_logs
+  if ! PACKAGE_R_LOG_PREFIX=e2e-s3 \
+    PACKAGE_R_WAIT_STATUS=any \
+    PACKAGE_R_WAIT_ATTEMPTS=120 \
+    PACKAGE_R_WAIT_DELAY=0.25 \
+    PACKAGE_R_CURL_TIMEOUT=2 \
+    package_r_wait_for_http "$AWS_ENDPOINT_URL" "rclone S3" "$rclone_log" "$rclone_pid"; then
     exit 1
   fi
 
@@ -178,17 +160,20 @@ init_and_start_local_filebrowser() {
     "$ROOT_DIR/init.sh" --add-shares "$PUBLIC_SHARE_HASH=/$BUCKET_NAME/public" >"$tmp_dir/init.log"
 
   log "starting package-r on $BASE_URL"
-  env \
-    FB_DATABASE="$fb_db" \
-    AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
-    AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
-    AWS_ENDPOINT_URL="$AWS_ENDPOINT_URL" \
-    AWS_REGION="$AWS_REGION" \
-    BUCKET_NAME="$BUCKET_NAME" \
-    "$FB_FILEBROWSER_BIN" -a "$FB_ADDRESS" -p "$FB_SERVER_PORT" >"$tmp_dir/filebrowser.log" 2>&1 &
-  filebrowser_pid=$!
-  if ! wait_for_http "$BASE_URL" "package-r"; then
-    sed -n '1,160p' "$tmp_dir/filebrowser.log" >&2 || true
+  export FB_DATABASE="$fb_db"
+  export AWS_ACCESS_KEY_ID
+  export AWS_SECRET_ACCESS_KEY
+  export AWS_ENDPOINT_URL
+  export AWS_REGION
+  export BUCKET_NAME
+  package_r_start_filebrowser "$FB_FILEBROWSER_BIN" "$FB_ADDRESS" "$FB_SERVER_PORT" "$tmp_dir/filebrowser.log"
+  filebrowser_pid=$PACKAGE_R_STARTED_PID
+  if ! PACKAGE_R_LOG_PREFIX=e2e-s3 \
+    PACKAGE_R_WAIT_STATUS=any \
+    PACKAGE_R_WAIT_ATTEMPTS=120 \
+    PACKAGE_R_WAIT_DELAY=0.25 \
+    PACKAGE_R_CURL_TIMEOUT=2 \
+    package_r_wait_for_http "$BASE_URL" "package-r" "$tmp_dir/filebrowser.log" "$filebrowser_pid"; then
     exit 1
   fi
 }
@@ -228,20 +213,7 @@ run_presign_checks() {
 }
 
 tmp_dir="$(mktemp -d)"
-
-case "$MODE" in
-  local-rclone)
-    start_local_rclone
-    init_and_start_local_filebrowser
-    ;;
-  existing)
-    log "using existing package-r/S3 environment at $BASE_URL"
-    ;;
-  *)
-    log "unknown PACKAGE_R_E2E_MODE: $MODE"
-    exit 2
-    ;;
-esac
-
+start_local_rclone
+init_and_start_local_filebrowser
 run_presign_checks
 log "S3 presign e2e checks passed"

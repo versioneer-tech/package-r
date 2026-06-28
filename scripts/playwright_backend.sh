@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$script_dir/package_r_harness.sh"
+
+repo_root="$(package_r_repo_root)"
 tmp_dir="${PACKAGE_R_PLAYWRIGHT_TMPDIR:-$(mktemp -d /tmp/package-r-playwright.XXXXXX)}"
 created_tmp=false
 if [ -z "${PACKAGE_R_PLAYWRIGHT_TMPDIR:-}" ]; then
@@ -11,50 +14,21 @@ backend_log="$tmp_dir/filebrowser.log"
 server_pid=""
 
 cleanup() {
-  if [ -n "$server_pid" ] && kill -0 "$server_pid" >/dev/null 2>&1; then
-    kill "$server_pid" >/dev/null 2>&1 || true
-    wait "$server_pid" >/dev/null 2>&1 || true
-  fi
+  package_r_kill_pid "$server_pid"
   if [ "$created_tmp" = "true" ]; then
     rm -rf "$tmp_dir"
   fi
 }
 trap cleanup EXIT
 
-dump_backend_log() {
-  if [ -f "$backend_log" ]; then
-    sed -n '1,160p' "$backend_log" >&2 || true
-  fi
-}
-
 wait_for_backend() {
-  local ready_url="${FB_PLAYWRIGHT_READY_URL:-http://127.0.0.1:${FB_SERVER_PORT}/api/public/share/public-share/}"
-  local timeout="${PACKAGE_R_PLAYWRIGHT_READY_TIMEOUT:-120}"
-  local attempt=1
-  local code
+  local ready_url="${FB_PLAYWRIGHT_READY_URL:-http://127.0.0.1:${FB_SERVER_PORT}/health}"
 
-  printf '[playwright-backend] waiting for %s\n' "$ready_url"
-  while [ "$attempt" -le "$timeout" ]; do
-    code="$(curl -sS -o /dev/null -w '%{http_code}' "$ready_url" 2>/dev/null || true)"
-    if [ "$code" = "200" ]; then
-      printf '[playwright-backend] ready: %s\n' "$ready_url"
-      return 0
-    fi
-    if ! kill -0 "$server_pid" >/dev/null 2>&1; then
-      printf '[playwright-backend] backend exited before readiness; last HTTP status: %s\n' "${code:-000}" >&2
-      dump_backend_log
-      return 1
-    fi
-    if [ $((attempt % 20)) -eq 0 ]; then
-      printf '[playwright-backend] still waiting; last HTTP status: %s\n' "${code:-000}" >&2
-    fi
-    sleep 1
-    attempt=$((attempt + 1))
-  done
-
-  printf '[playwright-backend] timed out waiting for %s; last HTTP status: %s\n' "$ready_url" "${code:-000}" >&2
-  dump_backend_log
-  return 1
+  PACKAGE_R_LOG_PREFIX=playwright-backend \
+    PACKAGE_R_WAIT_ATTEMPTS="${PACKAGE_R_PLAYWRIGHT_READY_TIMEOUT:-120}" \
+    PACKAGE_R_WAIT_DELAY=1 \
+    PACKAGE_R_CURL_TIMEOUT="${PACKAGE_R_PLAYWRIGHT_CURL_TIMEOUT:-2}" \
+    package_r_wait_for_http "$ready_url" "backend" "$backend_log" "$server_pid"
 }
 
 cd "$repo_root"
@@ -70,13 +44,10 @@ export FB_ALLOW_CHANGING="${FB_ALLOW_CHANGING:-true}"
 export FB_CATALOG_PREVIEW_URL="${FB_CATALOG_PREVIEW_URL:-https://radiantearth.github.io/stac-browser/#/external/}"
 export FB_FILEBROWSER_BIN="${FB_FILEBROWSER_BIN:-$repo_root/filebrowser}"
 
-if [ ! -x "$FB_FILEBROWSER_BIN" ] || [ "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}" = "true" ]; then
-  export GOCACHE="${GOCACHE:-/tmp/package-r-go-build}"
-  make build-backend-dev
-fi
+package_r_build_backend_dev_if_needed "$repo_root" "$FB_FILEBROWSER_BIN" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
 
 ./init.sh --add-shares public-share=/public --add-test-data /public
-"$FB_FILEBROWSER_BIN" -a "$FB_ADDRESS" -p "$FB_SERVER_PORT" >"$backend_log" 2>&1 &
-server_pid=$!
+package_r_start_filebrowser "$FB_FILEBROWSER_BIN" "$FB_ADDRESS" "$FB_SERVER_PORT" "$backend_log"
+server_pid=$PACKAGE_R_STARTED_PID
 wait_for_backend
 wait "$server_pid"

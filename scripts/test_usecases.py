@@ -28,7 +28,7 @@ def usecase_sources(source_dir: Path, source_pattern: str) -> list[Path]:
 def build_backend() -> None:
     env = os.environ.copy()
     env.setdefault("GOCACHE", "/tmp/package-r-go-build")
-    subprocess.run(["make", "build-backend"], cwd=REPO_ROOT, env=env, check=True)
+    subprocess.run(["make", "build-backend-dev"], cwd=REPO_ROOT, env=env, check=True)
 
 
 def run_usecase(source: Path, *, timeout: int) -> None:

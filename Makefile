@@ -50,6 +50,10 @@ test-backend: ## Run backend tests
 test-usecases: ## Run executable documentation use cases
 	$Q python3 scripts/test_usecases.py
 
+.PHONY: test-production-build
+test-production-build: ## Build production binary and smoke-check embedded frontend
+	$Q bash scripts/production_smoke.sh
+
 .PHONY: test-e2e-s3
 test-e2e-s3: ## Run local S3-compatible e2e checks
 	$Q scripts/e2e-s3.sh
