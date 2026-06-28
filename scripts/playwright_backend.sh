@@ -19,6 +19,7 @@ cd "$repo_root"
 
 export FB_ROOT="${FB_ROOT:-$tmp_dir/root}"
 export FB_DATABASE="${FB_DATABASE:-$tmp_dir/filebrowser.db}"
+export FB_ADDRESS="${FB_ADDRESS:-127.0.0.1}"
 export FB_SERVER_PORT="${FB_SERVER_PORT:-8888}"
 export FB_AUTH_METHOD="${FB_AUTH_METHOD:-json}"
 export FB_PASSWORD="${FB_PASSWORD:-admin}"
@@ -32,4 +33,4 @@ if [ ! -x "$FB_FILEBROWSER_BIN" ] || [ "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}" = "
 fi
 
 ./init.sh --add-shares public-share=/public --add-test-data /public
-"$FB_FILEBROWSER_BIN" -p "$FB_SERVER_PORT"
+"$FB_FILEBROWSER_BIN" -a "$FB_ADDRESS" -p "$FB_SERVER_PORT"

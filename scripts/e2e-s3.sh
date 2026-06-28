@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 MODE="${PACKAGE_R_E2E_MODE:-local-rclone}"
+FB_ADDRESS="${FB_ADDRESS:-127.0.0.1}"
 FB_SERVER_PORT="${FB_SERVER_PORT:-8888}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:${FB_SERVER_PORT}}"
 PUBLIC_SHARE_HASH="${PUBLIC_SHARE_HASH:-public-share}"
@@ -233,7 +234,7 @@ init_and_start_local_filebrowser() {
     AWS_ENDPOINT_URL="$AWS_ENDPOINT_URL" \
     AWS_REGION="$AWS_REGION" \
     BUCKET_NAME="$BUCKET_NAME" \
-    "$FB_FILEBROWSER_BIN" -p "$FB_SERVER_PORT" >"$tmp_dir/filebrowser.log" 2>&1 &
+    "$FB_FILEBROWSER_BIN" -a "$FB_ADDRESS" -p "$FB_SERVER_PORT" >"$tmp_dir/filebrowser.log" 2>&1 &
   filebrowser_pid=$!
   if ! wait_for_http "$BASE_URL" "package-r"; then
     sed -n '1,160p' "$tmp_dir/filebrowser.log" >&2 || true

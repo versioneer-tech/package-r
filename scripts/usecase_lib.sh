@@ -13,6 +13,7 @@ usecase_init() {
 
   export FB_ROOT="${FB_ROOT:-/workspace}"
   export FB_DATABASE="${FB_DATABASE:-/db/bolt.db}"
+  export FB_ADDRESS="${FB_ADDRESS:-127.0.0.1}"
   export FB_SERVER_PORT="${FB_SERVER_PORT:-8888}"
   export FB_FILEBROWSER_BIN="${FB_FILEBROWSER_BIN:-$PACKAGE_R_USECASE_REPO_ROOT/filebrowser}"
   export BASE_URL="${BASE_URL:-http://127.0.0.1:$FB_SERVER_PORT}"
@@ -36,7 +37,7 @@ usecase_build_backend() {
 usecase_start_server() {
   local wait_url=$1
   mkdir -p "$(dirname -- "$PACKAGE_R_USECASE_SERVER_LOG")"
-  "$FB_FILEBROWSER_BIN" -p "$FB_SERVER_PORT" >"$PACKAGE_R_USECASE_SERVER_LOG" 2>&1 &
+  "$FB_FILEBROWSER_BIN" -a "$FB_ADDRESS" -p "$FB_SERVER_PORT" >"$PACKAGE_R_USECASE_SERVER_LOG" 2>&1 &
   PACKAGE_R_USECASE_SERVER_PID=$!
   usecase_wait_for_url "$wait_url"
 }

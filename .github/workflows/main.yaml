@@ -88,6 +88,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: "frontend/package.json"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
       - uses: actions/setup-go@v5
         with:
           go-version: 1.26.4
@@ -96,6 +104,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: "frontend/package.json"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
       - uses: actions/setup-go@v5
         with:
           go-version: 1.26.4
@@ -134,7 +150,7 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: $
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
