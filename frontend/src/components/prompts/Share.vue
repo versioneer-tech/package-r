@@ -181,10 +181,7 @@ import { share as share_api, pub as pub_api } from "@/api";
 import dayjs from "dayjs";
 import { useLayoutStore } from "@/stores/layout";
 import { copy } from "@/utils/clipboard";
-import {
-  shareLinkDefaultHash,
-  catalogDefaultName,
-} from "@/utils/constants";
+import { shareLinkDefaultHash, catalogDefaultName } from "@/utils/constants";
 
 function defaultHash(length = 8) {
   const chars = "abcdefghjkmnpqrstuvwxyz23456789"; // no 0, O, l, 1, I
