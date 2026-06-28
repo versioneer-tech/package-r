@@ -58,6 +58,18 @@ test-production-build: ## Build production binary and smoke-check embedded front
 test-e2e-s3: ## Run local S3-compatible e2e checks
 	$Q scripts/e2e-s3.sh
 
+.PHONY: test-e2e-s3-k8s
+test-e2e-s3-k8s: ## Run Kubernetes/kind S3-compatible e2e checks
+	$Q scripts/e2e-s3-k8s.sh
+
+.PHONY: test-e2e-s3-k8s-keep
+test-e2e-s3-k8s-keep: ## Run Kubernetes/kind S3 e2e and keep it open for manual inspection
+	$Q PACKAGE_R_K8S_KEEP_CLUSTER=true \
+		PACKAGE_R_K8S_KEEP_FORWARD=true \
+		PACKAGE_R_FORWARD_PORT="$${PACKAGE_R_FORWARD_PORT:-8888}" \
+		S3_FORWARD_PORT="$${S3_FORWARD_PORT:-19000}" \
+		scripts/e2e-s3-k8s.sh
+
 # ------------------------------------------------------------------------------
 # Lint Targets
 # ------------------------------------------------------------------------------
@@ -99,6 +111,6 @@ help: ## Show this help
 	@echo ''
 	@echo 'Targets:'
 	@awk 'BEGIN {FS = ":.*?## "} { \
-		if (/^[a-zA-Z_-]+:.*?##.*$$/) {printf "    ${YELLOW}%-20s${GREEN}%s${RESET}\n", $$1, $$2} \
+		if (/^[a-zA-Z0-9_-]+:.*?##.*$$/) {printf "    ${YELLOW}%-20s${GREEN}%s${RESET}\n", $$1, $$2} \
 		else if (/^## .*$$/) {printf "  ${CYAN}%s${RESET}\n", substr($$1,4)} \
 		}' $(MAKEFILE_LIST)

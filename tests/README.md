@@ -16,7 +16,7 @@ itself lives in several places.
 | Browser tests | `frontend/tests/*.spec.ts` | `make test-frontend-e2e` | Login, settings, public shares, previews, screenshots, visible UI behavior |
 | Executable use cases | `docs/usecases/*.sh` | `make test-usecases` | The documented quickstart, public sharing, and STAC/catalog flows really work |
 | Local S3 e2e | `scripts/e2e-s3.sh` | `make test-e2e-s3` | packageR can presign and redirect files from an S3-compatible backend |
-| Kubernetes S3 e2e | `scripts/e2e-s3-k8s.sh` | `scripts/e2e-s3-k8s.sh` | The same S3 checks while packageR runs in kind with csi-rclone |
+| Kubernetes S3 e2e | `scripts/e2e-s3-k8s.sh` | `make test-e2e-s3-k8s` | The same S3 checks while packageR runs in kind with csi-rclone |
 
 ## What Each Layer Is For
 
@@ -46,8 +46,8 @@ downloads, or catalog asset URLs.
 The Kubernetes S3 e2e test is the same scenario inside a kind cluster. It uses
 the packageR Kubernetes/csi-rclone manifest, installs the EOEPCA csi-rclone
 chart, uploads `tests/data` to an in-cluster rclone S3 server, and runs the
-same catalog, presign, and redirect checks. It is a manual script for now, not
-a Make target or GitHub Actions job.
+same catalog, presign, and redirect checks. It is a local/manual target for now,
+not a GitHub Actions job.
 
 ## Main Commands
 
@@ -68,6 +68,7 @@ make test-frontend
 make test-usecases
 make test-frontend-e2e
 make test-e2e-s3
+make test-e2e-s3-k8s
 ```
 
 For S3 e2e, local rclone must be available and must be at least v1.74:
@@ -79,7 +80,29 @@ RCLONE_BIN="$PWD/tools/bin/rclone" make test-e2e-s3
 Run the manual kind/csi-rclone S3 check:
 
 ```bash
-RCLONE_BIN="$PWD/tools/bin/rclone" scripts/e2e-s3-k8s.sh
+RCLONE_BIN="$PWD/tools/bin/rclone" make test-e2e-s3-k8s
+```
+
+Keep the kind cluster and port-forwards running after the checks so the
+deployment can be inspected manually:
+
+```bash
+RCLONE_BIN="$PWD/tools/bin/rclone" make test-e2e-s3-k8s-keep
+```
+
+That target sets `PACKAGE_R_K8S_KEEP_CLUSTER=true` and
+`PACKAGE_R_K8S_KEEP_FORWARD=true`, with packageR on local port `8888` and the
+rclone S3 endpoint on local port `19000` by default. Override
+`PACKAGE_R_FORWARD_PORT` or `S3_FORWARD_PORT` if either port is already in use.
+Press `Ctrl-C` to stop the local port-forwards; the kind cluster and e2e
+resources stay in place.
+
+The script prints the actual ports it selected. If it has exited, reconnect to
+the kept deployment with explicit ports:
+
+```bash
+kubectl --context kind-package-r-e2e-s3 -n package-r port-forward service/package-r 8888:8888
+kubectl --context kind-package-r-e2e-s3 -n package-r port-forward service/rclone-s3 19000:9000
 ```
 
 Check generated use-case docs after editing `docs/usecases/*.sh`:
@@ -104,7 +127,7 @@ CI also runs frontend and backend lint jobs separately from tests.
 
 Playwright browser tests are local-only for now through `make test-frontend-e2e`.
 
-The Kubernetes S3 e2e script is not part of CI yet.
+The Kubernetes S3 e2e target is not part of CI yet.
 
 ## When To Add Which Test
 
