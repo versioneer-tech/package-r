@@ -135,12 +135,12 @@ func (a ProxyAuth) createUser(usr users.Store, setting *settings.Settings, srv *
 	}
 	setting.ApplyUserDefaults(user)
 
-	var userHome string
-	userHome, err = setting.MakeUserDir(user.Username, user.Scope, srv.Root)
+	var userScope string
+	userScope, err = setting.MakeUserDir(user.Username, user.Scope, srv.Root)
 	if err != nil {
 		return nil, err
 	}
-	user.Scope = userHome
+	user.Scope = userScope
 
 	err = usr.Save(user)
 	if err != nil {

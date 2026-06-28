@@ -10,7 +10,8 @@
       "args": ["-p 8888"],
       "preLaunchTask": "init",
       "env": {
-        "CGO_ENABLED": "1"
+        "CGO_ENABLED": "1",
+        "FB_DATABASE": "/db/bolt.db"
       }
     }
   ]

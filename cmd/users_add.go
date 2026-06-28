@@ -35,9 +35,9 @@ var usersAddCmd = &cobra.Command{
 		servSettings, err := d.store.Settings.GetServer()
 		checkErr(err)
 
-		userHome, err := s.MakeUserDir(user.Username, user.Scope, servSettings.Root)
+		userScope, err := s.MakeUserDir(user.Username, user.Scope, servSettings.Root)
 		checkErr(err)
-		user.Scope = userHome
+		user.Scope = userScope
 
 		err = d.store.Users.Save(user)
 		checkErr(err)

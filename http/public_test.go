@@ -10,6 +10,7 @@ import (
 	"github.com/asdine/storm/v3"
 	"github.com/spf13/afero"
 
+	"github.com/versioneer-tech/package-r/files"
 	"github.com/versioneer-tech/package-r/settings"
 	"github.com/versioneer-tech/package-r/share"
 	"github.com/versioneer-tech/package-r/storage/bolt"
@@ -57,13 +58,26 @@ func TestPublicShareBypassesGeneratedUserDirBaseRules(t *testing.T) {
 	}
 
 	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{Root: root})
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/api/public/share/public-share/data.txt", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/share/public-share/data.txt", http.NoBody)
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(recorder, req)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected public share to bypass generated user-dir rules, got status %d", recorder.Code)
+	}
+}
+
+func TestPublicSharePresignPathUsesSharedFilesystemPath(t *testing.T) {
+	cf := &catalogedFile{
+		SharePath: "/bucket/public",
+		File:      &files.FileInfo{Path: "/openaerialmap-assets/item/thumbnail.png"},
+	}
+
+	got := publicSharePresignPath(cf)
+	want := "/bucket/public/openaerialmap-assets/item/thumbnail.png"
+	if got != want {
+		t.Fatalf("expected public share presign path %q, got %q", want, got)
 	}
 }
 

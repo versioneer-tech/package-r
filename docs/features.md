@@ -24,6 +24,8 @@ text editing, basic shares, command hooks, branding, or standard media previews.
   provided by a FUSE-based mount such as `s3fs`, a Kubernetes CSI volume, or
   another platform storage integration.
 
+![Authenticated file information with presigned URL fallback](imgs/screenshots/authenticated-file-info-presign.png)
+
 ## Public Catalog and STAC
 
 - Shares can store catalog metadata: catalog URL, filter field, and asset base
@@ -59,10 +61,21 @@ text editing, basic shares, command hooks, branding, or standard media previews.
 
 ## User Defaults and Access Rules
 
-- New non-admin users can receive generated rules that deny other child paths
-  below the configured user-home base path and allow only their sanitized
-  username path. The default base path is `/home`, and the base directory
-  itself remains visible for navigation.
+- With generated user directories enabled, packageR creates
+  `/home/<username>` for each generated non-admin user and writes a `.keep`
+  marker there so the empty workspace is materialized on normal filesystems and
+  object-store-backed mounts.
+- Generated users keep `/` as their saved browsing scope, so they can still
+  browse other permitted content below `FB_ROOT`, including the full mounted
+  bucket outside `/home`. Generated access rules hide sibling user homes, so
+  users can browse bucket data but not `/home/<other-user>`.
+- Explicit legacy scope `.` still creates `/home/<username>` and stores that
+  generated directory as the user's scope, which keeps the user in home-only
+  browsing mode.
+- Upstream File Browser deployments often rely on normal filesystem ownership
+  and mode bits for this boundary; packageR adds explicit rules so the same
+  sibling-home isolation works on bucket mounts where those Unix ownership
+  assumptions may not hold.
 - The generated rules are applied through CLI user creation, JSON signup,
   proxy-created users, hook-created users, quick setup, and admin API user
   creation. Existing custom user rules are kept after the generated rules, so

@@ -71,10 +71,19 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: "npm run dev",
-    url: "http://127.0.0.1:5173",
-    reuseExistingServer: !process.env.CI,
-  },
+  /* Run local backend and frontend dev servers before starting the tests */
+  webServer: [
+    {
+      command: "FB_SERVER_PORT=8888 ../scripts/playwright_backend.sh",
+      url: "http://127.0.0.1:8888/api/public/share/public-share/",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    },
+    {
+      command: "FB_SERVER_PORT=8888 pnpm run dev",
+      url: "http://127.0.0.1:5173",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    },
+  ],
 });

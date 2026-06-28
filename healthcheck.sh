@@ -1,5 +1,11 @@
 #!/bin/sh
-PORT=${FB_SERVER_PORT:-$(jq -r .port /.filebrowser.json)}
-ADDRESS=${FB_ADDRESS:-$(jq -r .address /.filebrowser.json)}
-ADDRESS=${ADDRESS:-localhost}
-curl -f http://$ADDRESS:$PORT/health || exit 1
+port=${FB_SERVER_PORT:-8888}
+address=${FB_ADDRESS:-127.0.0.1}
+
+case "$address" in
+  ""|0.0.0.0|::|\[::\])
+    address=127.0.0.1
+    ;;
+esac
+
+busybox wget -q -O /dev/null "http://$address:$port/health" || exit 1

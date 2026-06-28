@@ -33,3 +33,5 @@ behavior layered on top of File Browser.
 The [quickstart](generated/usecases/quickstart.md) starts a local sample. The
 walkthroughs also cover public sharing, presigned URLs, access boundaries, and
 STAC catalog access.
+
+![packageR public share directory](imgs/screenshots/public-share-directory.png)

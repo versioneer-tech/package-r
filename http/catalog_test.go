@@ -71,7 +71,7 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 		t.Fatalf("expected STAC Feature, got %#v", feature)
 	}
 
-	expectedThumbnail := "http://localhost:8080/api/public/share/public-share/openaerialmap-assets/" +
+	expectedThumbnail := "http://localhost:8888/api/public/share/public-share/openaerialmap-assets/" +
 		openAerialMapID + "/thumbnail.png?presign&followRedirect"
 	if href := stacAssetHref(t, feature, "thumbnail"); href != expectedThumbnail {
 		t.Fatalf("unexpected rewritten asset href: %q", href)
@@ -87,7 +87,7 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 func callCatalog[T any](t *testing.T, handler http.Handler, path string) T {
 	t.Helper()
 
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080"+path, http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888"+path, http.NoBody)
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, req)
 

@@ -1,5 +1,29 @@
 #!/bin/sh
 
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+FB_DATABASE=${FB_DATABASE:-/db/bolt.db}
+FB_ROOT=${FB_ROOT:-/workspace}
+FB_SERVER_PORT=${FB_SERVER_PORT:-8888}
+FB_FILEBROWSER_BIN=${FB_FILEBROWSER_BIN:-$script_dir/filebrowser}
+FB_CREATE_USER_DIR=${FB_CREATE_USER_DIR:-true}
+FB_AUTH_METHOD=${FB_AUTH_METHOD:-proxy}
+FB_AUTH_HEADER=${FB_AUTH_HEADER:-X-Username}
+FB_AUTH_MAPPER=${FB_AUTH_MAPPER:-}
+FB_BRANDING_NAME=${FB_BRANDING_NAME:-packageR}
+FB_SHARELINK_DEFAULT_HASH=${FB_SHARELINK_DEFAULT_HASH:-public-<random>-v1}
+FB_CATALOG_DEFAULT_NAME=${FB_CATALOG_DEFAULT_NAME:-catalog.parquet}
+FB_CATALOG_PREVIEW_URL=${FB_CATALOG_PREVIEW_URL:-}
+FB_ALLOW_SHARING=${FB_ALLOW_SHARING:-false}
+FB_ALLOW_CHANGING=${FB_ALLOW_CHANGING:-false}
+FB_DEFAULT_SHARES=${FB_DEFAULT_SHARES:-}
+FB_PASSWORD=${FB_PASSWORD:-}
+export FB_DATABASE FB_ROOT FB_SERVER_PORT FB_FILEBROWSER_BIN
+export FB_CREATE_USER_DIR FB_AUTH_METHOD FB_AUTH_HEADER FB_AUTH_MAPPER
+export FB_BRANDING_NAME FB_SHARELINK_DEFAULT_HASH
+export FB_CATALOG_DEFAULT_NAME FB_CATALOG_PREVIEW_URL
+export FB_ALLOW_SHARING FB_ALLOW_CHANGING FB_DEFAULT_SHARES FB_PASSWORD
+
 log() {
   printf '[init] %s\n' "$*"
 }
@@ -51,8 +75,8 @@ log_presign_mode() {
     log "================================================================"
     log "LOCAL SETUP: AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY are not configured."
     log "Presigned URL requests will return for"
-    log "- authenticated resources: ${FB_ADDRESS:-127.0.0.1}:${FB_SERVER_PORT:-8080}/api/raw/<path>"
-    log "- public shares:           ${FB_ADDRESS:-127.0.0.1}:${FB_SERVER_PORT:-8080}/api/public/dl/<share-hash>/<path>"
+    log "- authenticated resources: ${FB_ADDRESS:-127.0.0.1}:$FB_SERVER_PORT/api/raw/<path>"
+    log "- public shares:           ${FB_ADDRESS:-127.0.0.1}:$FB_SERVER_PORT/api/public/dl/<share-hash>/<path>"
     log "Configure AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY for S3-compatible presigned URLs."
     log "================================================================"
   else
@@ -62,7 +86,7 @@ log_presign_mode() {
 
 print_filebrowser_banner() {
   log "================================================================"
-  log "Start via ./filebrowser -p ${FB_SERVER_PORT:-8080}"
+  log "Start via ./filebrowser -d $FB_DATABASE -p $FB_SERVER_PORT"
   log "================================================================"
 }
 
@@ -71,7 +95,7 @@ ensure_user() {
   shift
 
   log "Ensuring default user exists: $username"
-  if "$filebrowser_bin" users add "$username" "${FB_PASSWORD:-$password}" "$@" > /dev/null 2>&1; then
+  if "$FB_FILEBROWSER_BIN" users add "$username" "${FB_PASSWORD:-$password}" "$@" > /dev/null 2>&1; then
     log "Default user ready: $username"
   else
     log "Skipping default user bootstrap for $username; it may already exist"
@@ -81,7 +105,7 @@ ensure_user() {
 copy_test_data() {
   target=$1
   source=$script_dir/tests/data
-  root=${FB_ROOT:-./root}
+  root=$FB_ROOT
 
   if [ ! -d "$source" ]; then
     warn "Test data source not found: $source"
@@ -157,16 +181,15 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-filebrowser_bin=${FB_FILEBROWSER_BIN:-}
-if [ -z "$filebrowser_bin" ]; then
-  filebrowser_bin=$script_dir/filebrowser
+if ! mkdir -p "$FB_ROOT" "$(dirname -- "$FB_DATABASE")"; then
+  warn "Failed to prepare FB_ROOT or FB_DATABASE directory; cannot continue"
+  exit 1
 fi
 
 log "Starting bootstrap"
 
-log "Using ${FB_DATABASE:-./filebrowser.db} for state"
-log "Using ${FB_ROOT:-./root} as filebrowser root"
+log "Using $FB_DATABASE for state"
+log "Using $FB_ROOT as filebrowser root"
 
 envs=\
 "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-},"\
@@ -178,42 +201,40 @@ envs=\
 
 log_presign_mode
 
-if "$filebrowser_bin" config init > /dev/null 2>&1; then
+if "$FB_FILEBROWSER_BIN" config init > /dev/null 2>&1; then
   log "Initialized filebrowser database"
 else
   log "Filebrowser database already exists; continuing with configuration update"
 fi
 
 ALLOW_SHARING=false
-if [ "${FB_ALLOW_SHARING:-false}" = "true" ]; then
+if [ "$FB_ALLOW_SHARING" = "true" ]; then
   ALLOW_SHARING=true
   log "Sharing allowed"
 fi
 
 ALLOW_CHANGING=false
-if [ "${FB_ALLOW_CHANGING:-false}" = "true" ]; then
+if [ "$FB_ALLOW_CHANGING" = "true" ]; then
   ALLOW_CHANGING=true
   log "Changing allowed"
 fi
 
-log "Applying filebrowser configuration"
-if "$filebrowser_bin" config set \
+set -- config set \
   --address "" \
-  --root "${FB_ROOT:-./root}" \
+  --root "$FB_ROOT" \
   --disable-preview-resize \
   --disable-thumbnails \
   --disable-type-detection-by-header \
   --signup=true \
-  --create-user-dir="${FB_CREATE_USER_DIR:-true}" \
-  --auth.method="${FB_AUTH_METHOD:-proxy}" \
-  --auth.header="${FB_AUTH_HEADER:-X-Username}" \
-  --auth.mapper="${FB_AUTH_MAPPER:-}" \
-  --branding.name "${FB_BRANDING_NAME:-packageR}" \
-  --branding.files "${FB_BRANDING_FILES:-/package-r}" \
-  --sharelink.defaultHash "${FB_SHARELINK_DEFAULT_HASH:-public-<random>-v1}" \
-  --catalog.defaultName "${FB_CATALOG_DEFAULT_NAME:-catalog.parquet}" \
-  --catalog.previewURL "${FB_CATALOG_PREVIEW_URL:-}" \
-  --scope "" \
+  --create-user-dir="$FB_CREATE_USER_DIR" \
+  --auth.method="$FB_AUTH_METHOD" \
+  --auth.header="$FB_AUTH_HEADER" \
+  --auth.mapper="$FB_AUTH_MAPPER" \
+  --branding.name "$FB_BRANDING_NAME" \
+  --sharelink.defaultHash "$FB_SHARELINK_DEFAULT_HASH" \
+  --catalog.defaultName "$FB_CATALOG_DEFAULT_NAME" \
+  --catalog.previewURL "$FB_CATALOG_PREVIEW_URL" \
+  --scope "/" \
   --perm.admin=false \
   --perm.create=$ALLOW_CHANGING \
   --perm.delete=$ALLOW_CHANGING \
@@ -224,15 +245,19 @@ if "$filebrowser_bin" config set \
   --perm.share=$ALLOW_SHARING \
   --lockPassword=true \
   --envs="$envs" \
-  --commands "" > /dev/null; then
+  --commands ""
+
+log "Applying filebrowser configuration"
+if "$FB_FILEBROWSER_BIN" "$@" > /dev/null; then
   log "Filebrowser configuration applied"
 else
-  warn "Failed to apply filebrowser configuration; continuing"
+  warn "Failed to apply filebrowser configuration; cannot continue"
+  exit 1
 fi
 
 password=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 16)
 
-if [ -n "${FB_PASSWORD:-}" ]; then
+if [ -n "$FB_PASSWORD" ]; then
   log "Using FB_PASSWORD for bootstrap users"
 else
   log "Generated random password for bootstrap users"
@@ -257,7 +282,7 @@ done
 
 default_share_owner=admin
 
-default_shares=${FB_DEFAULT_SHARES:-}
+default_shares=$FB_DEFAULT_SHARES
 if [ -n "$extra_default_shares" ]; then
   if [ -n "$default_shares" ]; then
     default_shares="${default_shares};${extra_default_shares}"
@@ -282,7 +307,7 @@ if [ -n "$default_shares" ]; then
     fi
 
     log "Ensuring default share exists: hash=$hash path=$path owner=$default_share_owner"
-    if "$filebrowser_bin" shares add "$default_share_owner" "$hash" "$path" > /dev/null; then
+    if "$FB_FILEBROWSER_BIN" shares add "$default_share_owner" "$hash" "$path" > /dev/null; then
       log "Default share ready: $hash -> $path"
     else
       warn "Failed to create default share: $hash -> $path"
@@ -294,7 +319,7 @@ else
 fi
 
 log "Listing configured shares"
-if "$filebrowser_bin" shares ls; then
+if "$FB_FILEBROWSER_BIN" shares ls; then
   log "Configured shares listed"
 else
   warn "Failed to list configured shares; continuing"
@@ -302,8 +327,8 @@ fi
 
 log "Bootstrap complete"
 if [ "$serve_after_bootstrap" = "true" ]; then
-  log "Starting filebrowser on port ${FB_SERVER_PORT:-8080}"
-  exec "$filebrowser_bin" -p "${FB_SERVER_PORT:-8080}"
+  log "Starting filebrowser on port $FB_SERVER_PORT"
+  exec "$FB_FILEBROWSER_BIN" -p "$FB_SERVER_PORT"
 else
   print_filebrowser_banner
 fi

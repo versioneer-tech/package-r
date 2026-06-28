@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/versioneer-tech/package-r-design/main/logo.png" height="40"/>
+<img src="frontend/public/img/logo.png" height="40"/>
 
 # packageR
 
@@ -28,13 +28,21 @@ make build
 Start packageR with a public share and local test data:
 
 ```bash
+export FB_ROOT="${FB_ROOT:-/workspace}"
+export FB_DATABASE="${FB_DATABASE:-/db/bolt.db}"
+
 ./init.sh --add-shares public-share=/public --add-test-data /public --serve
 ```
+
+Local commands run from the current repository directory. The Docker image uses
+the same mounted data and database paths, with `/home/package-r` as the runtime
+home directory. Outside Docker, make sure `/workspace` and `/db` exist and are
+writable by the user running packageR.
 
 In another terminal, check the public package and STAC catalog endpoints:
 
 ```bash
-BASE_URL="${BASE_URL:-http://127.0.0.1:${FB_SERVER_PORT:-8080}}"
+BASE_URL="${BASE_URL:-http://127.0.0.1:${FB_SERVER_PORT:-8888}}"
 ITEM_ID=67793f0b9478720001790586
 
 curl -sS "$BASE_URL/api/public/catalog/public-share"

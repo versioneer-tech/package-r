@@ -1,6 +1,6 @@
 # Usage
 
-## Local Setup
+### Local Setup Without S3
 
 Build the local `filebrowser` binary from the repository root:
 
@@ -8,62 +8,113 @@ Build the local `filebrowser` binary from the repository root:
 make build
 ```
 
-Prepare the local sample data and start packageR:
+Prepare local fixture data and start packageR:
 
 ```bash
+export FB_ROOT="${FB_ROOT:-/workspace}"
+export FB_DATABASE="${FB_DATABASE:-/db/bolt.db}"
+
 ./init.sh --add-shares public-share=/public --add-test-data /public --serve
 ```
 
-This copies `tests/data` below the configured root's `/public` folder and
-creates reusable local state. The sample
-`catalog.parquet` uses relative asset paths, so it works from the copied
-location without rewriting. This setup is useful for checking the UI, public
-shares, and STAC catalog routes.
+This copies `tests/data` below `/workspace/public`, stores runtime state in
+`/db/bolt.db`, and creates a reusable public share. Make sure `/workspace` and
+`/db` exist and are writable by the user running packageR.
+
+!!! note
+    This setup is not backed by S3 or another object store. Presigned URL
+    actions still exercise the packageR flow, but they fall back to
+    packageR/File Browser URLs instead of S3-compatible object-storage URLs.
 
 For other local checks, use `--add-test-data <path>` to copy the fixture
 contents into another folder inside `FB_ROOT`.
 
-!!! note
-    Local sample setup is not backed by object storage. Presigned URL actions
-    still work as application flows, but they return packageR/File Browser URLs
-    instead of S3-compatible object-storage URLs.
+### Local Setup With S3
 
-### Local Setup With a FUSE Mount
+For an S3-backed setup, packageR needs two views of the same data:
 
-For a local setup backed by object storage, mount the bucket first and point
-`FB_ROOT` at the mounted folder. For example, with a configured rclone remote:
+- a filesystem view mounted at `FB_ROOT`, used for browsing, shares, previews,
+  and catalogs;
+- S3-compatible signing settings, used to create presigned URLs for clients.
 
-```bash
-mkdir -p /tmp/package-r-bucket
-rclone mount package-r-s3:my-bucket /tmp/package-r-bucket
-```
+Use an existing S3-compatible bucket, such as AWS S3 or MinIO, or start a local
+S3-compatible server for testing. This example uses `rclone serve s3`.
 
-Then start packageR against that mounted folder in another terminal:
+In one terminal, create a small local bucket and expose it through rclone's S3
+server:
 
 ```bash
-export FB_ROOT=/tmp/package-r-bucket
-export AWS_ACCESS_KEY_ID=<access-key>
-export AWS_SECRET_ACCESS_KEY=<secret-key>
-export AWS_ENDPOINT_URL=<s3-endpoint-url>
-export AWS_REGION=<region>
-export BUCKET_NAME=my-bucket
+mkdir -p /tmp/rclone-s3/bucket1
+echo "hello" > /tmp/rclone-s3/bucket1/test.txt
 
-./init.sh --add-shares public-share=/public --serve
+rclone serve s3 /tmp/rclone-s3 \
+  --addr :9000 \
+  --auth-key ACCESS_KEY_ID,SECRET_ACCESS_KEY
 ```
 
-The FUSE mount gives packageR a normal-looking file tree for browsing,
-previews, shares, and catalogs. S3-compatible presigned URLs require
-`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`; configure
-`AWS_ENDPOINT_URL`, `AWS_REGION`, `BUCKET_NAME`, and `BUCKET_PREFIX` as needed
-so packageR signs URLs for the same object-storage location that is mounted.
-Even if the rclone remote already has credentials, packageR needs these
-AWS-compatible signing values separately because it does not read rclone's
-remote configuration.
+In another terminal, mount that bucket into packageR's workspace path:
 
-The same model works with `s3fs` or other FUSE mounts. In Kubernetes, the
-mounted bucket may simply be injected as a folder through a CSI/FUSE volume or
-another platform storage integration; packageR only needs that folder as
-`FB_ROOT`.
+```bash
+mkdir -p /workspace
+
+rclone mount :s3:bucket1 /workspace \
+  --s3-provider Other \
+  --s3-endpoint http://127.0.0.1:9000 \
+  --s3-access-key-id ACCESS_KEY_ID \
+  --s3-secret-access-key SECRET_ACCESS_KEY \
+  --s3-region us-east-1 \
+  --s3-force-path-style \
+  --vfs-cache-mode writes
+```
+
+Then start packageR against the mounted bucket:
+
+```bash
+export FB_ROOT=/workspace
+export FB_DATABASE=/db/bolt.db
+export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
+export AWS_ENDPOINT_URL=http://127.0.0.1:9000
+export AWS_REGION=us-east-1
+export BUCKET_NAME=bucket1
+
+./init.sh --add-shares public-share=/ --serve
+```
+
+For AWS S3, MinIO, or another S3-compatible service, use the same packageR
+environment variables and replace the endpoint, region, bucket name, and
+credentials. The mounted filesystem and the signing settings must describe the
+same bucket content; packageR does not read rclone or MinIO configuration.
+
+### Docker Setup With S3
+
+Docker follows the same model: mount the bucket into the container at
+`/workspace`, keep packageR state in `/db/bolt.db`, and pass the S3-compatible
+credentials used for presigning. For the local rclone example, these are the
+same `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY` values passed to `--auth-key`.
+
+```bash
+docker run --rm -it \
+  -v /workspace:/workspace \
+  -v package-r-db:/db \
+  -e FB_ROOT=/workspace \
+  -e FB_DATABASE=/db/bolt.db \
+  -e FB_DEFAULT_SHARES='public-share=/' \
+  -e AWS_ACCESS_KEY_ID=ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY \
+  -e AWS_ENDPOINT_URL=http://127.0.0.1:9000 \
+  -e AWS_REGION=us-east-1 \
+  -e BUCKET_NAME=bucket1 \
+  -p 8888:8888 \
+  package-r:latest
+```
+
+The image runs as UID `1000` and GID `100` by default. Make sure bind-mounted
+folders are readable by that user/group, and writable when packageR should
+create generated user homes, shares, or uploaded files.
+
+If the S3 endpoint is not reachable from clients as `http://127.0.0.1:9000`,
+set `AWS_ENDPOINT_URL` to the URL that clients should use for presigned URLs.
 
 ## Shares and Catalogs
 
@@ -73,30 +124,6 @@ the external access paths.
 For example, with `FB_ROOT=/workspace`, sharing `/a/b` as `yyy` exposes
 `/workspace/a/b/c.txt` as `/share/yyy/c.txt`. If the catalog name is
 `catalog.parquet`, packageR reads it from `/workspace/a/b/catalog.parquet`.
-
-## Docker Example
-
-```bash
-docker run --rm -it \
-  -u 1000:1000 \
-  -v /workspace:/workspace \
-  -e FB_ROOT=/workspace/<my-bucket> \
-  -e FB_BRANDING_NAME=Workspace \
-  -e FB_DEFAULT_SHARES='public-my-bucket=/workspace/<my-bucket>/public' \
-  -e AWS_ACCESS_KEY_ID=<my-key> \
-  -e AWS_SECRET_ACCESS_KEY=<my-secret> \
-  -e AWS_ENDPOINT_URL=<my-endpoint> \
-  -e AWS_REGION=<my-region> \
-  -e BUCKET_NAME=<my-bucket> \
-  -p 8080:8080 \
-  package-r:latest
-```
-
-This lets packageR list and share data from the mounted folder while generating
-presigned URLs that point clients directly at the bucket.
-
-If you want startup-created default shares, set `FB_DEFAULT_SHARES` as a
-semicolon-separated list.
 
 ## Kubernetes Bucket Mount Health
 
@@ -119,35 +146,7 @@ If the mount is broken, it returns an error similar to:
 stat: cannot statx '/workspace': Transport endpoint is not connected
 ```
 
-Add readiness and liveness probes that check the mount:
-
-```yaml
-readinessProbe:
-  exec:
-    command:
-      - /bin/sh
-      - -lc
-      - |
-        out="$( (stat /workspace >/dev/null) 2>&1 || true )"
-        if echo "$out" | grep -qi "Transport endpoint is not connected"; then
-          exit 1
-        fi
-        exit 0
-  periodSeconds: 10
-
-livenessProbe:
-  exec:
-    command:
-      - /bin/sh
-      - -lc
-      - |
-        out="$( (stat /workspace >/dev/null) 2>&1 || true )"
-        if echo "$out" | grep -qi "Transport endpoint is not connected"; then
-          exit 1
-        fi
-        exit 0
-  periodSeconds: 20
-```
-
 Restarting the container may not fix a stale FUSE mount. In that case, recreate
-the pod.
+the pod. The full csi-rclone example includes readiness and liveness probes
+that check `/workspace` and keep packageR running as UID `1000` and GID `100`:
+[`docs/examples/kubernetes-csi-rclone.yaml`](examples/kubernetes-csi-rclone.yaml).

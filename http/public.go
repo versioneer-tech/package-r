@@ -133,7 +133,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 	presign, ok := r.URL.Query()["presign"]
 	if ok && !strings.EqualFold(presign[0], "false") {
-		url, err := presignOrLocalURL(file.RealPath(), r.Method, d.user.Envs, localPublicDownloadURL(r))
+		url, err := presignOrLocalURL(publicSharePresignPath(cf), r.Method, d.user.Envs, localPublicDownloadURL(r))
 		if errors.Is(err, fbErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {
@@ -169,6 +169,10 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 	return renderJSON(w, r, file)
 })
+
+func publicSharePresignPath(cf *catalogedFile) string {
+	return slashClean(path.Join(cf.SharePath, cf.File.Path))
+}
 
 var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	if !d.user.Perm.Download {

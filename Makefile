@@ -10,14 +10,14 @@ LDFLAGS += -w -s \
 # ------------------------------------------------------------------------------
 
 .PHONY: build
-build: | build-frontend build-backend ## Build everything
+build: | build-backend ## Build everything
 
 .PHONY: build-frontend
 build-frontend: ## Build frontend
 	$Q cd frontend && pnpm install --frozen-lockfile && pnpm run build
 
 .PHONY: build-backend
-build-backend: ## Build backend
+build-backend: | build-frontend ## Build backend and embed the current frontend bundle
 	$Q CGO_ENABLED=1 \
 	$(go) build -ldflags '$(LDFLAGS)' -o filebrowser
 
@@ -26,15 +26,27 @@ build-backend: ## Build backend
 # ------------------------------------------------------------------------------
 
 .PHONY: test
-test: | test-frontend test-backend ## Run all tests
+test: | test-frontend test-backend test-usecases ## Run all tests
 
 .PHONY: test-frontend
 test-frontend: ## Run frontend tests
 	$Q cd frontend && pnpm install --frozen-lockfile && pnpm run typecheck
 
+.PHONY: test-frontend-e2e
+test-frontend-e2e: ## Run frontend Playwright tests
+	$Q cd frontend && pnpm install --frozen-lockfile && pnpm exec playwright test --project=chromium
+
 .PHONY: test-backend
 test-backend: ## Run backend tests
 	$Q $(go) test -v ./...
+
+.PHONY: test-usecases
+test-usecases: ## Run executable documentation use cases
+	$Q python3 scripts/test_usecases.py
+
+.PHONY: test-e2e-s3
+test-e2e-s3: ## Run local S3-compatible e2e checks
+	$Q scripts/e2e-s3.sh
 
 # ------------------------------------------------------------------------------
 # Lint Targets

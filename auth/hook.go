@@ -163,12 +163,12 @@ func (a *HookAuth) SaveUser() (*users.User, error) {
 		a.Settings.ApplyUserDefaults(d)
 		u = a.GetUser(d)
 
-		userHome, err := a.Settings.MakeUserDir(u.Username, u.Scope, a.Server.Root)
+		userScope, err := a.Settings.MakeUserDir(u.Username, u.Scope, a.Server.Root)
 		if err != nil {
-			return nil, fmt.Errorf("user: failed to mkdir user home dir: [%s]", userHome)
+			return nil, fmt.Errorf("user: failed to create user directory: %w", err)
 		}
-		u.Scope = userHome
-		log.Printf("user: %s, home dir: [%s].", u.Username, userHome)
+		u.Scope = userScope
+		log.Printf("user: %s, scope: [%s].", u.Username, userScope)
 
 		err = a.Users.Save(u)
 		if err != nil {

@@ -56,7 +56,7 @@ func init() {
 func addServerFlags(flags *pflag.FlagSet) {
 	flags.StringP("address", "a", "127.0.0.1", "address to listen on")
 	flags.StringP("log", "l", "stdout", "log output")
-	flags.StringP("port", "p", "8080", "port to listen on")
+	flags.StringP("port", "p", "8888", "port to listen on")
 	flags.StringP("cert", "t", "", "tls certificate")
 	flags.StringP("key", "k", "", "tls key")
 	flags.StringP("root", "r", ".", "root to prepend to relative paths")

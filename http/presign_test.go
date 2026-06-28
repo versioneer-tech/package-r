@@ -26,7 +26,7 @@ func TestResourcePresignFallsBackToLocalRawURLWithoutS3Credentials(t *testing.T)
 
 	token := newTestAuthToken(t, store, user)
 	handler := handle(resourceGetHandler, "/api/resources", store, &settings.Server{Root: root})
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/api/resources/files/data.txt?presign=true", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/resources/files/data.txt?presign=true", http.NoBody)
 	req.Header.Set("X-Auth", token)
 	recorder := httptest.NewRecorder()
 
@@ -41,7 +41,7 @@ func TestResourcePresignFallsBackToLocalRawURLWithoutS3Credentials(t *testing.T)
 	if err := json.NewDecoder(result.Body).Decode(&file); err != nil {
 		t.Fatal(err)
 	}
-	if file.PresignedURL != "http://localhost:8080/api/raw/files/data.txt" {
+	if file.PresignedURL != "http://localhost:8888/api/raw/files/data.txt" {
 		t.Fatalf("expected local raw fallback URL, got %q", file.PresignedURL)
 	}
 }
@@ -57,7 +57,7 @@ func TestPublicSharePresignRedirectsToLocalDownloadURLWithoutS3Credentials(t *te
 	}
 
 	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{Root: root})
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/api/public/share/public-share/data.txt?presign=true&followRedirect=true", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/share/public-share/data.txt?presign=true&followRedirect=true", http.NoBody)
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(recorder, req)
@@ -65,7 +65,7 @@ func TestPublicSharePresignRedirectsToLocalDownloadURLWithoutS3Credentials(t *te
 	if recorder.Code != http.StatusTemporaryRedirect {
 		t.Fatalf("expected temporary redirect, got %d", recorder.Code)
 	}
-	if location := recorder.Header().Get("Location"); location != "http://localhost:8080/api/public/dl/public-share/data.txt" {
+	if location := recorder.Header().Get("Location"); location != "http://localhost:8888/api/public/dl/public-share/data.txt" {
 		t.Fatalf("expected local public download fallback URL, got %q", location)
 	}
 }
@@ -123,7 +123,7 @@ func newTestAuthToken(t *testing.T, store *storage.Storage, user *users.User) st
 		t.Fatal(err)
 	}
 	recorder := httptest.NewRecorder()
-	status, err := printToken(recorder, httptest.NewRequest(http.MethodGet, "http://localhost:8080", http.NoBody), &data{settings: set}, user, DefaultTokenExpirationTime)
+	status, err := printToken(recorder, httptest.NewRequest(http.MethodGet, "http://localhost:8888", http.NoBody), &data{settings: set}, user, DefaultTokenExpirationTime)
 	if status != 0 || err != nil {
 		t.Fatalf("failed to create test auth token: status=%d err=%v", status, err)
 	}

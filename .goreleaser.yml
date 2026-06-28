@@ -1,3 +1,5 @@
+version: 2
+
 project_name: package-r
 
 env:
@@ -5,6 +7,10 @@ env:
 
 release:
   disable: "{{ if .Prerelease }}true{{ else }}false{{ end }}"
+
+before:
+  hooks:
+    - make build-frontend
 
 builds:
   - env:
@@ -20,7 +26,8 @@ builds:
 
 archives:
   - name_template: "{{.Os}}-{{.Arch}}{{if .Arm}}v{{.Arm}}{{end}}-{{ .ProjectName }}"
-    format: tar.gz
+    formats:
+      - tar.gz
 
 dockers:
   - dockerfile: Dockerfile

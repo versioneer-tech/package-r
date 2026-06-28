@@ -24,6 +24,11 @@ const resolve = {
   },
 };
 
+const backendURL =
+  process.env.FB_BACKEND_URL ||
+  `http://127.0.0.1:${process.env.FB_SERVER_PORT || "8888"}`;
+const backendWsURL = backendURL.replace(/^http/, "ws");
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   if (command === "serve") {
@@ -33,10 +38,10 @@ export default defineConfig(({ command }) => {
       server: {
         proxy: {
           "/api/command": {
-            target: "ws://127.0.0.1:8080",
+            target: backendWsURL,
             ws: true,
           },
-          "/api": "http://127.0.0.1:8080",
+          "/api": backendURL,
         },
       },
     };

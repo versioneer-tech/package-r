@@ -39,7 +39,6 @@ dist/
 
 # Project-local generated files
 /filebrowser
-root/
 
 # Frontend build and test artifacts
 /frontend/dist/*
@@ -47,3 +46,4 @@ root/
 /frontend/test-results/
 /frontend/playwright-report/
 /frontend/playwright/.cache/
+*-snapshots

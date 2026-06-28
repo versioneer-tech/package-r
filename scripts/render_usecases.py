@@ -49,20 +49,31 @@ def parse_usecase_shell(path: Path) -> UsecaseSource:
     order = 1000
     events: list[Markdown | Command] = []
     command_lines: list[str] = []
+    hidden = False
+    hide_next = False
 
     def flush_command() -> None:
         if command_lines:
             events.append(Command("\n".join(command_lines).strip()))
             command_lines.clear()
 
+    def add_markdown(text: str) -> None:
+        if events and isinstance(events[-1], Markdown) and events[-1].text == "":
+            if text == "":
+                return
+        events.append(Markdown(text))
+
     for raw_line in path.read_text(encoding="utf-8").splitlines():
         stripped = raw_line.strip()
+        if hide_next and not stripped.startswith("#"):
+            hide_next = False
+            continue
         if not stripped:
             if command_lines:
                 command_lines.append(raw_line)
                 continue
-            if events and isinstance(events[-1], Markdown) and events[-1].text:
-                events.append(Markdown(""))
+            if not hidden and events and isinstance(events[-1], Markdown) and events[-1].text:
+                add_markdown("")
             continue
         if stripped.startswith("#!") or stripped == "set -euo pipefail":
             flush_command()
@@ -78,11 +89,34 @@ def parse_usecase_shell(path: Path) -> UsecaseSource:
                 if key == "order":
                     order = int(value)
                     continue
+                if key == "docs":
+                    if value == "hide-start":
+                        hidden = True
+                        continue
+                    if value == "hide-end":
+                        hidden = False
+                        continue
+                    if value == "hide-next":
+                        hide_next = True
+                        continue
+                    if value.startswith("command "):
+                        if not hidden:
+                            events.append(Command(value.removeprefix("command ").strip()))
+                        continue
+                    if value.startswith("text "):
+                        if not hidden:
+                            add_markdown(value.removeprefix("text ").strip())
+                        continue
+                    continue
                 if key in {"description", "mark"}:
                     continue
+            if hidden:
+                continue
             comment = stripped.removeprefix("#").strip()
             if comment:
-                events.append(Markdown(comment))
+                add_markdown(comment)
+            continue
+        if hidden:
             continue
         command_lines.append(raw_line)
     flush_command()

@@ -9,10 +9,9 @@
       "options": {
         "env": {
           "FB_PASSWORD": "1234!",
-          "FB_DEFAULT_SHARES": "public-share=/public",
+          "FB_AUTH_METHOD": "json",
           "FB_ALLOW_SHARING": "true",
-          "FB_ALLOW_CHANGING": "true",
-          "FB_SERVER_PORT": "8888"
+          "FB_ALLOW_CHANGING": "true"
         }
       },
       "problemMatcher": []
