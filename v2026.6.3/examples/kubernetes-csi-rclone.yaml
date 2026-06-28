@@ -1,0 +1,149 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: package-r
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: package-r-csi-rclone
+provisioner: csi-rclone
+volumeBindingMode: Immediate
+reclaimPolicy: Retain
+parameters:
+  vfsOpt: '{"uid":1000,"gid":100,"umask":2}'
+  mountOpt: '{"allowOther":true,"defaultPermissions":true}'
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: package-r-data
+  namespace: package-r
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Mi
+  storageClassName: package-r-csi-rclone
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: package-r-data
+  namespace: package-r
+type: Opaque
+stringData:
+  remote: package-r-s3
+  remotePath: "/my-bucket"
+  configData: |
+    [package-r-s3]
+    type = s3
+    provider = Other
+    endpoint = https://s3.example.invalid
+    region = auto
+    access_key_id = <access-key>
+    secret_access_key = <secret-key>
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: package-r-aws
+  namespace: package-r
+type: Opaque
+stringData:
+  access_key_id: <access-key>
+  secret_access_key: <secret-key>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: package-r
+  namespace: package-r
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: package-r
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: package-r
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: package-r
+          image: ghcr.io/versioneer-tech/package-r:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: http
+              containerPort: 8888
+          env:
+            - name: FB_ROOT
+              value: /workspace
+            - name: FB_DATABASE
+              value: /db/bolt.db
+            - name: FB_SERVER_PORT
+              value: "8888"
+            - name: FB_DEFAULT_SHARES
+              value: public=/public
+            - name: AWS_ENDPOINT_URL
+              value: https://s3.example.invalid
+            - name: AWS_REGION
+              value: auto
+            - name: BUCKET_NAME
+              value: my-bucket
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: package-r-aws
+                  key: access_key_id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: package-r-aws
+                  key: secret_access_key
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -lc
+                - |
+                  stat /workspace >/dev/null
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -lc
+                - |
+                  out="$( (stat /workspace >/dev/null) 2>&1 || true )"
+                  if echo "$out" | grep -qi "Transport endpoint is not connected"; then
+                    exit 1
+                  fi
+                  exit 0
+            periodSeconds: 20
+          volumeMounts:
+            - name: data
+              mountPath: /workspace
+            - name: db
+              mountPath: /db
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: package-r-data
+        - name: db
+          emptyDir: {}
