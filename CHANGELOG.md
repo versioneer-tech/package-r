@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2026.6.4](https://github.com/versioneer-tech/package-r/compare/v2026.6.3...v2026.6.4) (2026-06-28)
+
+- improve generated user home handling with root-scope defaults, /home isolation rules, .keep markers (with admin bypassing and public-share rule skipping)
+- adapt bootstrap via init.sh with flags for shares, sample data and serving, with configurable root, database, auth, sharing and changing defaults
+- streamline Docker image and runtime defaults using a slim Debian base, bundled branding assets, non-root execution, /workspace root and port 8888
+- add MkDocs documentation site with executable quickstart, public sharing and STAC/catalog use cases
+- add layered test coverage for use cases, e2e tests and more
+- go 1.26.4 and CI/release tooling updates, including expanded GitHub Actions checks and versioned docs deployment
+
 ### [2026.3.1](https://github.com/versioneer-tech/package-r/compare/v2025.7.1...v2026.3.1) (2026-03-30)
 
 - introduce share management via cli, allow automation (GitOps flow) via FB_DEFAULT_SHARES environment variable, enabling PVC-less approach for share management
