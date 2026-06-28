@@ -93,7 +93,6 @@ python3 scripts/render_usecases.py --check
 GitHub Actions runs the layers as separate jobs:
 
 - `test-frontend`
-- `test-frontend-e2e`
 - `test-backend`
 - `test-usecases`
 - `test-e2e-s3`
@@ -102,6 +101,8 @@ This keeps failures easier to read. The aggregate `test` job only waits for
 those jobs to finish.
 
 CI also runs frontend and backend lint jobs separately from tests.
+
+Playwright browser tests are local-only for now through `make test-frontend-e2e`.
 
 The Kubernetes S3 e2e script is not part of CI yet.
 

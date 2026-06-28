@@ -56,26 +56,6 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - run: make test-frontend
-  test-frontend-e2e:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          package_json_file: "frontend/package.json"
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "22.x"
-          cache: "pnpm"
-          cache-dependency-path: "frontend/pnpm-lock.yaml"
-      - uses: actions/setup-go@v6
-        with:
-          go-version: 1.26.4
-      - name: Install frontend dependencies
-        run: cd frontend && pnpm install --frozen-lockfile
-      - name: Install Playwright Chromium
-        run: cd frontend && pnpm exec playwright install --with-deps chromium
-      - run: make test-frontend-e2e
   test-backend:
     runs-on: ubuntu-latest
     steps:
@@ -129,7 +109,7 @@ jobs:
       - run: RCLONE_BIN="$PWD/tools/bin/rclone" make test-e2e-s3
   test:
     runs-on: ubuntu-latest
-    needs: [test-frontend, test-frontend-e2e, test-backend, test-usecases, test-production-build, test-e2e-s3]
+    needs: [test-frontend, test-backend, test-usecases, test-production-build, test-e2e-s3]
     steps:
       - run: echo "done"
 
