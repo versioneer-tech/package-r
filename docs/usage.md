@@ -21,6 +21,11 @@ This copies `tests/data` below `/workspace/public`, stores runtime state in
 `/db/bolt.db`, and creates a reusable public share. Make sure `/workspace` and
 `/db` exist and are writable by the user running packageR.
 
+In the recommended declarative setup, packageR can recreate configuration and
+default shares during startup. The database does not contain object data; keep
+`/db` durable only if users, shares, or settings created at runtime should
+survive a restart.
+
 !!! note
     This setup is not backed by S3 or another object store. Presigned URL
     actions still exercise the packageR flow, but they fall back to
@@ -33,15 +38,19 @@ contents into another folder inside `FB_ROOT`.
 
 For an S3-backed setup, packageR needs two views of the same data:
 
-- a filesystem view mounted at `FB_ROOT`, used for browsing, shares, previews,
-  and catalogs;
+- a filesystem view mounted at `FB_ROOT`, used for browsing, sharing,
+  previews, and catalogs. Write access can be enabled as well, making it easy
+  to curate additional metadata next to the data, while bulk data uploads
+  should generally remain the responsibility of the underlying storage and
+  ingestion workflows.
 - S3-compatible signing settings, used to create presigned URLs for clients.
 
-Use an existing S3-compatible bucket, such as AWS S3 or MinIO, or start a local
-S3-compatible server for testing. This example uses `rclone serve s3`.
+Use an existing S3-compatible bucket, such as AWS S3 or self-hosted MinIO, or
+start a local S3-compatible server for testing. The example below uses
+`rclone serve s3`, tested with rclone `v1.74.3`.
 
-In one terminal, create a small local bucket and expose it through rclone's S3
-server:
+In one terminal, create a small local bucket with one sample file and expose it
+through rclone's authenticated S3 API:
 
 ```bash
 mkdir -p /tmp/rclone-s3/bucket1
@@ -52,33 +61,63 @@ rclone serve s3 /tmp/rclone-s3 \
   --auth-key ACCESS_KEY_ID,SECRET_ACCESS_KEY
 ```
 
-In another terminal, mount that bucket into packageR's workspace path:
+`rclone serve s3` is an S3 API endpoint, not a public static HTTP file server.
+With `--auth-key`, a plain browser request such as
+`http://localhost:9000/bucket1/test.txt` or `http://localhost:9000/a` is
+unsigned and can return:
+
+ To sanity-check the rclone S3
+server directly, use the same credentials with an S3 client:
 
 ```bash
-mkdir -p /workspace
-
-rclone mount :s3:bucket1 /workspace \
+rclone cat :s3:bucket1/test.txt \
   --s3-provider Other \
   --s3-endpoint http://127.0.0.1:9000 \
   --s3-access-key-id ACCESS_KEY_ID \
   --s3-secret-access-key SECRET_ACCESS_KEY \
-  --s3-region us-east-1 \
-  --s3-force-path-style \
-  --vfs-cache-mode writes
+  --s3-region default \
+  --s3-force-path-style
 ```
 
-Then start packageR against the mounted bucket:
+In another terminal, mount that bucket into packageR's workspace path:
 
 ```bash
-export FB_ROOT=/workspace
-export FB_DATABASE=/db/bolt.db
+mkdir -p /tmp/workspace
+
+rclone mount :s3:bucket1 /tmp/workspace \
+  --uid 1000 \
+  --gid 100 \
+  --umask 022 \
+  --allow-other \
+  --s3-provider Other \
+  --s3-endpoint http://127.0.0.1:9000 \
+  --s3-access-key-id ACCESS_KEY_ID \
+  --s3-secret-access-key SECRET_ACCESS_KEY \
+  --s3-region default \
+  --s3-force-path-style
+```
+
+Leave the S3 server and the rclone mount running. Then start packageR against
+the mounted bucket in another terminal:
+
+```bash
+export FB_ROOT=/tmp/workspace
+export FB_DATABASE=/tmp/db/bolt.db
 export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
 export AWS_ENDPOINT_URL=http://127.0.0.1:9000
-export AWS_REGION=us-east-1
+export AWS_REGION=any
 export BUCKET_NAME=bucket1
 
 ./init.sh --add-shares public-share=/ --serve
+```
+
+Then validate access through packageR, which signs the S3 request and redirects
+the client to the presigned object URL:
+
+```bash
+curl -fsSL \
+  "http://127.0.0.1:8888/api/public/share/public-share/test.txt?presign=true&followRedirect=true"
 ```
 
 For AWS S3, MinIO, or another S3-compatible service, use the same packageR
@@ -92,18 +131,19 @@ Docker follows the same model: mount the bucket into the container at
 `/workspace`, keep packageR state in `/db/bolt.db`, and pass the S3-compatible
 credentials used for presigning. For the local rclone example, these are the
 same `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY` values passed to `--auth-key`.
+The bind mount below assumes `/workspace` is the mounted bucket path on the
+Docker host.
 
 ```bash
 docker run --rm -it \
-  -v /workspace:/workspace \
-  -v package-r-db:/db \
+  -v /tmp/workspace:/workspace \
   -e FB_ROOT=/workspace \
   -e FB_DATABASE=/db/bolt.db \
   -e FB_DEFAULT_SHARES='public-share=/' \
   -e AWS_ACCESS_KEY_ID=ACCESS_KEY_ID \
   -e AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY \
   -e AWS_ENDPOINT_URL=http://127.0.0.1:9000 \
-  -e AWS_REGION=us-east-1 \
+  -e AWS_REGION=any \
   -e BUCKET_NAME=bucket1 \
   -p 8888:8888 \
   package-r:latest
@@ -122,31 +162,4 @@ Share paths are filesystem paths inside `FB_ROOT`. Public share URLs are only
 the external access paths.
 
 For example, with `FB_ROOT=/workspace`, sharing `/a/b` as `yyy` exposes
-`/workspace/a/b/c.txt` as `/share/yyy/c.txt`. If the catalog name is
-`catalog.parquet`, packageR reads it from `/workspace/a/b/catalog.parquet`.
-
-## Kubernetes Bucket Mount Health
-
-If packageR runs on Kubernetes with a bucket-backed PVC, for example via a CSI
-FUSE mount, the mount can become stale. A typical error is:
-
-```text
-Transport endpoint is not connected
-```
-
-You can verify this inside the pod:
-
-```bash
-stat /workspace
-```
-
-If the mount is broken, it returns an error similar to:
-
-```text
-stat: cannot statx '/workspace': Transport endpoint is not connected
-```
-
-Restarting the container may not fix a stale FUSE mount. In that case, recreate
-the pod. The full csi-rclone example includes readiness and liveness probes
-that check `/workspace` and keep packageR running as UID `1000` and GID `100`:
-[`docs/examples/kubernetes-csi-rclone.yaml`](examples/kubernetes-csi-rclone.yaml).
+`/workspace/a/b/c.txt` as `/share/yyy/c.txt`.

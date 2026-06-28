@@ -12,6 +12,7 @@ nav:
     - Features: features.md
     - Configuration: configuration.md
     - Usage: usage.md
+    - Troubleshooting: troubleshooting.md
   - Walkthroughs:
     - Quickstart: generated/usecases/quickstart.md
     - Public Sharing: generated/usecases/public-sharing.md

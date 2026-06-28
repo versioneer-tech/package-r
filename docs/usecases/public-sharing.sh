@@ -15,6 +15,20 @@ usecase_init
 usecase_build_backend
 # docs: hide-end
 
+# Public sharing is useful when the source bucket stays protected, but selected
+# paths should be reachable through ordinary HTTP. Clients do not need bucket
+# credentials or S3-specific signing logic; they only need to request the
+# packageR URL and follow redirects.
+#
+# This matters for desktop and web clients that already understand HTTP
+# resources. For example, QGIS and similar tooling can stream large files by
+# sending HTTP range requests, and STAC Browser can follow the rewritten asset
+# links from the catalog use case without implementing packageR-specific or
+# S3-specific access logic. A full `catalog.parquet` works the same way: the
+# public share can expose the STAC GeoParquet catalog for download, while the
+# [Catalog and STAC](catalog-stac.md) use case shows interactive STAC browsing
+# over the same shared catalog.
+
 # Configure local state for a public share. Normal proxy-created users get a
 # private generated home directory, while mounted package data elsewhere below
 # `FB_ROOT` remains visible through the authenticated resource API.
@@ -90,3 +104,26 @@ curl -fsSL \
   --output "$public_thumbnail"
 cmp "tests/data/openaerialmap-assets/$ITEM_ID/thumbnail.png" \
   "$public_thumbnail"
+
+# The same public HTTP URL also supports streaming-style access. A client can
+# send a `Range` request, follow the redirect, and receive only the requested
+# bytes.
+public_thumbnail_range="$FB_ROOT/public-thumbnail-range.bin"
+range_status="$(
+  curl -fsSL -w '%{http_code}' \
+    -H 'Range: bytes=0-15' \
+    "$BASE_URL/api/public/share/$PUBLIC_SHARE_HASH/openaerialmap-assets/$ITEM_ID/thumbnail.png?presign=true&followRedirect=true" \
+    --output "$public_thumbnail_range"
+)"
+test "$range_status" = "206"
+head -c 16 "tests/data/openaerialmap-assets/$ITEM_ID/thumbnail.png" |
+  cmp - "$public_thumbnail_range"
+
+# The full STAC GeoParquet catalog can be shared as a normal HTTP resource too.
+# This lets collaborators download the protected bucket's catalog without
+# receiving bucket credentials.
+public_catalog="$FB_ROOT/public-catalog.parquet"
+curl -fsSL \
+  "$BASE_URL/api/public/share/$PUBLIC_SHARE_HASH/catalog.parquet?presign=true&followRedirect=true" \
+  --output "$public_catalog"
+cmp "tests/data/catalog.parquet" "$public_catalog"
