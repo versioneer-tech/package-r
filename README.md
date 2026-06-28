@@ -7,14 +7,14 @@ storage but is made visible to packageR as a regular file tree (e.g. via FUSE).
 
 packageR uses that filesystem view for browsing, inspection, and curation, then
 adds presigned URL access, streaming previews, public STAC catalog endpoints,
-and more. See the [feature summary](https://package-r.versioneer.at/features/)
+and more. See the [feature summary](https://package-r.versioneer.at/latest/features/)
 and follow the walkthroughs for
-[public sharing](https://package-r.versioneer.at/generated/usecases/public-sharing/)
-and [catalog handling via STAC](https://package-r.versioneer.at/generated/usecases/catalog-stac/).
+[public sharing](https://package-r.versioneer.at/latest/generated/usecases/public-sharing/)
+and [catalog handling via STAC](https://package-r.versioneer.at/latest/generated/usecases/catalog-stac/).
 
 Full documentation is available at
 [package-r.versioneer.at](https://package-r.versioneer.at/), including the necessary
-[configuration](https://package-r.versioneer.at/configuration/) for runtime
+[configuration](https://package-r.versioneer.at/latest/configuration/) for runtime
 environment variables and bootstrap settings.
 
 ## Getting Started
@@ -52,7 +52,7 @@ curl -sSI "$BASE_URL/api/public/share/public-share/openaerialmap-assets/$ITEM_ID
 
 The local sample is not backed by object storage, so presign checks return
 packageR/File Browser URLs. See the
-[Quickstart](https://package-r.versioneer.at/generated/usecases/quickstart/)
+[Quickstart](https://package-r.versioneer.at/latest/generated/usecases/quickstart/)
 docs page for the full walkthrough.
 
 ## Contributing
