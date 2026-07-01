@@ -24,6 +24,11 @@ and `--serve` starts File Browser after bootstrap. Startup shares can also be pr
 | `FB_AUTH_METHOD` | Authentication method configured by bootstrap, out of 'none','json','proxy'. Defaults to `proxy`. |
 | `FB_AUTH_HEADER` | HTTP header used to extract the user identity or role. Defaults to `X-Username` in `init.sh`. |
 | `FB_AUTH_MAPPER` | Mapping strategy for the auth header: empty uses the raw value, `.<claim>` extracts from JSON/JWT payloads, or any other value is used as a static username. |
+| `FB_AUTH_JWT_JWKS_URL` | Optional JWKS URL for strict validation of JWT-valued proxy auth headers. If unset, `.<claim>` mapping keeps the trusted-proxy decode-only behavior. |
+| `FB_AUTH_JWT_ISSUER` | Expected JWT issuer when `FB_AUTH_JWT_JWKS_URL` is set. Required for strict proxy JWT validation. |
+| `FB_AUTH_JWT_AUDIENCE` | Optional expected JWT audience when `FB_AUTH_JWT_JWKS_URL` is set. Recommended when tokens can be minted for multiple services. |
+| `FB_AUTH_JWT_ALGORITHMS` | Optional comma-separated allowed JWT algorithms for strict proxy JWT validation. Defaults to `RS256`. |
+| `FB_AUTH_JWT_CLOCK_SKEW` | Optional clock skew for strict proxy JWT validation. Defaults to `1m`. |
 | `FB_CREATE_USER_DIR` | Whether packageR should create generated user directories under the configured user-home base path. Defaults to `true` in `init.sh`; the settings default user-home base path is `/home`. packageR creates `/home/<username>/.keep` so each user's empty workspace exists on normal filesystems and object-store-backed mounts. The packageR default scope `/` keeps generated users at full-bucket scope while generated access rules hide sibling homes. Explicit legacy scope `.` stores the generated `/home/<username>` directory as the user's home-only scope. |
 
 ## Catalogs

@@ -37,6 +37,11 @@ func addConfigFlags(flags *pflag.FlagSet) {
 	flags.String("auth.method", string(auth.MethodJSONAuth), "authentication type")
 	flags.String("auth.header", "", "HTTP header for auth.method=proxy")
 	flags.String("auth.mapper", "", "(optional) HTTP header value mapping strategy for auth.method=proxy")
+	flags.String("auth.jwt.jwks-url", "", "(optional) JWKS URL for verified JWT auth.method=proxy headers")
+	flags.String("auth.jwt.issuer", "", "(optional) expected issuer for verified JWT auth.method=proxy headers")
+	flags.String("auth.jwt.audience", "", "(optional) expected audience for verified JWT auth.method=proxy headers")
+	flags.String("auth.jwt.algorithms", "", "(optional) comma-separated allowed JWT algorithms for auth.method=proxy; defaults to RS256")
+	flags.String("auth.jwt.clock-skew", "", "(optional) JWT clock skew for auth.method=proxy; defaults to 1m")
 	flags.String("auth.command", "", "command for auth.method=hook")
 
 	flags.String("recaptcha.host", "https://www.google.com", "use another host for ReCAPTCHA. recaptcha.net might be useful in China")
@@ -77,19 +82,37 @@ func getAuthentication(flags *pflag.FlagSet, defaults ...interface{}) (settings.
 
 	var auther auth.Auther
 	if method == auth.MethodProxyAuth {
-		header := mustGetString(flags, "auth.header")
-
-		if header == "" {
-			header = defaultAuther["header"].(string)
-		}
+		header := proxyAuthString(flags, defaultAuther, "auth.header", "header")
 
 		if header == "" {
 			checkErr(nerrors.New("you must set the flag 'auth.header' for method 'proxy'"))
 		}
 
-		mapper := mustGetString(flags, "auth.mapper")
+		mapper := proxyAuthString(flags, defaultAuther, "auth.mapper", "mapper")
+		jwtJwksURL := proxyAuthString(flags, defaultAuther, "auth.jwt.jwks-url", "jwtJwksURL")
+		jwtIssuer := proxyAuthString(flags, defaultAuther, "auth.jwt.issuer", "jwtIssuer")
+		jwtAudience := proxyAuthString(flags, defaultAuther, "auth.jwt.audience", "jwtAudience")
+		jwtAlgorithms := proxyAuthString(flags, defaultAuther, "auth.jwt.algorithms", "jwtAlgorithms")
+		jwtClockSkew := proxyAuthString(flags, defaultAuther, "auth.jwt.clock-skew", "jwtClockSkew")
 
-		auther = &auth.ProxyAuth{Header: header, Mapper: mapper}
+		if jwtJwksURL != "" {
+			if mapper == "" || mapper[0] != '.' {
+				checkErr(nerrors.New("you must set 'auth.mapper' to '.<claim>' when using 'auth.jwt.jwks-url'"))
+			}
+			if jwtIssuer == "" {
+				checkErr(nerrors.New("you must set 'auth.jwt.issuer' when using 'auth.jwt.jwks-url'"))
+			}
+		}
+
+		auther = &auth.ProxyAuth{
+			Header:        header,
+			Mapper:        mapper,
+			JWTJwksURL:    jwtJwksURL,
+			JWTIssuer:     jwtIssuer,
+			JWTAudience:   jwtAudience,
+			JWTAlgorithms: jwtAlgorithms,
+			JWTClockSkew:  jwtClockSkew,
+		}
 	}
 
 	if method == auth.MethodNoAuth {
@@ -143,6 +166,20 @@ func getAuthentication(flags *pflag.FlagSet, defaults ...interface{}) (settings.
 	}
 
 	return method, auther
+}
+
+func proxyAuthString(flags *pflag.FlagSet, defaultAuther map[string]interface{}, flagName, jsonName string) string {
+	value := mustGetString(flags, flagName)
+	if flags.Changed(flagName) || value != "" {
+		return value
+	}
+	if defaultAuther == nil {
+		return ""
+	}
+	if existing, ok := defaultAuther[jsonName].(string); ok {
+		return existing
+	}
+	return ""
 }
 
 func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Auther) {

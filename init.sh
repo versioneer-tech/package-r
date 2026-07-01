@@ -10,6 +10,11 @@ FB_CREATE_USER_DIR=${FB_CREATE_USER_DIR:-true}
 FB_AUTH_METHOD=${FB_AUTH_METHOD:-proxy}
 FB_AUTH_HEADER=${FB_AUTH_HEADER:-X-Username}
 FB_AUTH_MAPPER=${FB_AUTH_MAPPER:-}
+FB_AUTH_JWT_JWKS_URL=${FB_AUTH_JWT_JWKS_URL:-}
+FB_AUTH_JWT_ISSUER=${FB_AUTH_JWT_ISSUER:-}
+FB_AUTH_JWT_AUDIENCE=${FB_AUTH_JWT_AUDIENCE:-}
+FB_AUTH_JWT_ALGORITHMS=${FB_AUTH_JWT_ALGORITHMS:-}
+FB_AUTH_JWT_CLOCK_SKEW=${FB_AUTH_JWT_CLOCK_SKEW:-}
 FB_BRANDING_NAME=${FB_BRANDING_NAME:-packageR}
 FB_SHARELINK_DEFAULT_HASH=${FB_SHARELINK_DEFAULT_HASH:-public-<random>-v1}
 FB_CATALOG_DEFAULT_NAME=${FB_CATALOG_DEFAULT_NAME:-catalog.parquet}
@@ -20,6 +25,8 @@ FB_DEFAULT_SHARES=${FB_DEFAULT_SHARES:-}
 FB_PASSWORD=${FB_PASSWORD:-}
 export FB_DATABASE FB_ROOT FB_SERVER_PORT FB_FILEBROWSER_BIN
 export FB_CREATE_USER_DIR FB_AUTH_METHOD FB_AUTH_HEADER FB_AUTH_MAPPER
+export FB_AUTH_JWT_JWKS_URL FB_AUTH_JWT_ISSUER FB_AUTH_JWT_AUDIENCE
+export FB_AUTH_JWT_ALGORITHMS FB_AUTH_JWT_CLOCK_SKEW
 export FB_BRANDING_NAME FB_SHARELINK_DEFAULT_HASH
 export FB_CATALOG_DEFAULT_NAME FB_CATALOG_PREVIEW_URL
 export FB_ALLOW_SHARING FB_ALLOW_CHANGING FB_DEFAULT_SHARES FB_PASSWORD
@@ -90,16 +97,56 @@ print_filebrowser_banner() {
   log "================================================================"
 }
 
+check_filebrowser_binary() {
+  if "$FB_FILEBROWSER_BIN" version > /dev/null; then
+    return 0
+  fi
+
+  warn "Filebrowser binary failed to start; cannot continue"
+  return 1
+}
+
+filebrowser_config_set_supports() {
+  flag=$1
+  help_output=$("$FB_FILEBROWSER_BIN" config set --help 2>/dev/null || true)
+  case "$help_output" in
+    *"$flag"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+jwt_config_requested() {
+  [ -n "$FB_AUTH_JWT_JWKS_URL" ] ||
+    [ -n "$FB_AUTH_JWT_ISSUER" ] ||
+    [ -n "$FB_AUTH_JWT_AUDIENCE" ] ||
+    [ -n "$FB_AUTH_JWT_ALGORITHMS" ] ||
+    [ -n "$FB_AUTH_JWT_CLOCK_SKEW" ]
+}
+
+user_exists() {
+  username=$1
+  "$FB_FILEBROWSER_BIN" users find "$username" > /dev/null 2>&1
+}
+
 ensure_user() {
   username=$1
   shift
 
   log "Ensuring default user exists: $username"
-  if "$FB_FILEBROWSER_BIN" users add "$username" "${FB_PASSWORD:-$password}" "$@" > /dev/null 2>&1; then
+  command_output=$("$FB_FILEBROWSER_BIN" users add "$username" "${FB_PASSWORD:-$password}" "$@" 2>&1)
+  command_status=$?
+  if user_exists "$username"; then
     log "Default user ready: $username"
-  else
-    log "Skipping default user bootstrap for $username; it may already exist"
+    return 0
   fi
+
+  if [ "$command_status" -eq 0 ]; then
+    warn "Default user bootstrap completed but user was not found: $username"
+    return 1
+  fi
+
+  warn "Failed to bootstrap default user $username: $command_output"
+  return "$command_status"
 }
 
 copy_test_data() {
@@ -188,6 +235,10 @@ fi
 
 log "Starting bootstrap"
 
+if ! check_filebrowser_binary; then
+  exit 1
+fi
+
 log "Using $FB_DATABASE for state"
 log "Using $FB_ROOT as filebrowser root"
 
@@ -247,6 +298,18 @@ set -- config set \
   --envs="$envs" \
   --commands ""
 
+if filebrowser_config_set_supports "--auth.jwt.jwks-url"; then
+  set -- "$@" \
+    --auth.jwt.jwks-url="$FB_AUTH_JWT_JWKS_URL" \
+    --auth.jwt.issuer="$FB_AUTH_JWT_ISSUER" \
+    --auth.jwt.audience="$FB_AUTH_JWT_AUDIENCE" \
+    --auth.jwt.algorithms="$FB_AUTH_JWT_ALGORITHMS" \
+    --auth.jwt.clock-skew="$FB_AUTH_JWT_CLOCK_SKEW"
+elif jwt_config_requested; then
+  warn "JWT proxy auth environment variables require a filebrowser binary that supports --auth.jwt.jwks-url"
+  exit 1
+fi
+
 log "Applying filebrowser configuration"
 if "$FB_FILEBROWSER_BIN" "$@" > /dev/null; then
   log "Filebrowser configuration applied"
@@ -274,7 +337,7 @@ ensure_user admin \
   --perm.share=true \
   --perm.download=true \
   --lockPassword \
-  --envs="$envs"
+  --envs="$envs" || exit 1
 
 for target in $test_data_targets; do
   copy_test_data "$target" || true

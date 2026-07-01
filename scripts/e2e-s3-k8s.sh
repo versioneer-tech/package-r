@@ -28,6 +28,7 @@ AWS_REGION="${AWS_REGION:-us-east-1}"
 RCLONE_BIN="${RCLONE_BIN:-rclone}"
 S3_FORWARD_PORT="${S3_FORWARD_PORT:-}"
 PACKAGE_R_FORWARD_PORT="${PACKAGE_R_FORWARD_PORT:-}"
+MINIO_IMAGE="${MINIO_IMAGE:-quay.io/minio/minio:latest}"
 
 tmp_dir=""
 created_cluster=false
@@ -64,6 +65,18 @@ helm_cmd() {
   helm --kube-context "$KIND_CONTEXT" "$@"
 }
 
+ensure_namespace() {
+  namespace=$1
+  phase="$(kubectl_cmd get namespace "$namespace" -o jsonpath='{.status.phase}' 2>/dev/null || true)"
+  if [ "$phase" = "Terminating" ]; then
+    log "namespace $namespace is terminating; wait for cleanup or recreate the kind cluster"
+    exit 1
+  fi
+
+  kubectl_cmd create namespace "$namespace" --dry-run=client -o yaml |
+    kubectl_cmd apply -f -
+}
+
 cleanup_pid() {
   pid="${1:-}"
   if [ -n "$pid" ]; then
@@ -80,16 +93,16 @@ dump_k8s_debug() {
   log "cluster debug summary"
   kubectl_cmd get pods -A >&2 || true
   kubectl_cmd get pvc,pv,storageclass -A >&2 || true
-  if [ -n "$tmp_dir" ] && [ -f "$tmp_dir/rclone-s3-port-forward.log" ]; then
-    log "rclone S3 port-forward log"
-    cat "$tmp_dir/rclone-s3-port-forward.log" >&2 || true
+  if [ -n "$tmp_dir" ] && [ -f "$tmp_dir/minio-port-forward.log" ]; then
+    log "MinIO port-forward log"
+    cat "$tmp_dir/minio-port-forward.log" >&2 || true
   fi
   if [ -n "$tmp_dir" ] && [ -f "$tmp_dir/package-r-port-forward.log" ]; then
     log "packageR port-forward log"
     cat "$tmp_dir/package-r-port-forward.log" >&2 || true
   fi
   kubectl_cmd -n "$K8S_NAMESPACE" describe pods >&2 || true
-  kubectl_cmd -n "$K8S_NAMESPACE" logs deployment/rclone-s3 --all-containers --tail=160 >&2 || true
+  kubectl_cmd -n "$K8S_NAMESPACE" logs deployment/minio --all-containers --tail=160 >&2 || true
   kubectl_cmd -n "$K8S_NAMESPACE" logs deployment/package-r --all-containers --tail=160 >&2 || true
   kubectl_cmd -n "$CSI_RCLONE_NAMESPACE" logs daemonset/csi-rclone-nodeplugin --all-containers --tail=160 >&2 || true
   kubectl_cmd -n "$CSI_RCLONE_NAMESPACE" logs statefulset/csi-rclone-controller --all-containers --tail=160 >&2 || true
@@ -105,7 +118,7 @@ csi-rclone namespace: $CSI_RCLONE_NAMESPACE
 
 Current port-forwards while this script is running:
   packageR: $BASE_URL
-  rclone S3: $AWS_ENDPOINT_URL
+  MinIO S3: $AWS_ENDPOINT_URL
 
 Useful checks:
   kubectl --context "$KIND_CONTEXT" -n "$K8S_NAMESPACE" get pods,svc,pvc
@@ -118,7 +131,7 @@ EOF
     cat <<EOF
 Reconnect later after the script exits:
   kubectl --context "$KIND_CONTEXT" -n "$K8S_NAMESPACE" port-forward service/package-r ${PACKAGE_R_FORWARD_PORT}:8888
-  kubectl --context "$KIND_CONTEXT" -n "$K8S_NAMESPACE" port-forward service/rclone-s3 ${S3_FORWARD_PORT}:9000
+  kubectl --context "$KIND_CONTEXT" -n "$K8S_NAMESPACE" port-forward service/minio ${S3_FORWARD_PORT}:9000
 EOF
   else
     cat <<EOF
@@ -145,10 +158,11 @@ cleanup() {
     if [ "$created_cluster" = "true" ]; then
       kind delete cluster --name "$KIND_CLUSTER_NAME" >/dev/null 2>&1 || true
     else
-      if [ -n "$package_r_manifest" ] && [ -f "$package_r_manifest" ]; then
-        kubectl_cmd delete -f "$package_r_manifest" --ignore-not-found=true --wait=false >/dev/null 2>&1 || true
-      fi
-      kubectl_cmd -n "$K8S_NAMESPACE" delete deployment/rclone-s3 service/rclone-s3 --ignore-not-found=true --wait=false >/dev/null 2>&1 || true
+      kubectl_cmd -n "$K8S_NAMESPACE" delete deployment/package-r service/package-r \
+        secret/package-r-data secret/package-r-aws pvc/package-r-data \
+        --ignore-not-found=true --wait=false >/dev/null 2>&1 || true
+      kubectl_cmd -n "$K8S_NAMESPACE" delete deployment/minio service/minio --ignore-not-found=true --wait=false >/dev/null 2>&1 || true
+      kubectl_cmd delete storageclass/package-r-csi-rclone --ignore-not-found=true --wait=false >/dev/null 2>&1 || true
       helm_cmd uninstall "$CSI_RCLONE_RELEASE" -n "$CSI_RCLONE_NAMESPACE" >/dev/null 2>&1 || true
     fi
   fi
@@ -299,8 +313,7 @@ build_and_load_package_r_image() {
 
 install_csi_rclone() {
   log "installing csi-rclone from EOEPCA chart $CSI_RCLONE_CHART:$CSI_RCLONE_CHART_VERSION"
-  kubectl_cmd create namespace "$CSI_RCLONE_NAMESPACE" --dry-run=client -o yaml |
-    kubectl_cmd apply -f -
+  ensure_namespace "$CSI_RCLONE_NAMESPACE"
   helm_cmd upgrade --install "$CSI_RCLONE_RELEASE" "$CSI_RCLONE_CHART" \
     --version "$CSI_RCLONE_CHART_VERSION" \
     --namespace "$CSI_RCLONE_NAMESPACE"
@@ -309,51 +322,50 @@ install_csi_rclone() {
   kubectl_cmd -n "$CSI_RCLONE_NAMESPACE" rollout status statefulset/csi-rclone-controller --timeout="$PACKAGE_R_K8S_ROLLOUT_TIMEOUT"
 }
 
-deploy_rclone_s3() {
-  log "deploying in-cluster rclone S3 server"
-  kubectl_cmd create namespace "$K8S_NAMESPACE" --dry-run=client -o yaml |
-    kubectl_cmd apply -f -
+deploy_minio_s3() {
+  log "deploying in-cluster MinIO S3 server"
+  ensure_namespace "$K8S_NAMESPACE"
 
-  cat >"$tmp_dir/rclone-s3.yaml" <<EOF
+  cat >"$tmp_dir/minio.yaml" <<EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rclone-s3
+  name: minio
   namespace: $K8S_NAMESPACE
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: rclone-s3
+      app.kubernetes.io/name: minio
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: rclone-s3
+        app.kubernetes.io/name: minio
     spec:
-      initContainers:
-        - name: prepare-data
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - mkdir -p /data/$BUCKET_NAME
-          volumeMounts:
-            - name: data
-              mountPath: /data
       containers:
-        - name: rclone
-          image: rclone/rclone:1.74.3
+        - name: minio
+          image: $MINIO_IMAGE
           args:
-            - serve
-            - s3
+            - server
             - /data
-            - --addr
-            - :9000
-            - --auth-key
-            - $AWS_ACCESS_KEY_ID,$AWS_SECRET_ACCESS_KEY
+          env:
+            - name: MINIO_ROOT_USER
+              value: $AWS_ACCESS_KEY_ID
+            - name: MINIO_ROOT_PASSWORD
+              value: $AWS_SECRET_ACCESS_KEY
           ports:
             - name: s3
               containerPort: 9000
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: s3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: s3
+            periodSeconds: 10
           volumeMounts:
             - name: data
               mountPath: /data
@@ -364,19 +376,19 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: rclone-s3
+  name: minio
   namespace: $K8S_NAMESPACE
 spec:
   selector:
-    app.kubernetes.io/name: rclone-s3
+    app.kubernetes.io/name: minio
   ports:
     - name: s3
       port: 9000
       targetPort: s3
 EOF
 
-  kubectl_cmd apply -f "$tmp_dir/rclone-s3.yaml"
-  kubectl_cmd -n "$K8S_NAMESPACE" rollout status deployment/rclone-s3 --timeout="$PACKAGE_R_K8S_ROLLOUT_TIMEOUT"
+  kubectl_cmd apply -f "$tmp_dir/minio.yaml"
+  kubectl_cmd -n "$K8S_NAMESPACE" rollout status deployment/minio --timeout="$PACKAGE_R_K8S_ROLLOUT_TIMEOUT"
 }
 
 start_s3_port_forward_and_upload_data() {
@@ -384,14 +396,22 @@ start_s3_port_forward_and_upload_data() {
   AWS_ENDPOINT_URL="http://127.0.0.1:${S3_FORWARD_PORT}"
   export AWS_ENDPOINT_URL
 
-  log "port-forwarding rclone S3 to $AWS_ENDPOINT_URL"
-  kubectl_cmd -n "$K8S_NAMESPACE" port-forward --address 127.0.0.1 service/rclone-s3 "${S3_FORWARD_PORT}:9000" >"$tmp_dir/rclone-s3-port-forward.log" 2>&1 &
+  log "port-forwarding MinIO S3 to $AWS_ENDPOINT_URL"
+  kubectl_cmd -n "$K8S_NAMESPACE" port-forward --address 127.0.0.1 service/minio "${S3_FORWARD_PORT}:9000" >"$tmp_dir/minio-port-forward.log" 2>&1 &
   s3_port_forward_pid=$!
-  wait_for_http_any "$AWS_ENDPOINT_URL" "rclone S3" "$s3_port_forward_pid"
+  wait_for_http_any "$AWS_ENDPOINT_URL/minio/health/ready" "MinIO S3" "$s3_port_forward_pid"
+
+  log "creating s3://$BUCKET_NAME"
+  "$RCLONE_BIN" mkdir ":s3:${BUCKET_NAME}" \
+    --s3-provider Minio \
+    --s3-endpoint "$AWS_ENDPOINT_URL" \
+    --s3-access-key-id "$AWS_ACCESS_KEY_ID" \
+    --s3-secret-access-key "$AWS_SECRET_ACCESS_KEY" \
+    --s3-region "$AWS_REGION"
 
   log "uploading tests/data to s3://$BUCKET_NAME/public"
   "$RCLONE_BIN" copy "$ROOT_DIR/tests/data" ":s3:${BUCKET_NAME}/public" \
-    --s3-provider Other \
+    --s3-provider Minio \
     --s3-endpoint "$AWS_ENDPOINT_URL" \
     --s3-access-key-id "$AWS_ACCESS_KEY_ID" \
     --s3-secret-access-key "$AWS_SECRET_ACCESS_KEY" \
@@ -424,6 +444,7 @@ explicit_test_env = '''            - name: FB_SERVER_PORT
 replacements = {
     "            - name: FB_SERVER_PORT\n              value: \"8888\"": explicit_test_env,
     "remotePath: \"/my-bucket\"": f"remotePath: \"/{os.environ['BUCKET_NAME']}\"",
+    "provider = Other": "provider = Minio",
     "endpoint = https://s3.example.invalid": f"endpoint = {os.environ['CLUSTER_S3_ENDPOINT']}",
     "region = auto": f"region = {os.environ['AWS_REGION']}",
     "access_key_id = <access-key>": f"access_key_id = {os.environ['AWS_ACCESS_KEY_ID']}",
@@ -464,7 +485,7 @@ PY
 deploy_package_r() {
   export BUCKET_NAME AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION
   export AWS_ENDPOINT_URL PACKAGE_R_IMAGE PUBLIC_SHARE_HASH K8S_NAMESPACE
-  export CLUSTER_S3_ENDPOINT="http://rclone-s3.${K8S_NAMESPACE}.svc.cluster.local:9000"
+  export CLUSTER_S3_ENDPOINT="http://minio.${K8S_NAMESPACE}.svc.cluster.local:9000"
 
   render_package_r_manifest
   log "deploying packageR with patched $PACKAGE_R_K8S_MANIFEST"
@@ -526,7 +547,7 @@ tmp_dir="$(mktemp -d)"
 create_kind_cluster
 build_and_load_package_r_image
 install_csi_rclone
-deploy_rclone_s3
+deploy_minio_s3
 start_s3_port_forward_and_upload_data
 deploy_package_r
 start_package_r_port_forward

@@ -86,10 +86,13 @@ text editing, basic shares, command hooks, branding, or standard media previews.
 - `auth.mapper` / `FB_AUTH_MAPPER` adds mapping for proxy-auth header values.
 - The mapper can use the raw header value, a value extracted from a JWT or
   base64 JSON header payload, or a static username.
-- Claim parsing is unverified and assumes the request came through a trusted
-  authentication proxy. Proxy-created users are created only when signup is
-  enabled and then receive the same defaults, environment map, home directory,
-  and generated rules as other new users.
+- By default, claim parsing is unverified and assumes the request came through
+  a trusted authentication proxy. When `FB_AUTH_JWT_JWKS_URL` and
+  `FB_AUTH_JWT_ISSUER` are configured, JWT-valued proxy headers are validated
+  against JWKS before the mapped claim is used as the username.
+- Proxy-created users are created only when signup is enabled and then receive
+  the same defaults, environment map, home directory, and generated rules as
+  other new users.
 
 ## Container Bootstrap
 
