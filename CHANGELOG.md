@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2026.6.5](https://github.com/versioneer-tech/package-r/compare/v2026.6.4...v2026.6.5) (2026-07-01)
+
+- establish full jwt validation chain, i.e. not only supporting trusted proxy mode but also verification via jwks-url
+
 ### [2026.6.4](https://github.com/versioneer-tech/package-r/compare/v2026.6.3...v2026.6.4) (2026-06-28)
 
 - improve generated user home handling with root-scope defaults, /home isolation rules, .keep markers (with admin bypassing and public-share rule skipping)
