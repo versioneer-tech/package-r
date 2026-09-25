@@ -2,6 +2,14 @@
 
 # packageR 
 
+> [!WARNING]
+> **Deprecated: v1**
+>
+> The v1 release line uses the AWS S3 SDK directly in the application code and
+> is deprecated. Use the [vNext branch](https://github.com/versioneer-tech/package-r/tree/vnext)
+> for new deployments. vNext uses an embedded rclone VFS for object-storage
+> access.
+
 ## Goal
 
 **packageR** is a tool maintained by the [Versioneer team](https://versioneer.at) to provide seamless browsing through items within s3 buckets for authorized users. It enables users to share specific items with anonymous users via a regular HTTP link for a specific duration, optionally protected by a password. This link allows recipients to navigate through the shared items and generate [presigned URLs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html) for direct download of one or more items, using e.g. CLI tools like [wget](https://www.gnu.org/software/wget/) facilitating resumption of broken downloads even for large files.
