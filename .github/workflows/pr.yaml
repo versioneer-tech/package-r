@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  RCLONE_VERSION: "1.75.1"
+  RCLONE_RELEASE_VERSION: "1.75.1"
 
 jobs:
   lint_backend:
@@ -130,15 +130,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          archive="/tmp/rclone-${RCLONE_VERSION}.zip"
-          directory="/tmp/rclone-${RCLONE_VERSION}"
+          archive="/tmp/rclone-${RCLONE_RELEASE_VERSION}.zip"
+          directory="/tmp/rclone-${RCLONE_RELEASE_VERSION}"
           curl --fail --silent --show-error --location \
             --retry 5 --retry-delay 2 --retry-connrefused \
             --output "${archive}" \
-            "https://github.com/rclone/rclone/releases/download/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-amd64.zip"
+            "https://github.com/rclone/rclone/releases/download/v${RCLONE_RELEASE_VERSION}/rclone-v${RCLONE_RELEASE_VERSION}-linux-amd64.zip"
           unzip -q "${archive}" -d "${directory}"
           sudo install -m 0755 \
-            "${directory}/rclone-v${RCLONE_VERSION}-linux-amd64/rclone" \
+            "${directory}/rclone-v${RCLONE_RELEASE_VERSION}-linux-amd64/rclone" \
             /usr/local/bin/rclone
           rclone version
 
@@ -177,15 +177,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          archive="/tmp/rclone-${RCLONE_VERSION}.zip"
-          directory="/tmp/rclone-${RCLONE_VERSION}"
+          archive="/tmp/rclone-${RCLONE_RELEASE_VERSION}.zip"
+          directory="/tmp/rclone-${RCLONE_RELEASE_VERSION}"
           curl --fail --silent --show-error --location \
             --retry 5 --retry-delay 2 --retry-connrefused \
             --output "${archive}" \
-            "https://github.com/rclone/rclone/releases/download/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-amd64.zip"
+            "https://github.com/rclone/rclone/releases/download/v${RCLONE_RELEASE_VERSION}/rclone-v${RCLONE_RELEASE_VERSION}-linux-amd64.zip"
           unzip -q "${archive}" -d "${directory}"
           sudo install -m 0755 \
-            "${directory}/rclone-v${RCLONE_VERSION}-linux-amd64/rclone" \
+            "${directory}/rclone-v${RCLONE_RELEASE_VERSION}-linux-amd64/rclone" \
             /usr/local/bin/rclone
           rclone version
 
