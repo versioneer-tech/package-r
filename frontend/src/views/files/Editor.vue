@@ -53,6 +53,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { getTheme } from "@/utils/theme";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
 
 const $showError = inject<IToastError>("$showError")!;
 
@@ -83,7 +84,9 @@ onMounted(() => {
     if (isMarkdownFile && isPreview.value) {
       const new_value = editor.value?.getValue() || "";
       try {
-        previewContent.value = await marked(new_value);
+        previewContent.value = DOMPurify.sanitize(await marked(new_value), {
+          USE_PROFILES: { html: true },
+        });
       } catch (error) {
         console.error("Failed to convert content to HTML:", error);
         previewContent.value = "";

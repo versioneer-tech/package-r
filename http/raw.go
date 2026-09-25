@@ -1,15 +1,17 @@
 package http
 
 import (
+	"archive/zip"
+	"context"
 	"errors"
-	"log"
+	"io/fs"
 	"net/http"
 	"net/url"
 	gopath "path"
 	"path/filepath"
 	"strings"
 
-	"github.com/mholt/archiver/v3"
+	"github.com/mholt/archives"
 
 	"github.com/versioneer-tech/package-r/files"
 	"github.com/versioneer-tech/package-r/fileutils"
@@ -44,22 +46,25 @@ func parseQueryFiles(r *http.Request, f *files.FileInfo, _ *users.User) ([]strin
 	return fileSlice, nil
 }
 
-func parseQueryAlgorithm(r *http.Request) (string, archiver.Writer, error) {
+func parseQueryAlgorithm(r *http.Request) (string, archives.Archiver, error) {
 	switch r.URL.Query().Get("algo") {
 	case "zip", "true", "":
-		return ".zip", archiver.NewZip(), nil
+		return ".zip", archives.Zip{Compression: zip.Deflate, SelectiveCompression: true}, nil
 	case "tar":
-		return ".tar", archiver.NewTar(), nil
+		return ".tar", archives.Tar{}, nil
 	case "targz":
-		return ".tar.gz", archiver.NewTarGz(), nil
+		return ".tar.gz", archives.CompressedArchive{Compression: archives.Gz{}, Archival: archives.Tar{}}, nil
 	case "tarbz2":
-		return ".tar.bz2", archiver.NewTarBz2(), nil
+		return ".tar.bz2", archives.CompressedArchive{Compression: archives.Bz2{}, Archival: archives.Tar{}}, nil
 	case "tarxz":
-		return ".tar.xz", archiver.NewTarXz(), nil
+		return ".tar.xz", archives.CompressedArchive{Compression: archives.Xz{}, Archival: archives.Tar{}}, nil
 	case "tarlz4":
-		return ".tar.lz4", archiver.NewTarLz4(), nil
+		return ".tar.lz4", archives.CompressedArchive{Compression: archives.Lz4{}, Archival: archives.Tar{}}, nil
 	case "tarsz":
-		return ".tar.sz", archiver.NewTarSz(), nil
+		return ".tar.sz", archives.CompressedArchive{
+			Compression: archives.Sz{S2: archives.S2{Compression: archives.S2LevelFast}},
+			Archival:    archives.Tar{},
+		}, nil
 	default:
 		return "", nil, errors.New("format not implemented")
 	}
@@ -103,7 +108,10 @@ var rawHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) 
 	return rawDirHandler(w, r, d, file)
 })
 
-func addFile(ar archiver.Writer, d *data, path, commonPath string) error {
+func collectArchiveFiles(ctx context.Context, d *data, path, commonPath string, entries *[]archives.FileInfo) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if !d.Check(path) {
 		return nil
 	}
@@ -117,38 +125,40 @@ func addFile(ar archiver.Writer, d *data, path, commonPath string) error {
 		return nil
 	}
 
-	file, err := d.user.Fs.Open(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
 	if path != commonPath {
-		filename := strings.TrimPrefix(path, commonPath)
-		filename = strings.TrimPrefix(filename, string(filepath.Separator))
-		err = ar.Write(archiver.File{
-			FileInfo: archiver.FileInfo{
-				FileInfo:   info,
-				CustomName: filename,
-			},
-			ReadCloser: file,
-		})
+		filename, err := filepath.Rel(commonPath, path)
 		if err != nil {
 			return err
 		}
+		if !filepath.IsLocal(filename) {
+			return errors.New("archive path is outside the selected directory")
+		}
+		*entries = append(*entries, archives.FileInfo{
+			FileInfo:      info,
+			NameInArchive: filepath.ToSlash(filename),
+			Open:          func() (fs.File, error) { return d.user.Fs.Open(path) },
+		})
 	}
 
 	if info.IsDir() {
-		names, err := file.Readdirnames(0)
+		file, err := d.user.Fs.Open(path)
 		if err != nil {
 			return err
+		}
+		names, err := file.Readdirnames(0)
+		closeErr := file.Close()
+		if err != nil {
+			return err
+		}
+		if closeErr != nil {
+			return closeErr
 		}
 
 		for _, name := range names {
 			fPath := filepath.Join(path, name)
-			err = addFile(ar, d, fPath, commonPath)
+			err = collectArchiveFiles(ctx, d, fPath, commonPath, entries)
 			if err != nil {
-				log.Printf("Failed to archive %s: %v", fPath, err)
+				return err
 			}
 		}
 	}
@@ -167,13 +177,13 @@ func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.
 		return http.StatusInternalServerError, err
 	}
 
-	err = ar.Create(w)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-	defer ar.Close()
-
 	commonDir := fileutils.CommonPrefix(filepath.Separator, filenames...)
+	var entries []archives.FileInfo
+	for _, fname := range filenames {
+		if err := collectArchiveFiles(r.Context(), d, fname, commonDir, &entries); err != nil {
+			return http.StatusInternalServerError, err
+		}
+	}
 
 	name := filepath.Base(commonDir)
 	if name == "." || name == "" || name == string(filepath.Separator) {
@@ -187,11 +197,8 @@ func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.
 	name += extension
 	w.Header().Set("Content-Disposition", "attachment; filename*=utf-8''"+url.PathEscape(name))
 
-	for _, fname := range filenames {
-		err = addFile(ar, d, fname, commonDir)
-		if err != nil {
-			log.Printf("Failed to archive %s: %v", fname, err)
-		}
+	if err := ar.Archive(r.Context(), w, entries); err != nil {
+		return http.StatusInternalServerError, err
 	}
 
 	return 0, nil

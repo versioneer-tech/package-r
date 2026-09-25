@@ -186,7 +186,11 @@ const fetchData = async () => {
     const res = await api.fetch(url);
     console.log(res);
 
-    if (clean(res.path) !== clean(`/${[...route.params.path].join("/")}`)) {
+    const requestedPath = route.params.path;
+    const expectedPath = Array.isArray(requestedPath)
+      ? requestedPath.join("/")
+      : (requestedPath ?? "");
+    if (clean(res.path) !== clean(`/${expectedPath}`)) {
       throw new Error("Data Mismatch!");
     }
 

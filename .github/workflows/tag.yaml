@@ -70,7 +70,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
         with:
-          package_json_file: frontend/package.json
+          version: latest
 
       - name: Set up Node.js
         uses: actions/setup-node@v6

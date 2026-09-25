@@ -5,7 +5,7 @@ description = "Documentation environment for packageR"
 requires-python = ">=3.10"
 dependencies = [
   "mike==2.2.0",
-  "mkdocs-material==9.7.0",
+  "mkdocs-material==9.7.7",
 ]
 
 [tool.uv]

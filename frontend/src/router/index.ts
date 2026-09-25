@@ -138,8 +138,7 @@ const routes = [
   },
   {
     path: "/:catchAll(.*)*",
-    redirect: (to: RouteLocation) =>
-      `/files/${[...to.params.catchAll].join("/")}`,
+    redirect: (to: RouteLocation) => `/files${to.path}`,
   },
 ];
 

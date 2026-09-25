@@ -74,15 +74,17 @@ export default defineConfig({
   /* Run local backend and frontend dev servers before starting the tests */
   webServer: [
     {
-      command: "FB_SERVER_PORT=8888 ../scripts/playwright_backend.sh",
+      command: "FB_SERVER_PORT=8888 exec ../scripts/playwright_backend.sh",
       url: "http://127.0.0.1:8888/health",
       reuseExistingServer: !process.env.CI,
+      gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
       timeout: 180 * 1000,
     },
     {
-      command: "FB_SERVER_PORT=8888 pnpm run dev",
+      command: "FB_SERVER_PORT=8888 exec node node_modules/vite/bin/vite.js",
       url: "http://127.0.0.1:5173",
       reuseExistingServer: !process.env.CI,
+      gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
       timeout: 180 * 1000,
     },
   ],
