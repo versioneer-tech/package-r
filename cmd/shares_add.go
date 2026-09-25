@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
@@ -19,8 +20,8 @@ func init() {
 
 var sharesAddCmd = &cobra.Command{
 	Use:   "add <id|username> <hash> <path>",
-	Short: "Create a new default share",
-	Long:  `Create a new default share and add it to the database.`,
+	Short: "Add a configured bootstrap share",
+	Long:  `Add a configured share to the ephemeral runtime database.`,
 	Args:  cobra.ExactArgs(3),
 	Run: python(func(_ *cobra.Command, args []string, d pythonData) {
 		username, id := parseUsernameOrID(args[0])
@@ -39,16 +40,13 @@ var sharesAddCmd = &cobra.Command{
 		body := share.CreateBody{
 			Hash:        args[1],
 			Description: "default share",
+			Password:    os.Getenv("FB_SHARE_PIN"),
 		}
 		settings, err := d.store.Settings.Get()
 		checkErr(err)
-		server, err := d.store.Settings.GetServer()
-		checkErr(err)
-
 		opts := share.LinkOptions{
 			Path:   args[2],
 			UserID: owner.ID,
-			Root:   server.Root,
 		}
 		if settings.Catalog.DefaultName != "" {
 			body.CatalogName = settings.Catalog.DefaultName
@@ -62,12 +60,14 @@ var sharesAddCmd = &cobra.Command{
 		switch {
 		case err == nil:
 			if existingByHash.UserID == owner.ID && existingByHash.Path == args[2] {
-				if shouldApplyDefaultCatalog(existingByHash, link) {
-					existingByHash.CatalogURL = link.CatalogURL
-					existingByHash.FiltersField = link.FiltersField
-					existingByHash.AssetsBaseURL = link.AssetsBaseURL
-					checkErr(d.store.Share.Update(existingByHash))
-				}
+				existingByHash.Expire = link.Expire
+				existingByHash.Description = link.Description
+				existingByHash.CatalogURL = link.CatalogURL
+				existingByHash.FiltersField = link.FiltersField
+				existingByHash.AssetsBaseURL = link.AssetsBaseURL
+				existingByHash.PasswordHash = link.PasswordHash
+				existingByHash.Token = link.Token
+				checkErr(d.store.Share.Update(existingByHash))
 				printShares([]*share.Link{existingByHash})
 				return
 			}
@@ -101,11 +101,4 @@ func defaultShareAssetsBaseURL(sharePath string) string {
 		return ""
 	}
 	return parent
-}
-
-func shouldApplyDefaultCatalog(existing, target *share.Link) bool {
-	return target.CatalogURL != "" &&
-		existing.CatalogURL == "" &&
-		existing.FiltersField == "" &&
-		existing.AssetsBaseURL == ""
 }

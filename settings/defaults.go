@@ -13,16 +13,15 @@ import (
 // UserDefaults is a type that holds the default values
 // for some fields on User.
 type UserDefaults struct {
-	Scope        string             `json:"scope"`
-	Locale       string             `json:"locale"`
-	ViewMode     users.ViewMode     `json:"viewMode"`
-	SingleClick  bool               `json:"singleClick"`
-	Sorting      files.Sorting      `json:"sorting"`
-	Perm         users.Permissions  `json:"perm"`
-	Commands     []string           `json:"commands"`
-	HideDotfiles bool               `json:"hideDotfiles"`
-	DateFormat   bool               `json:"dateFormat"`
-	Envs         *map[string]string `json:"envs,omitempty"`
+	Scope        string            `json:"scope"`
+	Locale       string            `json:"locale"`
+	ViewMode     users.ViewMode    `json:"viewMode"`
+	SingleClick  bool              `json:"singleClick"`
+	Sorting      files.Sorting     `json:"sorting"`
+	Perm         users.Permissions `json:"perm"`
+	Commands     []string          `json:"commands"`
+	HideDotfiles bool              `json:"hideDotfiles"`
+	DateFormat   bool              `json:"dateFormat"`
 }
 
 // Apply applies the default options to a user.
@@ -36,7 +35,6 @@ func (d *UserDefaults) Apply(u *users.User) {
 	u.Commands = d.Commands
 	u.HideDotfiles = d.HideDotfiles
 	u.DateFormat = d.DateFormat
-	u.Envs = d.Envs
 }
 
 // ApplyUserDefaults applies settings defaults to a newly created user.
@@ -53,7 +51,7 @@ func (s *Settings) ApplyUserDirBaseRules(u *users.User) {
 	}
 
 	existingRules := withoutRules(u.Rules, generatedRules)
-	if u.Perm.Admin {
+	if !s.CreateUserDir || u.Perm.Admin {
 		u.Rules = existingRules
 		return
 	}

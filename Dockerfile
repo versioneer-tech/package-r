@@ -11,8 +11,8 @@ RUN apt-get update \
 
 RUN if ! getent group 100 >/dev/null; then groupadd --gid 100 package-r; fi \
  && useradd --uid 1000 --gid 100 --home-dir /home/package-r --no-create-home --shell /usr/sbin/nologin package-r \
- && mkdir -p /db /workspace /home/package-r \
- && chown -R 1000:100 /db /workspace /home/package-r
+ && mkdir -p /home/package-r \
+ && chown -R 1000:100 /home/package-r
 
 COPY healthcheck.sh /healthcheck.sh
 COPY init.sh /init.sh
@@ -21,8 +21,8 @@ COPY filebrowser /filebrowser
 RUN chmod 755 /filebrowser /init.sh /healthcheck.sh
 
 ENV HOME=/home/package-r
-ENV FB_DATABASE=/db/bolt.db
-ENV FB_ROOT=/workspace
+ENV FB_DATABASE=/tmp/package-r.db
+ENV FB_ROOT=/
 ENV FB_SERVER_PORT=8888
 
 HEALTHCHECK --start-period=2s --interval=5s --timeout=3s CMD /healthcheck.sh || exit 1

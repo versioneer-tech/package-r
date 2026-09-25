@@ -7,16 +7,18 @@ repo_url: https://github.com/versioneer-tech/package-r
 repo_name: versioneer-tech/package-r
 copyright: "Copyright &copy; 2026, Versioneer"
 nav:
-  - Home:
-    - Overview: index.md
-    - Features: features.md
-    - Configuration: configuration.md
-    - Usage: usage.md
-    - Troubleshooting: troubleshooting.md
-  - Walkthroughs:
-    - Quickstart: generated/usecases/quickstart.md
-    - Public Sharing: generated/usecases/public-sharing.md
-    - Catalog and STAC: generated/usecases/catalog-stac.md
+  - Home: index.md
+  - Get started:
+      - Run packageR: how-to-guides/run-package-r.md
+  - User guides:
+      - Work with objects: how-to-guides/work-with-objects.md
+      - Share and preview data: how-to-guides/share-and-preview-data.md
+  - Operator guides:
+      - Configuration: how-to-guides/configuration.md
+  - Reference guides:
+      - HTTP API: reference-guides/http-api.md
+      - Architecture:
+          - ADR-001 Embedded rclone VFS: architecture/0001-use-rclone-vfs-for-object-storage.md
 plugins:
   - search
   - mike
@@ -27,14 +29,13 @@ markdown_extensions:
 theme:
   name: material
   language: en
-  logo: imgs/logo.png
-  favicon: imgs/favicon.ico
   features:
     - content.code.copy
-    - navigation.footer
     - search.suggest
     - toc.follow
     - toc.permalink
+  logo: imgs/logo.png
+  favicon: imgs/favicon.ico
   palette:
     - scheme: default
       primary: white

@@ -131,9 +131,9 @@ var userPostHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *
 	}
 	d.settings.ApplyUserDirBaseRules(req.Data)
 
-	userScope, err := d.settings.MakeUserDir(req.Data.Username, req.Data.Scope, d.server.Root)
+	userScope, err := d.settings.ResolveUserScope(req.Data.Username, req.Data.Scope)
 	if err != nil {
-		log.Printf("create user: failed to create user directory: %v", err)
+		log.Printf("create user: failed to resolve user scope: %v", err)
 		return http.StatusInternalServerError, err
 	}
 	req.Data.Scope = userScope

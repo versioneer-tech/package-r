@@ -1,25 +1,33 @@
 package http
 
 import (
-	"errors"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
-	"github.com/versioneer-tech/package-r/files"
+	fbErrors "github.com/versioneer-tech/package-r/errors"
+	"github.com/versioneer-tech/package-r/users"
 )
 
-func presignOrLocalURL(filePath, method string, envs *map[string]string, localURL string) (string, error) {
-	userEnvs := map[string]string(nil)
-	if envs != nil {
-		userEnvs = *envs
-	}
+const presignLifetime = 7 * 24 * time.Hour
 
-	presignedURL, err := files.Presign(filePath, method, userEnvs)
-	if errors.Is(err, files.ErrMissingS3Credentials) {
+func presignOrLocalURL(
+	r *http.Request,
+	store users.Store,
+	user *users.User,
+	filePath string,
+	localURL string,
+	lifetime time.Duration,
+) (string, error) {
+	if r.Method != http.MethodGet {
+		return "", fbErrors.ErrInvalidOption
+	}
+	linker, ok := store.(users.PublicLinker)
+	if !ok {
 		return localURL, nil
 	}
-	return presignedURL, err
+	return linker.PublicLink(r.Context(), user, filePath, lifetime)
 }
 
 func localRawURL(r *http.Request, filePath string) string {

@@ -27,7 +27,7 @@ func tusPostHandler() handleFunc {
 		})
 		switch {
 		case errors.Is(err, afero.ErrFileNotFound):
-			if !d.user.Perm.Create || !d.Check(r.URL.Path) {
+			if !d.user.Perm.Create || !d.CheckWrite(r.URL.Path) {
 				return http.StatusForbidden, nil
 			}
 
@@ -93,7 +93,7 @@ func tusHeadHandler() handleFunc {
 
 func tusPatchHandler() handleFunc {
 	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-		if !d.user.Perm.Modify || !d.Check(r.URL.Path) {
+		if !d.user.Perm.Modify || !d.CheckWrite(r.URL.Path) {
 			return http.StatusForbidden, nil
 		}
 		if r.Header.Get("Content-Type") != "application/offset+octet-stream" {
@@ -136,7 +136,12 @@ func tusPatchHandler() handleFunc {
 		if err != nil {
 			return http.StatusInternalServerError, fmt.Errorf("could not open file: %w", err)
 		}
-		defer openFile.Close()
+		fileOpen := true
+		defer func() {
+			if fileOpen {
+				_ = openFile.Close()
+			}
+		}()
 
 		_, err = openFile.Seek(uploadOffset, 0)
 		if err != nil {
@@ -148,6 +153,10 @@ func tusPatchHandler() handleFunc {
 		if err != nil {
 			return http.StatusInternalServerError, fmt.Errorf("could not write to file: %w", err)
 		}
+		if err := openFile.Close(); err != nil {
+			return http.StatusInternalServerError, fmt.Errorf("could not close uploaded file: %w", err)
+		}
+		fileOpen = false
 
 		w.Header().Set("Upload-Offset", strconv.FormatInt(uploadOffset+bytesWritten, 10))
 

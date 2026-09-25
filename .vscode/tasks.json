@@ -2,17 +2,53 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "init",
-      "type": "shell",
-      "command": "${workspaceFolder}/init.sh",
-      "args": ["--add-shares", "public-share=/public", "--add-test-data", "/public"],      
+      "label": "prepare local development",
+      "type": "process",
+      "command": "${workspaceFolder}/scripts/local_s3.sh",
+      "args": ["run"],
+      "isBackground": true,
       "options": {
+        "cwd": "${workspaceFolder}",
         "env": {
+          "FB_DATABASE": "${workspaceFolder}/.vscode/package-r.db",
+          "FB_FILEBROWSER_BIN": "${workspaceFolder}/filebrowser",
+          "FB_ROOT": "data",
           "FB_PASSWORD": "1234!",
           "FB_AUTH_METHOD": "json",
           "FB_ALLOW_SHARING": "true",
-          "FB_ALLOW_CHANGING": "true"
+          "FB_ALLOW_CHANGING": "true",
+          "AWS_ACCESS_KEY_ID": "my-access-key",
+          "AWS_SECRET_ACCESS_KEY": "my-secret-key",
+          "AWS_ENDPOINT_URL": "http://127.0.0.1:19100",
+          "AWS_REGION": "us-east-1",
+          "RCLONE_CONFIG": "/dev/null",
+          "XDG_CACHE_HOME": "${workspaceFolder}/.vscode/cache"
         }
+      },
+      "problemMatcher": {
+        "owner": "package-r-local",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^(.*):(\\d+):(\\d+):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\[local-dev\\] preparing$",
+          "endsPattern": "^\\[local-dev\\] ready$"
+        }
+      }
+    },
+    {
+      "label": "stop local S3",
+      "type": "process",
+      "command": "${workspaceFolder}/scripts/local_s3.sh",
+      "args": ["stop"],
+      "options": {
+        "cwd": "${workspaceFolder}"
       },
       "problemMatcher": []
     }

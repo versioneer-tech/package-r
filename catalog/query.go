@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"path"
@@ -152,25 +153,27 @@ func sqlString(value string) string {
 }
 
 //nolint:gocyclo
-func QueryCatalogParquet(ctx context.Context, catalogPath, filterField, baseURL, requestPath, assetsURL, sharePath string) (map[string]interface{}, error) {
+func QueryCatalogParquet(ctx context.Context, catalogURL, filterField, baseURL, requestPath, assetsURL, sharePath string) (map[string]interface{}, error) {
 	packagePrefix := path.Join(baseURL, requestPath)
 	relativePrefix := relativeAssetPrefix(sharePath, requestPath)
 
-	query := fmt.Sprintf(`
+	query := `
 SELECT *
-FROM read_parquet(%s)
-`, sqlString(catalogPath))
+FROM read_parquet(?)
+`
+	args := []interface{}{catalogURL}
 	if filterField != "" {
 		query = fmt.Sprintf(`
 SELECT *
-FROM read_parquet(%s)
+FROM read_parquet(?)
 WHERE
-  COALESCE((CAST(assets AS JSON)->%s->>'href'), '') LIKE %s
-  OR COALESCE((CAST(assets AS JSON)->%s->>'href'), '') LIKE %s
-`, sqlString(catalogPath), sqlString("$."+filterField), sqlString(packagePrefix+"%"), sqlString("$."+filterField), sqlString(relativePrefix+"%"))
+  COALESCE((CAST(assets AS JSON)->%s->>'href'), '') LIKE ?
+  OR COALESCE((CAST(assets AS JSON)->%s->>'href'), '') LIKE ?
+`, sqlString("$."+filterField), sqlString("$."+filterField))
+		args = append(args, packagePrefix+"%", relativePrefix+"%")
 	}
 
-	log.Printf("Query: %s", query)
+	log.Println("Querying Parquet catalog")
 
 	conn, err := GetDuckDBConn(ctx)
 	if err != nil {
@@ -178,9 +181,10 @@ WHERE
 	}
 	defer conn.Close()
 
-	rows, err := conn.QueryContext(ctx, query)
+	rows, err := conn.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("query failed: %w", err)
+		message := redactCatalogURL(err.Error(), catalogURL)
+		return nil, errors.New("query failed: " + message)
 	}
 	defer rows.Close()
 
@@ -300,4 +304,11 @@ WHERE
 		"type":     "FeatureCollection",
 		"features": results,
 	}, nil
+}
+
+func redactCatalogURL(message, catalogURL string) string {
+	if catalogURL == "" {
+		return message
+	}
+	return strings.ReplaceAll(message, catalogURL, "[signed catalog URL]")
 }

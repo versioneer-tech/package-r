@@ -13,12 +13,6 @@
       <template #actions>
         <template v-if="!isMobile">
           <action
-            v-if="headerButtons.share"
-            icon="share"
-            :label="t('buttons.share')"
-            show="share"
-          />
-          <action
             v-if="authStore?.user?.perm.create"
             icon="create_new_folder"
             :label="t('sidebar.newFolder')"
@@ -97,12 +91,6 @@
       <span v-if="fileStore.selectedCount > 0">
         {{ t("prompts.filesSelected", fileStore.selectedCount) }}
       </span>
-      <action
-        v-if="headerButtons.share"
-        icon="share"
-        :label="t('buttons.share')"
-        show="share"
-      />
       <action
         v-if="headerButtons.rename"
         icon="mode_edit"
@@ -421,7 +409,6 @@ const headerButtons = computed(() => {
     shell: authStore.user?.perm.execute && enableExec,
     delete: fileStore.selectedCount > 0 && authStore.user?.perm.delete,
     rename: fileStore.selectedCount === 1 && authStore.user?.perm.rename,
-    share: fileStore.selectedCount === 1 && authStore.user?.perm.share,
     move: fileStore.selectedCount > 0 && authStore.user?.perm.rename,
     copy: fileStore.selectedCount > 0 && authStore.user?.perm.create,
   };

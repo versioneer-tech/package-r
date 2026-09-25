@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -10,11 +11,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -26,6 +26,8 @@ import (
 	"github.com/versioneer-tech/package-r/frontend"
 	fbhttp "github.com/versioneer-tech/package-r/http"
 	"github.com/versioneer-tech/package-r/img"
+	"github.com/versioneer-tech/package-r/objectstorage"
+	"github.com/versioneer-tech/package-r/rclonefs"
 	"github.com/versioneer-tech/package-r/settings"
 	"github.com/versioneer-tech/package-r/storage"
 	"github.com/versioneer-tech/package-r/users"
@@ -45,7 +47,7 @@ func init() {
 	persistent := rootCmd.PersistentFlags()
 
 	persistent.StringVarP(&cfgFile, "config", "c", "", "config file path")
-	persistent.StringP("database", "d", "./filebrowser.db", "database path")
+	persistent.StringP("database", "d", "/tmp/package-r.db", "database path")
 	flags.Bool("noauth", false, "use the noauth auther when using quick setup")
 	flags.String("username", "admin", "username for the first user when using quick config")
 	flags.String("password", "", "hashed password for the first user when using quick config (default \"admin\")")
@@ -59,7 +61,7 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.StringP("port", "p", "8888", "port to listen on")
 	flags.StringP("cert", "t", "", "tls certificate")
 	flags.StringP("key", "k", "", "tls key")
-	flags.StringP("root", "r", ".", "root to prepend to relative paths")
+	flags.StringP("root", "r", "/", "S3 service root (/) or one bucket name")
 	flags.String("socket", "", "socket to listen to (cannot be used with address, port, cert nor key flags)")
 	flags.Uint32("socket-perm", 0666, "unix socket file permissions")
 	flags.StringP("baseurl", "b", "", "base url")
@@ -138,9 +140,20 @@ user created with the credentials from options "username" and "password".`,
 		server := getRunParams(cmd.Flags(), d.store)
 		setupLog(server.Log)
 
-		root, err := filepath.Abs(server.Root)
+		applicationSettings, err := d.store.Settings.Get()
 		checkErr(err)
-		server.Root = root
+		storageConfig := objectstorage.Load()
+		storageConfig.SetRoot(server.Root)
+		checkErr(storageConfig.ValidateFilesystem())
+		checkErr(storageConfig.ValidateUserDir(applicationSettings.CreateUserDir))
+
+		objectFileSystems := rclonefs.NewManager(context.Background(), server.Root)
+		defer func() { _ = objectFileSystems.Close() }()
+		_, err = objectFileSystems.FileSystem()
+		checkErr(err)
+		d.store.Users = rclonefs.WrapUsers(d.store.Users, objectFileSystems, applicationSettings)
+		server.EnableExec = false
+		log.Println("Using native rclone object storage; command execution is disabled")
 
 		adr := server.Address + ":" + server.Port
 
@@ -169,7 +182,7 @@ user created with the credentials from options "username" and "password".`,
 
 		sigc := make(chan os.Signal, 1)
 		signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
-		go cleanupHandler(listener, sigc)
+		defer signal.Stop(sigc)
 
 		assetsFs, err := fs.Sub(frontend.Assets(), "dist")
 		if err != nil {
@@ -182,18 +195,33 @@ user created with the credentials from options "username" and "password".`,
 		defer listener.Close()
 
 		log.Println("Listening on", listener.Addr().String())
-		//nolint: gosec
-		if err := http.Serve(listener, handler); err != nil {
-			log.Fatal(err)
+		httpServer := &http.Server{
+			Handler:           handler,
+			ReadHeaderTimeout: 10 * time.Second,
+		}
+		serveErrors := make(chan error, 1)
+		go func() {
+			serveErrors <- httpServer.Serve(listener)
+		}()
+
+		select {
+		case sig := <-sigc:
+			log.Printf("Caught signal %s: shutting down.", sig)
+			shutdownContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if err := httpServer.Shutdown(shutdownContext); err != nil {
+				_ = httpServer.Close()
+				panic(err)
+			}
+			if err := <-serveErrors; err != nil && !errors.Is(err, http.ErrServerClosed) {
+				panic(err)
+			}
+		case err := <-serveErrors:
+			if err != nil && !errors.Is(err, http.ErrServerClosed) {
+				panic(err)
+			}
 		}
 	}, pythonConfig{allowNoDB: true}),
-}
-
-func cleanupHandler(listener net.Listener, c chan os.Signal) { //nolint:interfacer
-	sig := <-c
-	log.Printf("Caught signal %s: shutting down.", sig)
-	listener.Close()
-	os.Exit(0)
 }
 
 func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
@@ -400,7 +428,7 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 
 func initConfig() {
 	if cfgFile == "" {
-		home, err := homedir.Dir()
+		home, err := os.UserHomeDir()
 		checkErr(err)
 		v.AddConfigPath(".")
 		v.AddConfigPath(home)

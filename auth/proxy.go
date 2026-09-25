@@ -296,14 +296,14 @@ func (a ProxyAuth) Auth(r *http.Request, usr users.Store, setting *settings.Sett
 	user, err := usr.Get(srv.Root, username)
 	if errors.Is(err, fbErrors.ErrNotExist) {
 		if setting.Signup {
-			return a.createUser(usr, setting, srv, username)
+			return a.createUser(usr, setting, username)
 		}
 		log.Printf("User %s not found", username)
 	}
 	return user, err
 }
 
-func (a ProxyAuth) createUser(usr users.Store, setting *settings.Settings, srv *settings.Server, username string) (*users.User, error) {
+func (a ProxyAuth) createUser(usr users.Store, setting *settings.Settings, username string) (*users.User, error) {
 	const passwordSize = 32
 	randomPasswordBytes := make([]byte, passwordSize)
 	_, err := rand.Read(randomPasswordBytes)
@@ -325,7 +325,7 @@ func (a ProxyAuth) createUser(usr users.Store, setting *settings.Settings, srv *
 	setting.ApplyUserDefaults(user)
 
 	var userScope string
-	userScope, err = setting.MakeUserDir(user.Username, user.Scope, srv.Root)
+	userScope, err = setting.ResolveUserScope(user.Username, user.Scope)
 	if err != nil {
 		return nil, err
 	}

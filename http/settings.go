@@ -32,7 +32,6 @@ var settingsGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, 
 		Shell:            d.settings.Shell,
 		Commands:         d.settings.Commands,
 	}
-
 	return renderJSON(w, r, data)
 })
 

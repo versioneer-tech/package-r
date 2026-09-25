@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 )
@@ -20,9 +19,6 @@ func TestUsersAddCreatesGeneratedUserDirRootScope(t *testing.T) {
 		t.Fatalf("expected generated user to keep root scope, got %q", user.Scope)
 	}
 	assertUserBrowseRoot(t, user.FullPath("/"), rootPath)
-	if _, err := os.Stat(filepath.Join(rootPath, "home", "alice", ".keep")); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestUsersAddCreatesGeneratedUserDirHomeScope(t *testing.T) {
@@ -39,9 +35,6 @@ func TestUsersAddCreatesGeneratedUserDirHomeScope(t *testing.T) {
 		t.Fatalf("expected generated user to use home scope, got %q", user.Scope)
 	}
 	assertUserBrowseRoot(t, user.FullPath("/"), filepath.Join(rootPath, "home", "alice"))
-	if _, err := os.Stat(filepath.Join(rootPath, "home", "alice", ".keep")); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func assertUserBrowseRoot(t *testing.T, got, want string) {

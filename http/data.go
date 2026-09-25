@@ -3,7 +3,9 @@ package http
 import (
 	"log"
 	"net/http"
+	"path"
 	"strconv"
+	"strings"
 
 	"github.com/tomasen/realip"
 
@@ -33,6 +35,7 @@ func (d *data) Check(path string) bool {
 		return true
 	}
 
+	path = cleanAccessPath(path)
 	if d.user.HideDotfiles && rules.MatchHidden(path) {
 		return false
 	}
@@ -53,7 +56,66 @@ func (d *data) Check(path string) bool {
 		}
 	}
 
+	if !d.skipUserDirBaseRules && !d.checkUserDirPath(path) {
+		return false
+	}
+
 	return allow
+}
+
+// CheckWrite applies path rules and protects the user-directory base from
+// recursive mutations. The base remains readable so users can navigate to
+// their own directory.
+func (d *data) CheckWrite(requestPath string) bool {
+	requestPath = cleanAccessPath(requestPath)
+	if requestPath == "/" || !d.Check(requestPath) {
+		return false
+	}
+	if d.user.Perm.Admin || !d.settings.CreateUserDir {
+		return true
+	}
+
+	return !pathAtOrAbove(requestPath, d.userDirBasePath())
+}
+
+func (d *data) checkUserDirPath(requestPath string) bool {
+	if !d.settings.CreateUserDir {
+		return true
+	}
+
+	basePath := d.userDirBasePath()
+	if requestPath == basePath || !pathAtOrBelow(requestPath, basePath) {
+		return true
+	}
+
+	username := settings.CleanUsername(d.user.Username)
+	if username == "" || username == "-" || username == "." {
+		return false
+	}
+
+	return pathAtOrBelow(requestPath, path.Join(basePath, username))
+}
+
+func (d *data) userDirBasePath() string {
+	basePath := strings.TrimSpace(d.settings.UserHomeBasePath)
+	if basePath == "" {
+		basePath = settings.DefaultUsersHomeBasePath
+	}
+	return cleanAccessPath(basePath)
+}
+
+func cleanAccessPath(requestPath string) string {
+	return path.Clean("/" + strings.TrimPrefix(requestPath, "/"))
+}
+
+func pathAtOrBelow(requestPath, basePath string) bool {
+	return requestPath == basePath ||
+		(basePath == "/" && strings.HasPrefix(requestPath, "/")) ||
+		strings.HasPrefix(requestPath, basePath+"/")
+}
+
+func pathAtOrAbove(requestPath, basePath string) bool {
+	return requestPath == "/" || requestPath == basePath || strings.HasPrefix(basePath, requestPath+"/")
 }
 
 func handle(fn handleFunc, prefix string, store *storage.Storage, server *settings.Server) http.Handler {

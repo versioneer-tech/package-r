@@ -163,9 +163,9 @@ func (a *HookAuth) SaveUser() (*users.User, error) {
 		a.Settings.ApplyUserDefaults(d)
 		u = a.GetUser(d)
 
-		userScope, err := a.Settings.MakeUserDir(u.Username, u.Scope, a.Server.Root)
+		userScope, err := a.Settings.ResolveUserScope(u.Username, u.Scope)
 		if err != nil {
-			return nil, fmt.Errorf("user: failed to create user directory: %w", err)
+			return nil, fmt.Errorf("user: failed to resolve user scope: %w", err)
 		}
 		u.Scope = userScope
 		log.Printf("user: %s, scope: [%s].", u.Username, userScope)
@@ -225,7 +225,6 @@ func (a *HookAuth) GetUser(d *users.User) *users.User {
 		Commands:     a.Fields.GetArray("user.commands", d.Commands),
 		HideDotfiles: a.Fields.GetBoolean("user.hideDotfiles", d.HideDotfiles),
 		DateFormat:   d.DateFormat,
-		Envs:         d.Envs,
 		Rules:        d.Rules,
 		Perm:         perms,
 		LockPassword: true,

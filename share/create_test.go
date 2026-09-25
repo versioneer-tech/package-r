@@ -2,22 +2,22 @@ package share
 
 import "testing"
 
-func TestCatalogPathUsesShareFolderBelowRoot(t *testing.T) {
-	got, err := CatalogPath("/workspace", "/a/b", "catalog.parquet")
+func TestCatalogPathUsesShareFolder(t *testing.T) {
+	got, err := CatalogPath("/a/b", "catalog.parquet")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != "/workspace/a/b/catalog.parquet" {
+	if got != "/a/b/catalog.parquet" {
 		t.Fatalf("expected catalog path below shared folder, got %q", got)
 	}
 }
 
 func TestCatalogPathAllowsNestedRelativePath(t *testing.T) {
-	got, err := CatalogPath("/workspace", "/a/b", "meta/catalog.parquet")
+	got, err := CatalogPath("/a/b", "meta/catalog.parquet")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != "/workspace/a/b/meta/catalog.parquet" {
+	if got != "/a/b/meta/catalog.parquet" {
 		t.Fatalf("expected nested catalog path below shared folder, got %q", got)
 	}
 }
@@ -29,9 +29,10 @@ func TestCatalogPathRejectsEscapes(t *testing.T) {
 		"meta/../../catalog.parquet",
 		".",
 		"meta/..",
+		"catalog\x00.parquet",
 	} {
 		t.Run(name, func(t *testing.T) {
-			if got, err := CatalogPath("/workspace", "/a/b", name); err == nil {
+			if got, err := CatalogPath("/a/b", name); err == nil {
 				t.Fatalf("expected error for %q, got path %q", name, got)
 			}
 		})

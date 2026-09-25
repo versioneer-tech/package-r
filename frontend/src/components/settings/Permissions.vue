@@ -32,10 +32,6 @@
       <input type="checkbox" :disabled="admin" v-model="perm.rename" />
       {{ $t("settings.perm.rename") }}
     </p>
-    <p>
-      <input type="checkbox" :disabled="admin" v-model="perm.share" />
-      {{ $t("settings.perm.share") }}
-    </p>
   </div>
 </template>
 

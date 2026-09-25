@@ -1,0 +1,221 @@
+# Copyright 2026, Versioneer (https://versioneer.at)
+# SPDX-License-Identifier: Apache-2.0
+
+name: Tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - main
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  RCLONE_VERSION: "1.75.1"
+
+jobs:
+  lint_backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run backend linters
+        run: make lint-backend
+
+  lint_frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.x"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Run frontend linters and type checks
+        run: make lint-frontend
+
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.x"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Build the production binary
+        run: make build
+
+  unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run Go unit tests
+        run: make test-unit
+
+  rclone_integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    needs: unit
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install rclone
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="/tmp/rclone-${RCLONE_VERSION}.zip"
+          directory="/tmp/rclone-${RCLONE_VERSION}"
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 2 --retry-connrefused \
+            --output "${archive}" \
+            "https://github.com/rclone/rclone/releases/download/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-amd64.zip"
+          unzip -q "${archive}" -d "${directory}"
+          sudo install -m 0755 \
+            "${directory}/rclone-v${RCLONE_VERSION}-linux-amd64/rclone" \
+            /usr/local/bin/rclone
+          rclone version
+
+      - name: Run local rclone API integration tests
+        run: make test-integration
+
+  playwright:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    needs: unit
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.x"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install rclone
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="/tmp/rclone-${RCLONE_VERSION}.zip"
+          directory="/tmp/rclone-${RCLONE_VERSION}"
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 2 --retry-connrefused \
+            --output "${archive}" \
+            "https://github.com/rclone/rclone/releases/download/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-amd64.zip"
+          unzip -q "${archive}" -d "${directory}"
+          sudo install -m 0755 \
+            "${directory}/rclone-v${RCLONE_VERSION}-linux-amd64/rclone" \
+            /usr/local/bin/rclone
+          rclone version
+
+      - name: Install frontend dependencies
+        run: cd frontend && pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: cd frontend && pnpm exec playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: make test-frontend
+
+  docs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: docs/requirements.txt
+
+      - name: Install documentation dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Build documentation
+        run: mkdocs build --strict

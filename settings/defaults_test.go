@@ -9,7 +9,8 @@ import (
 
 func TestApplyUserDefaultsAddsUserDirBaseRules(t *testing.T) {
 	set := Settings{
-		Defaults: UserDefaults{Locale: "en"},
+		CreateUserDir: true,
+		Defaults:      UserDefaults{Locale: "en"},
 	}
 	user := &users.User{Username: "alice"}
 
@@ -43,7 +44,7 @@ func TestApplyUserDefaultsAddsUserDirBaseRules(t *testing.T) {
 }
 
 func TestApplyUserDirBaseRulesPrependsGeneratedRules(t *testing.T) {
-	set := Settings{}
+	set := Settings{CreateUserDir: true}
 	user := &users.User{
 		Username: "alice",
 		Rules:    []rules.Rule{{Allow: true, Path: "/custom"}},
@@ -63,7 +64,7 @@ func TestApplyUserDirBaseRulesPrependsGeneratedRules(t *testing.T) {
 }
 
 func TestApplyUserDefaultsUsesConfiguredUserHomeBasePath(t *testing.T) {
-	set := Settings{UserHomeBasePath: "users"}
+	set := Settings{CreateUserDir: true, UserHomeBasePath: "users"}
 	user := &users.User{Username: "alice"}
 
 	set.ApplyUserDefaults(user)
@@ -77,6 +78,7 @@ func TestApplyUserDefaultsUsesConfiguredUserHomeBasePath(t *testing.T) {
 
 func TestApplyUserDefaultsSkipsUserDirBaseRulesForAdmins(t *testing.T) {
 	set := Settings{
+		CreateUserDir: true,
 		Defaults: UserDefaults{
 			Perm: users.Permissions{Admin: true},
 		},
@@ -91,7 +93,7 @@ func TestApplyUserDefaultsSkipsUserDirBaseRulesForAdmins(t *testing.T) {
 }
 
 func TestApplyUserDirBaseRulesRemovesGeneratedRulesForAdmins(t *testing.T) {
-	set := Settings{}
+	set := Settings{CreateUserDir: true}
 	user := &users.User{
 		Username: "alice",
 		Perm:     users.Permissions{Admin: true},
@@ -106,6 +108,17 @@ func TestApplyUserDirBaseRulesRemovesGeneratedRulesForAdmins(t *testing.T) {
 
 	if len(user.Rules) != 1 || user.Rules[0].Path != "/custom" {
 		t.Fatalf("expected admin to keep only custom rules, got %#v", user.Rules)
+	}
+}
+
+func TestApplyUserDefaultsSkipsUserDirBaseRulesWhenDisabled(t *testing.T) {
+	set := Settings{}
+	user := &users.User{Username: "alice"}
+
+	set.ApplyUserDefaults(user)
+
+	if len(user.Rules) != 0 {
+		t.Fatalf("expected no generated rules, got %#v", user.Rules)
 	}
 }
 

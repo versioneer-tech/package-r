@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/spf13/afero"
 	"golang.org/x/crypto/bcrypt"
@@ -21,6 +22,7 @@ type catalogedFile struct {
 	CatalogURL    string
 	FilterField   string
 	AssetsBaseURL string
+	ShareExpire   int64
 }
 
 var withHashFile = func(fn handleFunc) handleFunc {
@@ -88,6 +90,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 			CatalogURL:    link.CatalogURL,
 			FilterField:   link.FiltersField,
 			AssetsBaseURL: link.AssetsBaseURL,
+			ShareExpire:   link.Expire,
 		}
 
 		return fn(w, r, d)
@@ -133,7 +136,17 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 	presign, ok := r.URL.Query()["presign"]
 	if ok && !strings.EqualFold(presign[0], "false") {
-		url, err := presignOrLocalURL(publicSharePresignPath(cf), r.Method, d.user.Envs, localPublicDownloadURL(r))
+		if !d.user.Perm.Download {
+			return http.StatusForbidden, nil
+		}
+		url, err := presignOrLocalURL(
+			r,
+			d.store.Users,
+			d.user,
+			publicSharePresignPath(cf),
+			localPublicDownloadURL(r),
+			publicSharePresignLifetime(cf.ShareExpire),
+		)
 		if errors.Is(err, fbErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {
@@ -172,6 +185,17 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 func publicSharePresignPath(cf *catalogedFile) string {
 	return slashClean(path.Join(cf.SharePath, cf.File.Path))
+}
+
+func publicSharePresignLifetime(expireUnix int64) time.Duration {
+	if expireUnix == 0 {
+		return presignLifetime
+	}
+	remaining := time.Until(time.Unix(expireUnix, 0))
+	if remaining < presignLifetime {
+		return remaining
+	}
+	return presignLifetime
 }
 
 var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {

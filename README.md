@@ -1,82 +1,120 @@
-<img src="frontend/public/img/logo.png" height="40"/>
+<img src="frontend/public/img/logo.png" height="40" alt="packageR"/>
 
 # packageR
 
-`packageR` is a File Browser-derived application designed for data that lives in object
-storage but is made visible to packageR as a regular file tree (e.g. via FUSE).
+packageR is a web file browser for S3-compatible object storage. The Go
+service opens the S3 service root or one bucket through an embedded rclone
+VFS. It uses the same rclone backend to browse objects and to create
+time-limited download URLs.
+Production does not need an object-storage mount or a separate rclone service.
 
-packageR uses that filesystem view for browsing, inspection, and curation, then
-adds presigned URL access, streaming previews, public STAC catalog endpoints,
-and more. See the [feature summary](https://package-r.versioneer.at/latest/features/)
-and follow the walkthroughs for
-[public sharing](https://package-r.versioneer.at/latest/generated/usecases/public-sharing/)
-and [catalog handling via STAC](https://package-r.versioneer.at/latest/generated/usecases/catalog-stac/).
+The current design uses one process-owned S3 credential source. It can use a
+standard S3 access-key pair or provider-supported workload identity, such as
+AWS IRSA. All sessions use that storage identity. packageR can narrow access
+with identity scopes, path rules, and action permissions. User-directory mode
+protects sibling home directories and their shared parent. Action permissions
+separately control changes to allowed paths. User-directory mode does not
+select credentials. Per-user object-storage credentials are a possible future
+direction and are not currently planned.
 
-Full documentation is available at
-[package-r.versioneer.at](https://package-r.versioneer.at/), including the necessary
-[configuration](https://package-r.versioneer.at/latest/configuration/) for runtime
-environment variables and bootstrap settings.
+packageR provides:
 
-## Getting Started
+- directory navigation and common File Browser operations;
+- uploads, downloads, and access rules;
+- public shares declared during bootstrap, with optional PINs;
+- presigned GET URLs for authenticated files and public shares;
+- TIFF and Cloud Optimized GeoTIFF (COG) previews; and
+- STAC-compatible Parquet catalogs exposed as public STAC JSON.
 
-Build the local `filebrowser` binary from the repository root:
+See the [packageR documentation](https://package-r.versioneer.at/) for
+[configuration](https://package-r.versioneer.at/latest/how-to-guides/configuration/),
+[operation](https://package-r.versioneer.at/latest/how-to-guides/run-package-r/),
+the [HTTP API](https://package-r.versioneer.at/latest/reference-guides/http-api/),
+and the
+[rclone VFS architecture decision](https://package-r.versioneer.at/latest/architecture/0001-use-rclone-vfs-for-object-storage/).
 
-```bash
-make build
-```
+## Development
 
-Start packageR with a public share and local test data:
+Local development uses `rclone serve s3` as a disposable S3-compatible API.
+Production does not need this process.
 
-```bash
-export FB_ROOT="${FB_ROOT:-/workspace}"
-export FB_DATABASE="${FB_DATABASE:-/db/bolt.db}"
+### Use VS Code
 
-./init.sh --add-shares public-share=/public --add-test-data /public --serve
-```
+Open **Run and Debug** and start **run packageR**. The launch configuration:
 
-Local commands run from the current repository directory. The Docker image uses
-the same mounted data and database paths, with `/home/package-r` as the runtime
-home directory. Outside Docker, make sure `/workspace` and `/db` exist and are
-writable by the user running packageR.
+1. Starts local S3 on `127.0.0.1:19100`.
+2. Builds the development backend.
+3. Bootstraps `.vscode/package-r.db` and shares `/public` as `public-share`.
+   This directory contains the test catalog and its assets. The bucket root
+   contains image, JSON, PDF, and text fixtures for manual checks.
+4. Starts packageR on `127.0.0.1:8888` under the Go debugger.
+5. Opens `http://localhost:8888` when the server is ready.
 
-In another terminal, check the public package and STAC catalog endpoints:
+Stop the debug session to stop its local S3 server. Rclone output is in
+`.vscode/local-s3.log`, and cache data is below `.vscode/cache`.
 
-```bash
-BASE_URL="${BASE_URL:-http://127.0.0.1:${FB_SERVER_PORT:-8888}}"
-ITEM_ID=67793f0b9478720001790586
-
-curl -sS "$BASE_URL/api/public/catalog/public-share"
-curl -sS "$BASE_URL/api/public/catalog/public-share/openaerialmap-assets/$ITEM_ID/thumbnail.png"
-curl -sSI "$BASE_URL/api/public/share/public-share/openaerialmap-assets/$ITEM_ID/thumbnail.png?presign=true&followRedirect=true"
-```
-
-The local sample is not backed by object storage, so presign checks return
-packageR/File Browser URLs. See the
-[Quickstart](https://package-r.versioneer.at/latest/generated/usecases/quickstart/)
-docs page for the full walkthrough.
-
-## Contributing
-
-packageR is fork-derived from
-[File Browser](https://github.com/filebrowser/filebrowser). We aim to stay
-aligned with upstream where practical, so packageR-specific changes should stay
-narrow and easy to rebase.
-
-Contributors should base work on the current `main` branch and rebase changes
-before opening a pull request.
-
-Run the backend tests from the repository root:
+To control local S3 without VS Code, use:
 
 ```bash
-go test -v ./...
+./scripts/local_s3.sh serve
+./scripts/local_s3.sh stop
 ```
 
-For documentation changes, build the docs locally:
+`serve` stays in the foreground. The `run` command is for the VS Code task and
+also stays active so that VS Code can manage its lifetime.
+
+### Run tests
+
+Run the Go unit tests and local integration tests:
 
 ```bash
-uv run --with-requirements docs/requirements.txt mkdocs build --strict
+make test-unit
+make test-integration
 ```
+
+The integration harness starts `rclone serve s3` on a loopback address. It
+copies `tests/data` into a temporary test bucket and does not need cloud
+credentials.
+
+Run the frontend tests with Playwright and Chromium:
+
+```bash
+make test-frontend
+```
+
+See [tests/README.md](tests/README.md) for the complete test strategy.
+
+Each integration harness selects free ports, starts its dependencies, waits
+for readiness, and stops the processes that it owns.
+
+### Build the documentation
+
+Build all pages and fail on warnings:
+
+```bash
+uv run mkdocs build --strict
+```
+
+You can also use `make docs`. The first run creates `.venv` and installs the
+locked dependencies from `pyproject.toml`.
+
+### Troubleshoot startup
+
+If packageR does not open on port `8888`, check `.vscode/local-s3.log` and the
+VS Code task output. Confirm that ports `19100`, `19101`, and `8888` are free.
+Stop a previous local S3 process with:
+
+```bash
+./scripts/local_s3.sh stop
+```
+
+The launch fails if port `19100` has a different server or if the rclone
+control endpoint on port `19101` is not available.
+
+packageR is derived from
+[File Browser](https://github.com/filebrowser/filebrowser). Keep packageR
+changes narrow where practical so that upstream updates remain manageable.
 
 ## License
 
-[Apache 2.0](LICENSE) (Apache License Version 2.0, January 2004) from https://www.apache.org/licenses/LICENSE-2.0
+[Apache 2.0](LICENSE)

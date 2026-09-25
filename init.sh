@@ -2,11 +2,11 @@
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
-FB_DATABASE=${FB_DATABASE:-/db/bolt.db}
-FB_ROOT=${FB_ROOT:-/workspace}
+FB_DATABASE=${FB_DATABASE:-/tmp/package-r.db}
+FB_ROOT=${FB_ROOT:-/}
 FB_SERVER_PORT=${FB_SERVER_PORT:-8888}
 FB_FILEBROWSER_BIN=${FB_FILEBROWSER_BIN:-$script_dir/filebrowser}
-FB_CREATE_USER_DIR=${FB_CREATE_USER_DIR:-true}
+FB_CREATE_USER_DIR=${FB_CREATE_USER_DIR:-false}
 FB_AUTH_METHOD=${FB_AUTH_METHOD:-proxy}
 FB_AUTH_HEADER=${FB_AUTH_HEADER:-X-Username}
 FB_AUTH_MAPPER=${FB_AUTH_MAPPER:-}
@@ -19,9 +19,9 @@ FB_BRANDING_NAME=${FB_BRANDING_NAME:-packageR}
 FB_SHARELINK_DEFAULT_HASH=${FB_SHARELINK_DEFAULT_HASH:-public-<random>-v1}
 FB_CATALOG_DEFAULT_NAME=${FB_CATALOG_DEFAULT_NAME:-catalog.parquet}
 FB_CATALOG_PREVIEW_URL=${FB_CATALOG_PREVIEW_URL:-}
-FB_ALLOW_SHARING=${FB_ALLOW_SHARING:-false}
 FB_ALLOW_CHANGING=${FB_ALLOW_CHANGING:-false}
 FB_DEFAULT_SHARES=${FB_DEFAULT_SHARES:-}
+FB_DEFAULT_SHARE_PINS=${FB_DEFAULT_SHARE_PINS:-}
 FB_PASSWORD=${FB_PASSWORD:-}
 export FB_DATABASE FB_ROOT FB_SERVER_PORT FB_FILEBROWSER_BIN
 export FB_CREATE_USER_DIR FB_AUTH_METHOD FB_AUTH_HEADER FB_AUTH_MAPPER
@@ -29,7 +29,7 @@ export FB_AUTH_JWT_JWKS_URL FB_AUTH_JWT_ISSUER FB_AUTH_JWT_AUDIENCE
 export FB_AUTH_JWT_ALGORITHMS FB_AUTH_JWT_CLOCK_SKEW
 export FB_BRANDING_NAME FB_SHARELINK_DEFAULT_HASH
 export FB_CATALOG_DEFAULT_NAME FB_CATALOG_PREVIEW_URL
-export FB_ALLOW_SHARING FB_ALLOW_CHANGING FB_DEFAULT_SHARES FB_PASSWORD
+export FB_ALLOW_CHANGING FB_DEFAULT_SHARES FB_DEFAULT_SHARE_PINS FB_PASSWORD
 
 log() {
   printf '[init] %s\n' "$*"
@@ -46,8 +46,8 @@ Usage: ./init.sh [options]
 Options:
   --add-shares HASH=PATH[;HASH=PATH]
               Create one or more default shares in addition to FB_DEFAULT_SHARES.
-  --add-test-data PATH
-              Copy tests/data into PATH below the configured filebrowser root.
+  --add-share-pins HASH=PIN[;HASH=PIN]
+              Protect configured shares in addition to FB_DEFAULT_SHARE_PINS.
   --serve     Start filebrowser after bootstrap.
   -h, --help  Show this help.
 EOF
@@ -65,30 +65,58 @@ append_shares() {
   fi
 }
 
-append_test_data_target() {
+append_share_pins() {
   value=$1
   if [ -z "$value" ]; then
     return
   fi
-  if [ -z "$test_data_targets" ]; then
-    test_data_targets=$value
+  if [ -z "$extra_default_share_pins" ]; then
+    extra_default_share_pins=$value
   else
-    test_data_targets="${test_data_targets} ${value}"
+    extra_default_share_pins="${extra_default_share_pins};${value}"
   fi
 }
 
-log_presign_mode() {
+default_share_pin() {
+  target_hash=$1
+  pin_entries=$2
+
+  printf '%s\n' "$pin_entries" | tr ';' '\n' | while IFS= read -r entry || [ -n "$entry" ]; do
+    [ -z "$entry" ] && continue
+    pin_hash=${entry%%=*}
+    pin=${entry#*=}
+    if [ -z "$pin_hash" ] || [ -z "$pin" ] || [ "$pin_hash" = "$entry" ]; then
+      warn "Skipping invalid FB_DEFAULT_SHARE_PINS entry"
+      continue
+    fi
+    if [ "$pin_hash" = "$target_hash" ]; then
+      printf '%s' "$pin"
+      return 0
+    fi
+  done
+}
+
+log_object_storage_mode() {
   if [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${AWS_SECRET_ACCESS_KEY:-}" ]; then
-    log "================================================================"
-    log "LOCAL SETUP: AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY are not configured."
-    log "Presigned URL requests will return for"
-    log "- authenticated resources: ${FB_ADDRESS:-127.0.0.1}:$FB_SERVER_PORT/api/raw/<path>"
-    log "- public shares:           ${FB_ADDRESS:-127.0.0.1}:$FB_SERVER_PORT/api/public/dl/<share-hash>/<path>"
-    log "Configure AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY for S3-compatible presigned URLs."
-    log "================================================================"
+    warn "Object-storage settings are incomplete; file access needs process S3 settings"
   else
-    log "S3-compatible presign credentials detected"
+    log "rclone VFS object-storage settings detected"
   fi
+}
+
+validate_object_storage_root() {
+  case "$FB_ROOT" in
+    /)
+      if [ "$FB_CREATE_USER_DIR" = "true" ]; then
+        warn "FB_CREATE_USER_DIR=true requires FB_ROOT to name one S3 bucket; FB_ROOT=/ exposes the S3 service root"
+        return 1
+      fi
+      ;;
+    ""|.|..|*/*)
+      warn "FB_ROOT must be / or one S3 bucket name without /"
+      return 1
+      ;;
+  esac
 }
 
 print_filebrowser_banner() {
@@ -149,41 +177,8 @@ ensure_user() {
   return "$command_status"
 }
 
-copy_test_data() {
-  target=$1
-  source=$script_dir/tests/data
-  root=$FB_ROOT
-
-  if [ ! -d "$source" ]; then
-    warn "Test data source not found: $source"
-    return 1
-  fi
-
-  old_ifs=$IFS
-  IFS=/
-  for part in $target; do
-    if [ "$part" = ".." ]; then
-      IFS=$old_ifs
-      warn "Skipping test data target outside root: $target"
-      return 1
-    fi
-  done
-  IFS=$old_ifs
-
-  target=${target#/}
-  if [ -z "$target" ]; then
-    destination=$root
-  else
-    destination=${root%/}/$target
-  fi
-
-  log "Copying test data into $destination"
-  mkdir -p "$destination"
-  cp -R -n "$source"/. "$destination"/
-}
-
 extra_default_shares=
-test_data_targets=
+extra_default_share_pins=
 serve_after_bootstrap=false
 
 while [ "$#" -gt 0 ]; do
@@ -204,17 +199,17 @@ while [ "$#" -gt 0 ]; do
     --add-shares=*)
       append_shares "${1#--add-shares=}"
       ;;
-    --add-test-data)
+    --add-share-pins)
       shift
       if [ "$#" -eq 0 ]; then
-        warn "Missing value for --add-test-data"
+        warn "Missing value for --add-share-pins"
         usage >&2
         exit 2
       fi
-      append_test_data_target "$1"
+      append_share_pins "$1"
       ;;
-    --add-test-data=*)
-      append_test_data_target "${1#--add-test-data=}"
+    --add-share-pins=*)
+      append_share_pins "${1#--add-share-pins=}"
       ;;
     --serve)
       serve_after_bootstrap=true
@@ -228,8 +223,12 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-if ! mkdir -p "$FB_ROOT" "$(dirname -- "$FB_DATABASE")"; then
-  warn "Failed to prepare FB_ROOT or FB_DATABASE directory; cannot continue"
+if ! validate_object_storage_root; then
+  exit 1
+fi
+
+if ! mkdir -p "$(dirname -- "$FB_DATABASE")"; then
+  warn "Failed to prepare the FB_DATABASE directory; cannot continue"
   exit 1
 fi
 
@@ -240,28 +239,14 @@ if ! check_filebrowser_binary; then
 fi
 
 log "Using $FB_DATABASE for state"
-log "Using $FB_ROOT as filebrowser root"
+log "Using $FB_ROOT as the S3 root"
 
-envs=\
-"AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-},"\
-"AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-},"\
-"AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL:-},"\
-"AWS_REGION=${AWS_REGION:-},"\
-"BUCKET_NAME=${BUCKET_NAME:-},"\
-"BUCKET_PREFIX=${BUCKET_PREFIX:-}"
-
-log_presign_mode
+log_object_storage_mode
 
 if "$FB_FILEBROWSER_BIN" config init > /dev/null 2>&1; then
   log "Initialized filebrowser database"
 else
   log "Filebrowser database already exists; continuing with configuration update"
-fi
-
-ALLOW_SHARING=false
-if [ "$FB_ALLOW_SHARING" = "true" ]; then
-  ALLOW_SHARING=true
-  log "Sharing allowed"
 fi
 
 ALLOW_CHANGING=false
@@ -293,9 +278,8 @@ set -- config set \
   --perm.execute=false \
   --perm.modify=$ALLOW_CHANGING \
   --perm.rename=$ALLOW_CHANGING \
-  --perm.share=$ALLOW_SHARING \
+  --perm.share=false \
   --lockPassword=true \
-  --envs="$envs" \
   --commands ""
 
 if filebrowser_config_set_supports "--auth.jwt.jwks-url"; then
@@ -334,14 +318,9 @@ ensure_user admin \
   --perm.rename=true \
   --perm.modify=true \
   --perm.delete=true \
-  --perm.share=true \
+  --perm.share=false \
   --perm.download=true \
-  --lockPassword \
-  --envs="$envs" || exit 1
-
-for target in $test_data_targets; do
-  copy_test_data "$target" || true
-done
+  --lockPassword || exit 1
 
 default_share_owner=admin
 
@@ -351,6 +330,15 @@ if [ -n "$extra_default_shares" ]; then
     default_shares="${default_shares};${extra_default_shares}"
   else
     default_shares=$extra_default_shares
+  fi
+fi
+
+default_share_pins=$FB_DEFAULT_SHARE_PINS
+if [ -n "$extra_default_share_pins" ]; then
+  if [ -n "$default_share_pins" ]; then
+    default_share_pins="${default_share_pins};${extra_default_share_pins}"
+  else
+    default_share_pins=$extra_default_share_pins
   fi
 fi
 
@@ -370,7 +358,8 @@ if [ -n "$default_shares" ]; then
     fi
 
     log "Ensuring default share exists: hash=$hash path=$path owner=$default_share_owner"
-    if "$FB_FILEBROWSER_BIN" shares add "$default_share_owner" "$hash" "$path" > /dev/null; then
+    pin=$(default_share_pin "$hash" "$default_share_pins")
+    if FB_SHARE_PIN=$pin "$FB_FILEBROWSER_BIN" shares add "$default_share_owner" "$hash" "$path" > /dev/null; then
       log "Default share ready: $hash -> $path"
     else
       warn "Failed to create default share: $hash -> $path"

@@ -1,6 +1,27 @@
 package fileutils
 
-import "testing"
+import (
+	"errors"
+	"os"
+	"testing"
+
+	"github.com/spf13/afero"
+)
+
+var errCloseDestination = errors.New("close destination")
+
+func TestCopyFileReturnsDestinationCloseError(t *testing.T) {
+	base := afero.NewMemMapFs()
+	if err := afero.WriteFile(base, "/source.txt", []byte("data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fsys := &closeErrorFS{Fs: base, destination: "/destination.txt"}
+
+	err := CopyFile(fsys, "/source.txt", "/destination.txt")
+	if !errors.Is(err, errCloseDestination) {
+		t.Fatalf("expected destination close error, got %v", err)
+	}
+}
 
 func TestCommonPrefix(t *testing.T) {
 	testCases := map[string]struct {
@@ -43,4 +64,26 @@ func TestCommonPrefix(t *testing.T) {
 			}
 		})
 	}
+}
+
+type closeErrorFS struct {
+	afero.Fs
+	destination string
+}
+
+func (f *closeErrorFS) OpenFile(name string, flag int, perm os.FileMode) (afero.File, error) {
+	file, err := f.Fs.OpenFile(name, flag, perm)
+	if err != nil || name != f.destination {
+		return file, err
+	}
+	return &closeErrorFile{File: file}, nil
+}
+
+type closeErrorFile struct {
+	afero.File
+}
+
+func (f *closeErrorFile) Close() error {
+	_ = f.File.Close()
+	return errCloseDestination
 }

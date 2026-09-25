@@ -17,14 +17,14 @@ test("login and logout", async ({ authPage, page, context }) => {
 
   await authPage.loginAs();
   await expect(authPage.wrongCredentials).toBeHidden();
-  // await page.waitForURL("**/files/", { timeout: 5000 });
+  await expect(page).toHaveURL(/\/files\/$/);
   await expect(page).toHaveTitle(/.*Files - File Browser$/);
 
   let cookies = await context.cookies();
   expect(cookies.find((c) => c.name == "auth")?.value).toBeDefined();
 
   await authPage.logout();
-  // await page.waitForURL("**/login", { timeout: 5000 });
+  await expect(page).toHaveURL(/\/login$/);
   await expect(page).toHaveTitle(/Login - File Browser$/);
 
   cookies = await context.cookies();

@@ -21,7 +21,6 @@ type LinkOptions struct {
 	Path        string
 	UserID      uint
 	DefaultHash string
-	Root        string
 }
 
 func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
@@ -46,7 +45,7 @@ func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
 
 	catalogURL := ""
 	if body.CatalogName != "" {
-		catalogURL, err = CatalogPath(opts.Root, opts.Path, body.CatalogName)
+		catalogURL, err = CatalogPath(opts.Path, body.CatalogName)
 		if err != nil {
 			return nil, err
 		}
@@ -66,12 +65,15 @@ func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
 	}, nil
 }
 
-func CatalogPath(root, sharePath, catalogName string) (string, error) {
+func CatalogPath(sharePath, catalogName string) (string, error) {
 	if catalogName == "" {
 		return "", nil
 	}
 	if strings.HasPrefix(catalogName, "/") {
 		return "", fmt.Errorf("catalog name must be relative: %s", catalogName)
+	}
+	if strings.ContainsRune(catalogName, '\x00') {
+		return "", fmt.Errorf("catalog name contains a NUL byte")
 	}
 
 	cleanName := path.Clean(catalogName)
@@ -79,7 +81,7 @@ func CatalogPath(root, sharePath, catalogName string) (string, error) {
 		return "", fmt.Errorf("catalog name must stay within the shared tree: %s", catalogName)
 	}
 
-	return path.Join(root, sharePath, cleanName), nil
+	return path.Join("/", sharePath, cleanName), nil
 }
 
 func resolveHash(hash string, defaultHash string) (string, error) {

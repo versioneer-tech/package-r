@@ -31,44 +31,25 @@ build-backend-dev: ## Build backend with filesystem frontend assets for local/de
 # ------------------------------------------------------------------------------
 
 .PHONY: test
-test: | test-frontend test-backend test-usecases ## Run all tests
+test: test-unit test-integration test-frontend ## Run all tests
 
-.PHONY: test-frontend
-test-frontend: ## Run frontend tests
-	$Q cd frontend && pnpm install --frozen-lockfile && pnpm run typecheck
-
-.PHONY: test-frontend-e2e
-test-frontend-e2e: ## Run frontend Playwright tests
-	$Q $(MAKE) build-backend-dev
-	$Q cd frontend && PACKAGE_R_PLAYWRIGHT_BUILD=false pnpm exec playwright test --project=chromium
-
-.PHONY: test-backend
-test-backend: ## Run backend tests
+.PHONY: test-unit
+test-unit: ## Run Go unit tests
 	$Q $(go) test -v ./...
 
-.PHONY: test-usecases
-test-usecases: ## Run executable documentation use cases
-	$Q python3 scripts/test_usecases.py
+.PHONY: test-integration
+test-integration: ## Run API integration tests with local rclone S3
+	$Q tests/integration/run.bash
 
-.PHONY: test-production-build
-test-production-build: ## Build production binary and smoke-check embedded frontend
-	$Q bash scripts/production_smoke.sh
+.PHONY: test-frontend
+test-frontend: ## Run frontend Playwright tests
+	$Q $(MAKE) build-backend-dev
+	$Q cd frontend && pnpm install --frozen-lockfile && \
+		PACKAGE_R_PLAYWRIGHT_BUILD=false pnpm exec playwright test --project=chromium
 
-.PHONY: test-e2e-s3
-test-e2e-s3: ## Run local S3-compatible e2e checks
-	$Q scripts/e2e-s3.sh
-
-.PHONY: test-e2e-s3-k8s
-test-e2e-s3-k8s: ## Run Kubernetes/kind S3-compatible e2e checks
-	$Q scripts/e2e-s3-k8s.sh
-
-.PHONY: test-e2e-s3-k8s-keep
-test-e2e-s3-k8s-keep: ## Run Kubernetes/kind S3 e2e and keep it open for manual inspection
-	$Q PACKAGE_R_K8S_KEEP_CLUSTER=true \
-		PACKAGE_R_K8S_KEEP_FORWARD=true \
-		PACKAGE_R_FORWARD_PORT="$${PACKAGE_R_FORWARD_PORT:-8888}" \
-		S3_FORWARD_PORT="$${S3_FORWARD_PORT:-19000}" \
-		scripts/e2e-s3-k8s.sh
+.PHONY: docs
+docs: ## Build documentation with strict validation
+	$Q uv run mkdocs build --strict
 
 # ------------------------------------------------------------------------------
 # Lint Targets
@@ -79,7 +60,7 @@ lint: lint-frontend lint-backend ## Run all linters
 
 .PHONY: lint-frontend
 lint-frontend: ## Run frontend linters
-	$Q cd frontend && pnpm install --frozen-lockfile && pnpm run lint
+	$Q cd frontend && pnpm install --frozen-lockfile && pnpm run lint && pnpm run typecheck
 
 .PHONY: lint-backend
 lint-backend: | $(golangci-lint) ## Run backend linters

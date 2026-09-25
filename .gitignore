@@ -12,6 +12,8 @@ yarn-error.log*
 
 # Editor and IDE files
 .idea/
+.vscode/cache/
+.vscode/local-s3.log
 *.suo
 *.ntvs*
 *.njsproj
@@ -24,6 +26,8 @@ node_modules/
 
 # Python
 __pycache__/
+.venv/
+.uv-cache/
 
 # Databases and backups
 *.db

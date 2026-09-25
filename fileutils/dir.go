@@ -22,9 +22,16 @@ func CopyDir(fs afero.Fs, source, dest string) error {
 		return err
 	}
 
-	dir, _ := fs.Open(source)
+	dir, err := fs.Open(source)
+	if err != nil {
+		return err
+	}
 	obs, err := dir.Readdir(-1)
 	if err != nil {
+		_ = dir.Close()
+		return err
+	}
+	if err := dir.Close(); err != nil {
 		return err
 	}
 

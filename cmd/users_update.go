@@ -57,7 +57,9 @@ options you want to change.`,
 		user.Perm = defaults.Perm
 		user.Commands = defaults.Commands
 		user.Sorting = defaults.Sorting
-		user.LockPassword = mustGetBool(flags, "lockPassword")
+		if flags.Changed("lockPassword") {
+			user.LockPassword = mustGetBool(flags, "lockPassword")
+		}
 
 		if newUsername != "" {
 			user.Username = newUsername

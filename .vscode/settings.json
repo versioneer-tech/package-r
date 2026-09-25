@@ -7,5 +7,20 @@
   "go.testFlags": ["-v"],
   "go.toolsEnvVars": {
     "CGO_ENABLED": "1"
+  },
+  "remote.autoForwardPorts": true,
+  "remote.portsAttributes": {
+    "8888": {
+      "label": "packageR",
+      "onAutoForward": "openBrowser"
+    },
+    "19100": {
+      "label": "packageR local S3",
+      "onAutoForward": "ignore"
+    },
+    "19101": {
+      "label": "packageR local S3 control",
+      "onAutoForward": "ignore"
+    }
   }
 }

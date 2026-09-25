@@ -3,6 +3,7 @@ import { AuthPage } from "./fixtures/auth";
 
 const itemId = "67793f0b9478720001790586";
 const publicShare = "public-share";
+const backendBaseURL = "http://127.0.0.1:8888";
 const thumbnailPath = `openaerialmap-assets/${itemId}/thumbnail.png`;
 const publicShareThumbnailPath = `/share/${publicShare}/${thumbnailPath}`;
 const catalogPreviewBaseURL =
@@ -86,11 +87,50 @@ async function openPublicShareThumbnail(page: Page) {
   return infoBox;
 }
 
+async function expectAndNormalizePresignedURL(
+  link: Locator,
+  expectedObjectPath: string,
+  screenshotText: string
+) {
+  await expect(link).toHaveAttribute("href", /X-Amz-Signature=/);
+  const href = await link.getAttribute("href");
+  if (href === null) {
+    throw new Error("presigned link has no href");
+  }
+
+  const url = new URL(href);
+  expect(url.hostname).toBe("127.0.0.1");
+  expect(url.pathname).toBe(`/my-bucket/${expectedObjectPath}`);
+  expect(url.searchParams.get("X-Amz-Algorithm")).toBe("AWS4-HMAC-SHA256");
+  expect(url.searchParams.get("X-Amz-Signature")).toBeTruthy();
+
+  await link.evaluate((element, text) => {
+    element.textContent = text;
+    element.setAttribute("href", text);
+  }, screenshotText);
+}
+
 test.describe("packageR use-case UI", () => {
   test.skip(
     ({ browserName }) => browserName !== "chromium",
     "screenshots run on chromium"
   );
+
+  test("lists root development fixtures", async ({ page }) => {
+    await loginAsAdmin(page);
+
+    await page.goto("/files/");
+
+    for (const name of [
+      "public",
+      "sample.jpg",
+      "sample.json",
+      "sample.pdf",
+      "sample.txt",
+    ]) {
+      await expect(page.getByLabel(name)).toBeVisible();
+    }
+  });
 
   test("renders authenticated public data listing", async ({ page }) => {
     await prepareStableScreenshot(page);
@@ -135,16 +175,19 @@ test.describe("packageR use-case UI", () => {
     );
   });
 
-  test("shows public share presigned URL fallback", async ({ page }) => {
+  test("shows public share rclone presigned URL", async ({ page }) => {
     await prepareStableScreenshot(page);
 
     const infoBox = await openPublicShareThumbnail(page);
-    await infoBox
+    const presignedLink = infoBox
       .locator("p", { hasText: "Presigned URL:" })
-      .getByRole("link", { name: "Show" })
-      .click();
-    await expect(infoBox).toContainText(
-      `/api/public/dl/${publicShare}/${thumbnailPath}`
+      .getByRole("link");
+    await expect(presignedLink).toHaveText("Show");
+    await presignedLink.click();
+    await expectAndNormalizePresignedURL(
+      presignedLink,
+      `public/${thumbnailPath}`,
+      `${backendBaseURL}/api/public/dl/${publicShare}/${thumbnailPath}`
     );
     await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
@@ -172,7 +215,7 @@ test.describe("packageR use-case UI", () => {
     );
   });
 
-  test("shows authenticated file info with presigned URL fallback", async ({
+  test("shows authenticated file info with rclone presigned URL", async ({
     page,
   }) => {
     await prepareStableScreenshot(page);
@@ -191,12 +234,15 @@ test.describe("packageR use-case UI", () => {
       has: page.getByRole("heading", { name: "File information" }),
     });
     await expect(modal).toBeVisible();
-    await modal
+    const presignedLink = modal
       .locator("p", { hasText: "Presigned URL:" })
-      .getByRole("link", { name: "Show" })
-      .click();
-    await expect(modal).toContainText(
-      `/api/raw/public/openaerialmap-assets/${itemId}/thumbnail.png`
+      .getByRole("link");
+    await expect(presignedLink).toHaveText("Show");
+    await presignedLink.click();
+    await expectAndNormalizePresignedURL(
+      presignedLink,
+      `public/${thumbnailPath}`,
+      `${backendBaseURL}/api/raw/public/${thumbnailPath}`
     );
     await normalizeRelativeTimes(page);
     await expect(modal).toHaveScreenshot(

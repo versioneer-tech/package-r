@@ -15,10 +15,11 @@ func init() {
 }
 
 var sharesCmd = &cobra.Command{
-	Use:   "shares",
-	Short: "Shares management utility",
-	Long:  `Shares management utility.`,
-	Args:  cobra.NoArgs,
+	Use:    "shares",
+	Short:  "Bootstrap share utility",
+	Long:   `Bootstrap configured shares in the ephemeral runtime database.`,
+	Args:   cobra.NoArgs,
+	Hidden: true,
 }
 
 func printShares(links []*share.Link) {

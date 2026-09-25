@@ -1,0 +1,194 @@
+# Copyright 2026, Versioneer (https://versioneer.at)
+# SPDX-License-Identifier: Apache-2.0
+
+name: Publish packageR
+on:
+  push:
+    tags:
+      - 'vnext\.[0-9]+\.[0-9]+\.[0-9]+'
+      - 'vnext\.[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+'
+
+jobs:
+  verify_release_commit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v7
+
+      - name: Verify successful main-branch tests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_commit="$(git rev-parse HEAD)"
+          workflow_runs="$(
+            curl --fail --silent --show-error --location --get \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              --data-urlencode "branch=main" \
+              --data-urlencode "event=push" \
+              --data-urlencode "head_sha=${release_commit}" \
+              --data-urlencode "status=success" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/pr.yaml/runs"
+          )"
+
+          if ! jq -e --arg commit "${release_commit}" \
+            '.workflow_runs | any(.head_sha == $commit and .conclusion == "success")' \
+            <<<"${workflow_runs}" >/dev/null; then
+            printf 'Release commit %s has no successful main-branch Tests workflow run.\n' \
+              "${release_commit}" >&2
+            exit 1
+          fi
+
+  release:
+    # GoReleaser builds CGO binaries. Use the older runner ABI for wider
+    # compatibility with supported Linux systems.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    needs: verify_release_commit
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.x"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build release files
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          make build-frontend
+          short_commit="${GITHUB_SHA:0:7}"
+          CGO_ENABLED=1 go build \
+            -ldflags "-s -w -X github.com/versioneer-tech/package-r/version.Version=${RELEASE_VERSION} -X github.com/versioneer-tech/package-r/version.CommitSHA=${short_commit}" \
+            -o filebrowser
+          mkdir -p dist
+          tar -czf dist/linux-amd64-package-r.tar.gz filebrowser
+
+      - name: Publish container image
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="ghcr.io/versioneer-tech/package-r:${GITHUB_REF_NAME}"
+          docker buildx build \
+            --pull \
+            --platform linux/amd64 \
+            --label "org.opencontainers.image.created=$(date --utc +%Y-%m-%dT%H:%M:%SZ)" \
+            --label "org.opencontainers.image.name=package-r" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.version=${GITHUB_REF_NAME}" \
+            --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --tag "${image}-amd64" \
+            --push \
+            .
+          docker buildx imagetools create \
+            --tag "${image}" \
+            "${image}-amd64"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          options=(--verify-tag --title "${GITHUB_REF_NAME}" --generate-notes)
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            options+=(--prerelease)
+          else
+            options+=(--latest)
+          fi
+          gh release create \
+            "${GITHUB_REF_NAME}" \
+            dist/linux-amd64-package-r.tar.gz \
+            "${options[@]}"
+
+      - name: Publish latest image alias
+        if: ${{ !contains(github.ref_name, '-') }}
+        run: |
+          docker buildx imagetools create \
+            --tag ghcr.io/versioneer-tech/package-r:latest \
+            "ghcr.io/versioneer-tech/package-r:${GITHUB_REF_NAME}"
+
+  docs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    needs: release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: docs/requirements.txt
+
+      - name: Install documentation dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Build documentation
+        run: mkdocs build --strict
+
+      - name: Set up Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Publish versioned documentation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin gh-pages --depth=1 || true
+          tag="${GITHUB_REF_NAME}"
+          if [[ "${tag}" =~ ^vnext\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            mike deploy --branch gh-pages "${tag}" latest --update-alias --push
+            mike set-default --branch gh-pages latest --push
+          else
+            mike deploy --branch gh-pages "${tag}" --push
+          fi

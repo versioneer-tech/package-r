@@ -5,10 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/url"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/marcboeker/go-duckdb/v2"
+	"github.com/duckdb/duckdb-go/v2"
 )
 
 var (
@@ -20,13 +23,48 @@ var (
 func InitDuckDB() {
 	dbOnce.Do(func() {
 		log.Println("Initializing global DuckDB connection")
-		connector, err := duckdb.NewConnector("", nil)
+		cacheDir, err := os.UserCacheDir()
+		if err != nil {
+			dbErr = fmt.Errorf("resolve DuckDB extension cache: %w", err)
+			return
+		}
+		extensionDir := filepath.Join(cacheDir, "package-r", "duckdb-extensions")
+		if err := os.MkdirAll(extensionDir, 0o700); err != nil {
+			dbErr = fmt.Errorf("create DuckDB extension cache: %w", err)
+			return
+		}
+
+		connector, err := duckdb.NewConnector("?extension_directory="+url.QueryEscape(extensionDir), nil)
 		if err != nil {
 			dbErr = fmt.Errorf("duckdb connector error: %w", err)
 			return
 		}
-		db = sql.OpenDB(connector)
+		database := sql.OpenDB(connector)
+		if err := loadHTTPFS(database); err != nil {
+			_ = database.Close()
+			dbErr = err
+			return
+		}
+		db = database
 	})
+}
+
+func loadHTTPFS(database *sql.DB) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	if _, err := database.ExecContext(ctx, "LOAD httpfs"); err == nil {
+		return nil
+	}
+
+	log.Println("Installing DuckDB httpfs extension")
+	if _, err := database.ExecContext(ctx, "INSTALL httpfs"); err != nil {
+		return fmt.Errorf("install DuckDB httpfs extension: %w", err)
+	}
+	if _, err := database.ExecContext(ctx, "LOAD httpfs"); err != nil {
+		return fmt.Errorf("load DuckDB httpfs extension: %w", err)
+	}
+	return nil
 }
 
 func GetDuckDBConn(ctx context.Context) (*sql.Conn, error) {

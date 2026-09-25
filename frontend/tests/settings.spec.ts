@@ -1,7 +1,6 @@
 import { test, expect } from "./fixtures/settings";
 import { Toast } from "./fixtures/toast";
 
-// test.describe("profile settings", () => {
 test("settings button", async ({ page }) => {
   const button = page.getByLabel("Settings", { exact: true });
   await expect(button).toBeVisible();
@@ -17,11 +16,6 @@ test("set locale", async ({ settingsPage, page }) => {
 
   await settingsPage.goto("profile");
   await expect(page).toHaveTitle(/^Profile Settings/);
-  // await settingsPage.saveProfile();
-  // await toast.isSuccess();
-  // await expect(
-  //   page.getByText("Settings updated!", { exact: true })
-  // ).toBeVisible();
 
   await settingsPage.setLanguage("hu");
   await settingsPage.saveProfile();
@@ -43,4 +37,3 @@ test("set locale", async ({ settingsPage, page }) => {
     page.getByRole("heading", { name: "Profile Settings" })
   ).toBeVisible();
 });
-// });

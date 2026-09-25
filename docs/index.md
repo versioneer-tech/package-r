@@ -1,37 +1,47 @@
 # packageR
 
-`packageR` started as a fork of the excellent
-[File Browser](https://github.com/filebrowser/filebrowser) project. Most core
-File Browser concepts still apply: users, permissions, shares, a familiar file
-tree, and browser-based inspection of text and common media.
+packageR is a web interface for S3-compatible object storage. It lets users
+browse object data as a file tree and keeps the familiar File Browser workflow
+for files, permissions, and configured public shares.
 
-packageR is meant for data that lives in object storage and is made visible to
-packageR as a regular file tree. That filesystem view can come from different
-deployment choices, where an object-storage bucket is mounted into the runtime,
-often through FUSE or the platform's storage integration.
+packageR connects to object storage directly:
 
-On top of that filesystem view, packageR adds bucket-aware features: presigned
-URLs for direct access, streaming previews for supported formats, and catalogs
-for domain workflows. STAC is the main geospatial catalog workflow.
+```text
+Browser -> packageR API -> embedded rclone VFS -> S3-compatible storage
+                         -> presigned GET URL
+```
 
-Large uploads and downloads should usually go directly to the bucket with
-S3-compatible tools. packageR is mainly for browsing, inspection, curation,
-sharing, preview, and catalog access.
+Users can:
 
-Another conceptual difference is operational. packageR treats the File Browser
-database as ephemeral cache: only files in the mounted filesystem are
-persistent, while runtime state such as configured shares comes from startup
-configuration. This lets operators treat packageR as stateless, with no
-application database to back up; the persistent system is the mounted object
-store plus credentials for presigned URLs. A curated `init.sh` bootstrap provides
-recommended defaults and helper flags, while still letting deployments tweak
-settings through environment variables.
+- browse one bucket or all buckets that the service credentials can access;
+- upload, download, create, rename, copy, move, and delete objects;
+- inspect metadata and calculate checksums;
+- access public shares declared by the operator, with an optional PIN;
+- create direct, time-limited object URLs;
+- preview common files and Cloud Optimized GeoTIFFs (COGs); and
+- expose a STAC-compatible Parquet catalog as public STAC JSON.
 
-Use the [feature summary](features.md) for the packageR-specific
-behavior layered on top of File Browser.
+The current design uses one process-owned S3 credential source. It can use a
+standard S3 access-key pair or provider-supported workload identity, such as
+AWS IRSA. All sessions use that storage identity for file operations and
+presigned URLs.
 
-The [quickstart](generated/usecases/quickstart.md) starts a local sample. The
-walkthroughs also cover public sharing, presigned URLs, access boundaries, and
-STAC catalog access.
+The storage policy associated with the credentials defines maximum access.
+packageR can narrow access with identity scopes, path rules, and action
+permissions. With `FB_CREATE_USER_DIR=true`, a non-admin user can access their
+own directory below `/home` but cannot access a sibling home. The `/home`
+directory remains readable for navigation, but users cannot modify it or an
+ancestor. Content outside `/home` remains available when the user's scope and
+other rules allow it. `FB_ALLOW_CHANGING` controls whether the user can change
+allowed paths. Neither setting selects per-user credentials. The current proxy
+flow does not derive storage or permission profiles from login claims.
+
+## Choose a guide
+
+- **New users:** [Work with objects](how-to-guides/work-with-objects.md)
+- **Sharing data:** [Share and preview data](how-to-guides/share-and-preview-data.md)
+- **Operators:** [Run packageR](how-to-guides/run-package-r.md) and
+  [Configuration](how-to-guides/configuration.md)
+- **API clients:** [HTTP API](reference-guides/http-api.md)
 
 ![packageR public share directory](imgs/screenshots/public-share-directory.png)

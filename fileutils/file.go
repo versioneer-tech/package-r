@@ -52,13 +52,22 @@ func CopyFile(fs afero.Fs, source, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer dst.Close()
+	destinationOpen := true
+	defer func() {
+		if destinationOpen {
+			_ = dst.Close()
+		}
+	}()
 
 	// Copy the contents of the file.
 	_, err = io.Copy(dst, src)
 	if err != nil {
 		return err
 	}
+	if err := dst.Close(); err != nil {
+		return err
+	}
+	destinationOpen = false
 
 	// Copy the mode
 	info, err := fs.Stat(source)

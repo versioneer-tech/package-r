@@ -32,10 +32,7 @@ var usersAddCmd = &cobra.Command{
 
 		s.ApplyUserDefaults(user)
 
-		servSettings, err := d.store.Settings.GetServer()
-		checkErr(err)
-
-		userScope, err := s.MakeUserDir(user.Username, user.Scope, servSettings.Root)
+		userScope, err := s.ResolveUserScope(user.Username, user.Scope)
 		checkErr(err)
 		user.Scope = userScope
 

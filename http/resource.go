@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/spf13/afero"
 
 	fbErrors "github.com/versioneer-tech/package-r/errors"
@@ -54,7 +53,17 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 
 	presign, ok := r.URL.Query()["presign"]
 	if ok && !strings.EqualFold(presign[0], "false") {
-		url, err := presignOrLocalURL(file.Path, r.Method, d.user.Envs, localRawURL(r, file.Path))
+		if !d.user.Perm.Download {
+			return http.StatusForbidden, nil
+		}
+		url, err := presignOrLocalURL(
+			r,
+			d.store.Users,
+			d.user,
+			file.Path,
+			localRawURL(r, file.Path),
+			presignLifetime,
+		)
 		if errors.Is(err, fbErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {
@@ -75,7 +84,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 
 func resourceDeleteHandler(fileCache FileCache) handleFunc {
 	return withUser(func(_ http.ResponseWriter, r *http.Request, d *data) (int, error) {
-		if r.URL.Path == "/" || !d.user.Perm.Delete {
+		if r.URL.Path == "/" || !d.user.Perm.Delete || !d.CheckWrite(r.URL.Path) {
 			return http.StatusForbidden, nil
 		}
 
@@ -111,7 +120,7 @@ func resourceDeleteHandler(fileCache FileCache) handleFunc {
 
 func resourcePostHandler(fileCache FileCache) handleFunc {
 	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-		if !d.user.Perm.Create || !d.Check(r.URL.Path) {
+		if !d.user.Perm.Create || !d.CheckWrite(r.URL.Path) {
 			return http.StatusForbidden, nil
 		}
 
@@ -165,7 +174,7 @@ func resourcePostHandler(fileCache FileCache) handleFunc {
 }
 
 var resourcePutHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-	if !d.user.Perm.Modify || !d.Check(r.URL.Path) {
+	if !d.user.Perm.Modify || !d.CheckWrite(r.URL.Path) {
 		return http.StatusForbidden, nil
 	}
 
@@ -202,7 +211,7 @@ func resourcePatchHandler(fileCache FileCache) handleFunc {
 		dst := r.URL.Query().Get("destination")
 		action := r.URL.Query().Get("action")
 		dst, err := url.QueryUnescape(dst)
-		if !d.Check(src) || !d.Check(dst) {
+		if !d.CheckWrite(src) || !d.CheckWrite(dst) {
 			return http.StatusForbidden, nil
 		}
 		if err != nil {
@@ -284,16 +293,19 @@ func writeFile(fs afero.Fs, dst string, in io.Reader) (os.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
 	_, err = io.Copy(file, in)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, file.Close())
 	}
 
 	// Gets the info about the file.
 	info, err := file.Stat()
 	if err != nil {
+		return nil, errors.Join(err, file.Close())
+	}
+
+	if err := file.Close(); err != nil {
 		return nil, err
 	}
 
@@ -350,38 +362,6 @@ func patchAction(ctx context.Context, action, src, dst string, d *data, fileCach
 	}
 }
 
-type DiskUsageResponse struct {
-	Total uint64 `json:"total"`
-	Used  uint64 `json:"used"`
-}
-
-var diskUsage = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-	file, err := files.NewFileInfo(&files.FileOptions{
-		Fs:         d.user.Fs,
-		Path:       r.URL.Path,
-		Modify:     d.user.Perm.Modify,
-		Expand:     false,
-		ReadHeader: false,
-		Checker:    d,
-		Content:    false,
-	})
-	if err != nil {
-		return errToStatus(err), err
-	}
-	fPath := file.RealPath()
-	if !file.IsDir {
-		return renderJSON(w, r, &DiskUsageResponse{
-			Total: 0,
-			Used:  0,
-		})
-	}
-
-	usage, err := disk.UsageWithContext(r.Context(), fPath)
-	if err != nil {
-		return errToStatus(err), err
-	}
-	return renderJSON(w, r, &DiskUsageResponse{
-		Total: usage.Total,
-		Used:  usage.Used,
-	})
+var diskUsage = withUser(func(_ http.ResponseWriter, _ *http.Request, _ *data) (int, error) {
+	return http.StatusNotImplemented, nil
 })

@@ -1,12 +1,15 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/asdine/storm/v3"
 
@@ -17,10 +20,7 @@ import (
 	"github.com/versioneer-tech/package-r/users"
 )
 
-func TestResourcePresignFallsBackToLocalRawURLWithoutS3Credentials(t *testing.T) {
-	t.Setenv("AWS_ACCESS_KEY_ID", "")
-	t.Setenv("AWS_SECRET_ACCESS_KEY", "")
-
+func TestResourcePresignFallsBackToLocalRawURLWithoutRcloneStorage(t *testing.T) {
 	root, store, user := newPresignTestStorage(t)
 	writePresignTestFile(t, root, "files/data.txt")
 
@@ -46,10 +46,7 @@ func TestResourcePresignFallsBackToLocalRawURLWithoutS3Credentials(t *testing.T)
 	}
 }
 
-func TestPublicSharePresignRedirectsToLocalDownloadURLWithoutS3Credentials(t *testing.T) {
-	t.Setenv("AWS_ACCESS_KEY_ID", "")
-	t.Setenv("AWS_SECRET_ACCESS_KEY", "")
-
+func TestPublicSharePresignRedirectsToLocalDownloadURLWithoutRcloneStorage(t *testing.T) {
 	root, store, _ := newPresignTestStorage(t)
 	writePresignTestFile(t, root, "files/data.txt")
 	if err := store.Share.Save(&share.Link{Hash: "public-share", Path: "/files", UserID: 1}); err != nil {
@@ -67,6 +64,121 @@ func TestPublicSharePresignRedirectsToLocalDownloadURLWithoutS3Credentials(t *te
 	}
 	if location := recorder.Header().Get("Location"); location != "http://localhost:8888/api/public/dl/public-share/data.txt" {
 		t.Fatalf("expected local public download fallback URL, got %q", location)
+	}
+}
+
+func TestPublicSharePresignRejectsHead(t *testing.T) {
+	root, store, _ := newPresignTestStorage(t)
+	writePresignTestFile(t, root, "files/data.txt")
+	if err := store.Share.Save(&share.Link{Hash: "public-share", Path: "/files", UserID: 1}); err != nil {
+		t.Fatal(err)
+	}
+
+	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{Root: root})
+	req := httptest.NewRequest(http.MethodHead, "http://localhost:8888/api/public/share/public-share/data.txt?presign=true", http.NoBody)
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", recorder.Code)
+	}
+}
+
+func TestPublicSharePresignDoesNotOutliveShare(t *testing.T) {
+	root, store, _ := newPresignTestStorage(t)
+	writePresignTestFile(t, root, "files/data.txt")
+	linker := &recordingPublicLinkStore{
+		Store: store.Users,
+		url:   "https://objects.example.invalid/data.txt?signature=xyz",
+	}
+	store.Users = linker
+	expire := time.Now().Add(5 * time.Minute).Unix()
+	if err := store.Share.Save(&share.Link{
+		Hash:   "public-share",
+		Path:   "/files",
+		UserID: 1,
+		Expire: expire,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{Root: root})
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/share/public-share/data.txt?presign=true", http.NoBody)
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+	if linker.expire <= 4*time.Minute || linker.expire > 5*time.Minute {
+		t.Fatalf("expected public link expiry to match the remaining share lifetime, got %v", linker.expire)
+	}
+}
+
+func TestResourcePresignUsesRclonePublicLinker(t *testing.T) {
+	root, store, user := newPresignTestStorage(t)
+	user.Scope = "/team/alice"
+	if err := store.Users.Update(user, "Scope"); err != nil {
+		t.Fatal(err)
+	}
+	linker := &recordingPublicLinkStore{
+		Store: store.Users,
+		url:   "https://objects.example.invalid/bucket/prefix/team/alice/files/data.txt?signature=xyz",
+	}
+	store.Users = linker
+	writePresignTestFile(t, root, "team/alice/files/data.txt")
+
+	token := newTestAuthToken(t, store, user)
+	handler := handle(resourceGetHandler, "/api/resources", store, &settings.Server{Root: root})
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/resources/files/data.txt?presign=true", http.NoBody)
+	req.Header.Set("X-Auth", token)
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+
+	result := recorder.Result()
+	defer result.Body.Close()
+	var file struct {
+		PresignedURL string `json:"presignedURL"`
+	}
+	if err := json.NewDecoder(result.Body).Decode(&file); err != nil {
+		t.Fatal(err)
+	}
+	presigned, err := url.Parse(file.PresignedURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if presigned.Path != "/bucket/prefix/team/alice/files/data.txt" {
+		t.Fatalf("unexpected presigned object path %q", presigned.Path)
+	}
+	if linker.userScope != "/team/alice" || linker.name != "/files/data.txt" {
+		t.Fatalf("unexpected public link input: scope=%q name=%q", linker.userScope, linker.name)
+	}
+	if linker.expire != presignLifetime {
+		t.Fatalf("unexpected public link expiry %v", linker.expire)
+	}
+}
+
+func TestResourcePresignRequiresDownloadPermission(t *testing.T) {
+	root, store, user := newPresignTestStorage(t)
+	writePresignTestFile(t, root, "files/data.txt")
+	user.Perm.Download = false
+	if err := store.Users.Update(user, "Perm"); err != nil {
+		t.Fatal(err)
+	}
+
+	token := newTestAuthToken(t, store, user)
+	handler := handle(resourceGetHandler, "/api/resources", store, &settings.Server{Root: root})
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/resources/files/data.txt?presign=true", http.NoBody)
+	req.Header.Set("X-Auth", token)
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("expected status 403, got %d", recorder.Code)
 	}
 }
 
@@ -93,16 +205,11 @@ func newPresignTestStorage(t *testing.T) (string, *storage.Storage, *users.User)
 		t.Fatal(err)
 	}
 
-	envs := map[string]string{
-		"AWS_ACCESS_KEY_ID":     "",
-		"AWS_SECRET_ACCESS_KEY": "",
-	}
 	user := &users.User{
 		Username: "admin",
 		Password: "password",
 		Scope:    "/",
 		Perm:     users.Permissions{Download: true},
-		Envs:     &envs,
 	}
 	if err := store.Users.Save(user); err != nil {
 		t.Fatal(err)
@@ -113,6 +220,21 @@ func newPresignTestStorage(t *testing.T) (string, *storage.Storage, *users.User)
 	}
 
 	return root, store, user
+}
+
+type recordingPublicLinkStore struct {
+	users.Store
+	url       string
+	userScope string
+	name      string
+	expire    time.Duration
+}
+
+func (s *recordingPublicLinkStore) PublicLink(_ context.Context, user *users.User, name string, expire time.Duration) (string, error) {
+	s.userScope = user.Scope
+	s.name = name
+	s.expire = expire
+	return s.url, nil
 }
 
 func newTestAuthToken(t *testing.T, store *storage.Storage, user *users.User) string {

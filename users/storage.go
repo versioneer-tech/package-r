@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -24,6 +25,11 @@ type Store interface {
 	Save(user *User) error
 	Delete(id interface{}) error
 	LastUpdate(id uint) int64
+}
+
+// PublicLinker creates read URLs for files in a user's storage scope.
+type PublicLinker interface {
+	PublicLink(ctx context.Context, user *User, name string, expire time.Duration) (string, error)
 }
 
 // Storage is a users storage.

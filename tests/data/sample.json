@@ -1,0 +1,10 @@
+{
+  "name": "packageR test fixture",
+  "purpose": "Exercise JSON browsing and previews",
+  "items": [
+    "image",
+    "json",
+    "pdf",
+    "text"
+  ]
+}

@@ -162,9 +162,9 @@ var signupHandler = func(_ http.ResponseWriter, r *http.Request, d *data) (int, 
 
 	user.Password = pwd
 
-	userScope, err := d.settings.MakeUserDir(user.Username, user.Scope, d.server.Root)
+	userScope, err := d.settings.ResolveUserScope(user.Username, user.Scope)
 	if err != nil {
-		log.Printf("create user: failed to create user directory: %v", err)
+		log.Printf("create user: failed to resolve user scope: %v", err)
 		return http.StatusInternalServerError, err
 	}
 	user.Scope = userScope

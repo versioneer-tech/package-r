@@ -2,16 +2,10 @@ package settings
 
 import (
 	"errors"
-	"fmt"
 	"log"
-	"os"
 	"path"
 	"regexp"
 	"strings"
-
-	"github.com/spf13/afero"
-
-	"github.com/versioneer-tech/package-r/version"
 )
 
 var (
@@ -20,43 +14,27 @@ var (
 	dashes = regexp.MustCompile(`[\-]+`)
 )
 
-// MakeUserDir makes the user's configured scope directory or generated home
-// directory according to settings, then returns the scope to store for the user.
-func (s *Settings) MakeUserDir(username, userScope, serverRoot string) (string, error) {
+// ResolveUserScope returns the object-storage scope to store for a user.
+// Object directories are created through the user's rclone VFS when data is
+// written. This function must not create paths below the local server root.
+func (s *Settings) ResolveUserScope(username, userScope string) (string, error) {
 	userScope = strings.TrimSpace(userScope)
-	userDir := userScope
-	generatedUserDir := false
 	if s.CreateUserDir && isGeneratedUserDirScope(userScope) {
 		username = CleanUsername(username)
 		if username == "" || username == "-" || username == "." {
-			log.Printf("create user: invalid user for home dir creation: [%s]", username)
-			return "", errors.New("invalid user for home dir creation")
+			log.Printf("create user: invalid user for home scope: [%s]", username)
+			return "", errors.New("invalid user for home scope")
 		}
-		userDir = path.Join(s.userHomeBasePath(), username)
 		// "." preserves the legacy File Browser home-only mode. packageR's
 		// explicit full-bucket default is "/" and keeps the stored scope at root.
 		if userScope == "." {
-			userScope = userDir
+			userScope = path.Join(s.userHomeBasePath(), username)
 		} else {
 			userScope = "/"
 		}
-		generatedUserDir = true
 	}
 
-	userDir = path.Join("/", userDir)
-	userScope = path.Join("/", userScope)
-
-	fs := afero.NewBasePathFs(afero.NewOsFs(), serverRoot)
-	if err := fs.MkdirAll(userDir, os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to create user home dir: [%s]: %w", userDir, err)
-	}
-	if generatedUserDir {
-		content := fmt.Sprintf("created by package-r %s automatically - please keep!", version.Version)
-		if err := afero.WriteFile(fs, path.Join(userDir, ".keep"), []byte(content), 0644); err != nil {
-			return "", fmt.Errorf("failed to create user home dir marker: [%s]: %w", userDir, err)
-		}
-	}
-	return userScope, nil
+	return path.Join("/", userScope), nil
 }
 
 func isGeneratedUserDirScope(userScope string) bool {

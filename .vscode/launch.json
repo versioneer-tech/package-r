@@ -2,16 +2,31 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "run",
+      "name": "run packageR",
       "type": "go",
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/main.go",
-      "args": ["-p 8888"],
-      "preLaunchTask": "init",
+      "cwd": "${workspaceFolder}",
+      "buildFlags": "-tags=dev",
+      "args": ["-a", "127.0.0.1", "-p", "8888"],
+      "preLaunchTask": "prepare local development",
+      "postDebugTask": "stop local S3",
+      "serverReadyAction": {
+        "pattern": "Listening on .*:(\\d+)",
+        "uriFormat": "http://localhost:%s",
+        "action": "openExternally"
+      },
       "env": {
         "CGO_ENABLED": "1",
-        "FB_DATABASE": "/db/bolt.db"
+        "FB_DATABASE": "${workspaceFolder}/.vscode/package-r.db",
+        "FB_ROOT": "data",
+        "AWS_ACCESS_KEY_ID": "my-access-key",
+        "AWS_SECRET_ACCESS_KEY": "my-secret-key",
+        "AWS_ENDPOINT_URL": "http://127.0.0.1:19100",
+        "AWS_REGION": "us-east-1",
+        "RCLONE_CONFIG": "/dev/null",
+        "XDG_CACHE_HOME": "${workspaceFolder}/.vscode/cache"
       }
     }
   ]
