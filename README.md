@@ -2,6 +2,14 @@
 
 # packageR
 
+> [!WARNING]
+> **Deprecated: v2**
+>
+> The v2 release line depends on an external S3 mount and is
+> deprecated. Use the [vNext branch](https://github.com/versioneer-tech/package-r/tree/vnext)
+> for new deployments. vNext integrates rclone VFS directly and does not need
+> an external S3 mount.
+
 `packageR` is a File Browser-derived application designed for data that lives in object
 storage but is made visible to packageR as a regular file tree (e.g. via FUSE).
 
