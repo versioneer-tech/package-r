@@ -14,7 +14,7 @@ const enableExec: boolean = window.PackageR.EnableExec;
 const tusSettings = window.PackageR.TusSettings;
 const origin = window.location.origin;
 const tusEndpoint = `/api/tus`;
-const catalogPreviewURL = window.PackageR.CatalogPreviewURL;
+const stacBrowserURL = window.PackageR.STACBrowserURL;
 
 export {
   name,
@@ -32,5 +32,5 @@ export {
   tusSettings,
   origin,
   tusEndpoint,
-  catalogPreviewURL,
+  stacBrowserURL,
 };

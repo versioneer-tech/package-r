@@ -11,7 +11,7 @@ readonly ACCESS_KEY_ID=my-access-key
 readonly SECRET_ACCESS_KEY=my-secret-key
 readonly BUCKET=my-bucket
 readonly SHARE_NAME=my-share
-readonly SHARE_PASSWORD=1234
+readonly SHARE_PASSWORD=my-password
 readonly SHARED_PREFIX=catalog-sample
 readonly ITEM_ID=67793f0b9478720001790586
 readonly CURL_CONNECT_TIMEOUT_SECONDS=2
@@ -68,8 +68,9 @@ cleanup() {
 
   if ((status != 0)) && [[ -n "${tmp_dir}" ]]; then
     show_log "packageR log" "${tmp_dir}/package-r.log"
+    show_log "packageR user-directory log" "${tmp_dir}/home-mode.log"
     show_log "rclone log" "${tmp_dir}/rclone.log"
-    show_log "bootstrap log" "${tmp_dir}/init.log"
+    show_log "database preparation log" "${tmp_dir}/init.log"
   fi
 
   if [[ -n "${tmp_dir}" && "${PACKAGE_R_KEEP_TEST_DATA:-false}" == "true" ]]; then
@@ -212,25 +213,50 @@ common_env=(
   "HOME=${tmp_dir}/home"
   "PATH=${PATH}"
   "RCLONE_CONFIG=/dev/null"
-  "SERVE_PACKAGE_R_BIN=${tmp_dir}/package-r"
   "PACKAGE_R_DATABASE=${tmp_dir}/package-r.db"
   "PACKAGE_R_ROOT=/"
   "PACKAGE_R_PORT=${package_r_port}"
-  "PACKAGE_R_AUTH_METHOD=proxy"
-  "PACKAGE_R_AUTH_HEADER=X-Username"
-  "SERVE_PACKAGE_R_ALLOW_CHANGING=true"
-  "SERVE_PACKAGE_R_DEFAULT_SHARES=${SHARE_NAME}=/${BUCKET}/${SHARED_PREFIX}"
-  "SERVE_PACKAGE_R_DEFAULT_SHARE_PASSWORDS=${SHARE_NAME}=${SHARE_PASSWORD}"
-  "SERVE_PACKAGE_R_PASSWORD=my-password"
   "AWS_ACCESS_KEY_ID=${ACCESS_KEY_ID}"
   "AWS_SECRET_ACCESS_KEY=${SECRET_ACCESS_KEY}"
   "AWS_ENDPOINT_URL=${rclone_url}"
   "AWS_REGION=us-east-1"
 )
 
+log "Preparing the packageR database"
+: >"${tmp_dir}/init.log"
+env -i "${common_env[@]}" "${tmp_dir}/package-r" config init \
+  --address=127.0.0.1 \
+  --port="${package_r_port}" \
+  --root=/ \
+  --auth.method=proxy \
+  --auth.header=X-Username \
+  --auth.mapper= \
+  --signup=true \
+  --create-user-dir=false \
+  --scope=/ \
+  --perm.create=true \
+  --perm.delete=true \
+  --perm.download=true \
+  --perm.modify=true \
+  --perm.rename=true \
+  >>"${tmp_dir}/init.log" 2>&1
+env -i "${common_env[@]}" "${tmp_dir}/package-r" users add admin my-password \
+  --scope=/ \
+  --perm.create=true \
+  --perm.delete=true \
+  --perm.download=true \
+  --perm.modify=true \
+  --perm.rename=true \
+  >>"${tmp_dir}/init.log" 2>&1
+env -i "${common_env[@]}" "${tmp_dir}/package-r" shares add \
+  admin "${SHARE_NAME}" "/${BUCKET}/${SHARED_PREFIX}" \
+  --password="${SHARE_PASSWORD}" \
+  --catalog-name=catalog.parquet \
+  >>"${tmp_dir}/init.log" 2>&1
+
 log "Starting packageR on ${package_r_url}"
 env -i "${common_env[@]}" \
-  "${REPO_ROOT}/scripts/serve.sh" \
+  "${tmp_dir}/package-r" \
   >"${tmp_dir}/package-r.log" 2>&1 &
 package_r_pid=$!
 wait_for_http "${package_r_url}/health" "packageR" "${tmp_dir}/package-r.log" "${package_r_pid}" 200
@@ -253,7 +279,7 @@ for api_path in users settings shares; do
 done
 signup_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
   -H 'Content-Type: application/json' \
-  --data '{"username":"xyz","password":"xyz"}' \
+  --data '{"username":"xyz","password":"my-password"}' \
   "${package_r_url}/api/signup")"
 if [[ "${signup_status}" != "404" ]]; then
   printf 'Expected /api/signup to return 404, got %s\n' "${signup_status}" >&2
@@ -396,5 +422,106 @@ else:
 ' "${tmp_dir}/catalog.json")"
 fetch_and_compare "${catalog_asset_url}" "${thumbnail}" "${tmp_dir}/catalog-thumbnail.png" \
   -H "${share_password_header}"
+
+log "Checking generated user home write isolation"
+stop_process "${package_r_pid}"
+package_r_pid=""
+
+home_port="$(free_port)"
+while [[ "${home_port}" == "${rclone_port}" ]]; do
+  home_port="$(free_port)"
+done
+home_url="http://127.0.0.1:${home_port}"
+home_env=(
+  "HOME=${tmp_dir}/home"
+  "PATH=${PATH}"
+  "RCLONE_CONFIG=/dev/null"
+  "PACKAGE_R_DATABASE=${tmp_dir}/home-mode.db"
+  "PACKAGE_R_ROOT=${BUCKET}"
+  "PACKAGE_R_PORT=${home_port}"
+  "AWS_ACCESS_KEY_ID=${ACCESS_KEY_ID}"
+  "AWS_SECRET_ACCESS_KEY=${SECRET_ACCESS_KEY}"
+  "AWS_ENDPOINT_URL=${rclone_url}"
+  "AWS_REGION=us-east-1"
+)
+
+env -i "${home_env[@]}" "${tmp_dir}/package-r" config init \
+  --address=127.0.0.1 \
+  --port="${home_port}" \
+  --root="${BUCKET}" \
+  --auth.method=proxy \
+  --auth.header=X-Username \
+  --auth.mapper= \
+  --signup=true \
+  --create-user-dir=true \
+  --scope=/ \
+  --perm.create=true \
+  --perm.delete=true \
+  --perm.download=true \
+  --perm.modify=true \
+  --perm.rename=true \
+  >>"${tmp_dir}/init.log" 2>&1
+env -i "${home_env[@]}" "${tmp_dir}/package-r" users add admin my-password \
+  --scope=/ \
+  --perm.create=true \
+  --perm.delete=true \
+  --perm.download=true \
+  --perm.modify=true \
+  --perm.rename=true \
+  >>"${tmp_dir}/init.log" 2>&1
+
+env -i "${home_env[@]}" \
+  "${tmp_dir}/package-r" \
+  >"${tmp_dir}/home-mode.log" 2>&1 &
+package_r_pid=$!
+wait_for_http "${home_url}/health" "packageR user-directory mode" \
+  "${tmp_dir}/home-mode.log" "${package_r_pid}" 200
+
+alice_token="$(curl_test -fsS -H 'X-Username: alice' "${home_url}/api/login")"
+bob_token="$(curl_test -fsS -H 'X-Username: bob' "${home_url}/api/login")"
+alice_auth_header="X-Auth: ${alice_token}"
+bob_auth_header="X-Auth: ${bob_token}"
+
+printf 'written by alice\n' >"${tmp_dir}/alice-home.txt"
+printf 'written by bob\n' >"${tmp_dir}/bob-home.txt"
+
+curl_test -fsS -X POST -H "${alice_auth_header}" \
+  --data-binary "@${tmp_dir}/alice-home.txt" \
+  "${home_url}/api/resources/home/alice/alice.txt" >/dev/null
+curl_test -fsS -X POST -H "${bob_auth_header}" \
+  --data-binary "@${tmp_dir}/bob-home.txt" \
+  "${home_url}/api/resources/home/bob/bob.txt" >/dev/null
+
+fetch_and_compare \
+  "${home_url}/api/raw/home/alice/alice.txt" \
+  "${tmp_dir}/alice-home.txt" \
+  "${tmp_dir}/alice-home-read.txt" \
+  -H "${alice_auth_header}"
+fetch_and_compare \
+  "${home_url}/api/raw/home/bob/bob.txt" \
+  "${tmp_dir}/bob-home.txt" \
+  "${tmp_dir}/bob-home-read.txt" \
+  -H "${bob_auth_header}"
+
+alice_to_bob_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "${alice_auth_header}" --data-binary "@${tmp_dir}/alice-home.txt" \
+  "${home_url}/api/resources/home/bob/from-alice.txt")"
+bob_to_alice_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "${bob_auth_header}" --data-binary "@${tmp_dir}/bob-home.txt" \
+  "${home_url}/api/resources/home/alice/from-bob.txt")"
+[[ "${alice_to_bob_status}" == "403" ]]
+[[ "${bob_to_alice_status}" == "403" ]]
+
+alice_reads_bob_status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
+  -H "${alice_auth_header}" "${home_url}/api/raw/home/bob/bob.txt")"
+bob_reads_alice_status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
+  -H "${bob_auth_header}" "${home_url}/api/raw/home/alice/alice.txt")"
+[[ "${alice_reads_bob_status}" == "403" ]]
+[[ "${bob_reads_alice_status}" == "403" ]]
+
+cmp "${tmp_dir}/alice-home.txt" "${tmp_dir}/rclone/${BUCKET}/home/alice/alice.txt"
+cmp "${tmp_dir}/bob-home.txt" "${tmp_dir}/rclone/${BUCKET}/home/bob/bob.txt"
+[[ ! -e "${tmp_dir}/rclone/${BUCKET}/home/bob/from-alice.txt" ]]
+[[ ! -e "${tmp_dir}/rclone/${BUCKET}/home/alice/from-bob.txt" ]]
 
 log "Integration tests passed"

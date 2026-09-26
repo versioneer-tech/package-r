@@ -30,9 +30,6 @@ func (s *Storage) Get() (*Settings, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := ApplyCatalogEnvironment(&set.Catalog); err != nil {
-		return nil, err
-	}
 	if set.UserHomeBasePath == "" {
 		set.UserHomeBasePath = DefaultUsersHomeBasePath
 	}

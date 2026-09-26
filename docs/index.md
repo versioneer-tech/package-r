@@ -35,7 +35,8 @@ path rules, and action permissions. See
 - **New users:** [Work with objects](how-to-guides/work-with-objects.md)
 - **Data publishers:**
   [Package, share, and preview data](how-to-guides/share-and-preview-data.md)
-- **Operators:** [Configuration](how-to-guides/configuration.md)
+- **Operators:** [Configuration](how-to-guides/configuration.md) and
+  [Kubernetes](how-to-guides/kubernetes.md)
 - **API clients:** [HTTP API](reference-guides/http-api.md)
 
 ![packageR public share directory](imgs/screenshots/my-share-directory.png)

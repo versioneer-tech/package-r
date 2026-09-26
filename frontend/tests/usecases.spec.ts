@@ -8,8 +8,7 @@ const backendBaseURL = `http://127.0.0.1:${process.env.PACKAGE_R_PORT || "8888"}
 const screenshotBackendBaseURL = "http://127.0.0.1:8888";
 const thumbnailPath = `openaerialmap-assets/${itemId}/thumbnail.png`;
 const publicShareThumbnailPath = `/share/${publicShare}/${thumbnailPath}`;
-const catalogPreviewBaseURL =
-  "https://radiantearth.github.io/stac-browser/#/external/";
+const stacBrowserBaseURL = "https://browser.moregeo.it/external/";
 const screenshotOptions = { animations: "disabled", caret: "hide" } as const;
 const stableRelativeTime = "a few seconds ago";
 const stableScreenshotStyle = `
@@ -58,7 +57,7 @@ async function normalizeRelativeTimes(page: Page) {
 async function loginAsInitialUser(page: Page) {
   const authPage = new AuthPage(page);
   await authPage.goto();
-  await authPage.loginAs("admin", "admin");
+  await authPage.loginAs("admin", "my-password");
   await expect(page).toHaveTitle(/.*Files - packageR$/);
 }
 
@@ -231,7 +230,7 @@ test.describe("packageR use-case UI", () => {
     await expect(page.getByText("catalog.parquet")).toBeVisible();
 
     const response = await page.request.post("/api/login", {
-      data: { username: "admin", password: "admin", recaptcha: "" },
+      data: { username: "admin", password: "my-password", recaptcha: "" },
     });
     expect(response.ok()).toBe(true);
     const token = await response.text();
@@ -242,20 +241,20 @@ test.describe("packageR use-case UI", () => {
     await expect(page).toHaveTitle(/.*Files - packageR$/);
   });
 
-  test("shows public share catalog preview URL", async ({ page }) => {
+  test("shows public share STAC Browser URL", async ({ page }) => {
     await prepareStableScreenshot(page);
 
     const infoBox = await openPublicShareThumbnail(page);
     await infoBox
-      .locator("p", { hasText: "Preview URL:" })
+      .locator("p", { hasText: "STAC Browser URL:" })
       .getByRole("link", { name: "Show" })
       .click();
-    await expect(infoBox).toContainText(catalogPreviewBaseURL);
+    await expect(infoBox).toContainText(stacBrowserBaseURL);
     await expect(infoBox).toContainText(
       `/api/public/catalog/${publicShare}/${thumbnailPath}`
     );
     await infoBox
-      .locator("p", { hasText: "Preview URL:" })
+      .locator("p", { hasText: "STAC Browser URL:" })
       .evaluate((element) => {
         for (const link of element.querySelectorAll("a")) {
           link.textContent =
@@ -274,7 +273,7 @@ test.describe("packageR use-case UI", () => {
       });
     await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
-      "my-share-preview-url.png",
+      "my-share-stac-browser-url.png",
       screenshotOptions
     );
   });

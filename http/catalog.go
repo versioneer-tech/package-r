@@ -57,8 +57,8 @@ var catalogHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d
 
 	assetsURL := localRequestURL(r, d.server.BaseURL, "/api/public/share/"+parts[0])
 	catalogEndpoint := localRequestURL(r, d.server.BaseURL, "/api/public/catalog/"+parts[0])
-	assetMappings := make([]catalog.AssetMapping, 0, len(d.settings.Catalog.AssetMappings))
-	for _, mapping := range d.settings.Catalog.AssetMappings {
+	assetMappings := make([]catalog.AssetMapping, 0, len(cf.AssetMappings))
+	for _, mapping := range cf.AssetMappings {
 		assetMappings = append(assetMappings, catalog.AssetMapping{From: mapping.From, To: mapping.To})
 	}
 

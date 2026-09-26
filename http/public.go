@@ -17,10 +17,11 @@ import (
 )
 
 type catalogedFile struct {
-	File        *files.FileInfo
-	SharePath   string
-	CatalogURL  string
-	ShareExpire int64
+	File          *files.FileInfo
+	SharePath     string
+	CatalogURL    string
+	AssetMappings []share.CatalogAssetMapping
+	ShareExpire   int64
 }
 
 var withHashFile = func(fn handleFunc) handleFunc {
@@ -83,10 +84,11 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		}
 
 		d.raw = &catalogedFile{
-			File:        file,
-			SharePath:   link.Path,
-			CatalogURL:  link.CatalogURL,
-			ShareExpire: link.Expire,
+			File:          file,
+			SharePath:     link.Path,
+			CatalogURL:    link.CatalogURL,
+			AssetMappings: link.AssetMappings,
+			ShareExpire:   link.Expire,
 		}
 
 		return fn(w, r, d)
@@ -155,10 +157,10 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 		return status, nil
 	}
 
-	if d.settings.Catalog.PreviewURL != "" {
+	if d.settings.STACBrowserURL != "" {
 		preview, ok := r.URL.Query()["preview"]
 		if ok && !strings.EqualFold(preview[0], "false") {
-			err := file.Preview()
+			err := file.STACBrowser()
 			if errors.Is(err, appErrors.ErrInvalidOption) {
 				return http.StatusBadRequest, nil
 			} else if err != nil {
@@ -170,7 +172,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 				d.server.BaseURL,
 				"/api/public/catalog/"+strings.TrimPrefix(r.URL.Path, "/"),
 			)
-			file.PreviewURL = d.settings.Catalog.PreviewURL + catalogURL
+			file.STACBrowserURL = d.settings.STACBrowserURL + catalogURL
 		}
 	}
 

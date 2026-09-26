@@ -217,7 +217,7 @@ func newPresignTestStorage(t *testing.T) (string, *storage.Storage, *users.User)
 
 	user := &users.User{
 		Username: "admin",
-		Password: "password",
+		Password: "my-password",
 		Scope:    "/",
 		Perm:     users.Permissions{Download: true},
 	}

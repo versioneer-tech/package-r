@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -14,14 +13,17 @@ import (
 
 func init() {
 	sharesCmd.AddCommand(sharesAddCmd)
+	sharesAddCmd.Flags().String("password", "", "password required to open the share")
+	sharesAddCmd.Flags().String("catalog-name", "", "relative catalog path inside the share")
+	sharesAddCmd.Flags().String("asset-mappings", "", "JSON array of catalog asset URL-to-path mappings")
 }
 
 var sharesAddCmd = &cobra.Command{
 	Use:   "add <id|username> <hash> <path>",
-	Short: "Add a configured bootstrap share",
-	Long:  `Add a configured share to the ephemeral runtime database.`,
+	Short: "Add a public share",
+	Long:  `Add a public share to the runtime database.`,
 	Args:  cobra.ExactArgs(3),
-	Run: python(func(_ *cobra.Command, args []string, d pythonData) {
+	Run: python(func(cmd *cobra.Command, args []string, d pythonData) {
 		username, id := parseUsernameOrID(args[0])
 
 		var (
@@ -35,19 +37,17 @@ var sharesAddCmd = &cobra.Command{
 		}
 		checkErr(err)
 
-		body := share.CreateBody{
-			Hash:        args[1],
-			Description: "default share",
-			Password:    os.Getenv("PACKAGE_R_SHARE_PASSWORD"),
-		}
-		settings, err := d.store.Settings.Get()
+		assetMappings, err := share.ParseCatalogAssetMappings(mustGetString(cmd.Flags(), "asset-mappings"))
 		checkErr(err)
+		body := share.CreateBody{
+			Hash:          args[1],
+			Password:      mustGetString(cmd.Flags(), "password"),
+			CatalogName:   mustGetString(cmd.Flags(), "catalog-name"),
+			AssetMappings: assetMappings,
+		}
 		opts := share.LinkOptions{
 			Path:   args[2],
 			UserID: owner.ID,
-		}
-		if settings.Catalog.DefaultName != "" {
-			body.CatalogName = settings.Catalog.DefaultName
 		}
 
 		link, err := share.NewLink(body, opts)
@@ -60,6 +60,7 @@ var sharesAddCmd = &cobra.Command{
 				existingByHash.Expire = link.Expire
 				existingByHash.Description = link.Description
 				existingByHash.CatalogURL = link.CatalogURL
+				existingByHash.AssetMappings = link.AssetMappings
 				existingByHash.PasswordHash = link.PasswordHash
 				existingByHash.Token = link.Token
 				checkErr(d.store.Share.Update(existingByHash))

@@ -3,6 +3,7 @@ package share
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"path"
@@ -49,17 +50,58 @@ func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
 			return nil, err
 		}
 	}
+	if err := ValidateCatalogAssetMappings(body.AssetMappings); err != nil {
+		return nil, err
+	}
 
 	return &Link{
-		Path:         opts.Path,
-		Hash:         hash,
-		Expire:       expire,
-		Description:  body.Description,
-		CatalogURL:   catalogURL,
-		UserID:       opts.UserID,
-		PasswordHash: passwordHash,
-		Token:        token,
+		Path:          opts.Path,
+		Hash:          hash,
+		Expire:        expire,
+		Description:   body.Description,
+		CatalogURL:    catalogURL,
+		AssetMappings: append([]CatalogAssetMapping(nil), body.AssetMappings...),
+		UserID:        opts.UserID,
+		PasswordHash:  passwordHash,
+		Token:         token,
 	}, nil
+}
+
+// ParseCatalogAssetMappings parses a JSON array of catalog asset mappings.
+func ParseCatalogAssetMappings(value string) ([]CatalogAssetMapping, error) {
+	if value == "" {
+		return nil, nil
+	}
+
+	var mappings []CatalogAssetMapping
+	if err := json.Unmarshal([]byte(value), &mappings); err != nil {
+		return nil, err
+	}
+	if err := ValidateCatalogAssetMappings(mappings); err != nil {
+		return nil, err
+	}
+	return mappings, nil
+}
+
+// ValidateCatalogAssetMappings checks that mappings stay inside the share.
+func ValidateCatalogAssetMappings(mappings []CatalogAssetMapping) error {
+	for i, mapping := range mappings {
+		if mapping.From == "" {
+			return fmt.Errorf("catalog asset mapping %d has an empty from value", i)
+		}
+		if !catalogMappingPathIsRelative(mapping.To) {
+			return fmt.Errorf("catalog asset mapping %d to value must stay inside the share", i)
+		}
+	}
+	return nil
+}
+
+func catalogMappingPathIsRelative(value string) bool {
+	if strings.HasPrefix(value, "/") || strings.ContainsRune(value, '\x00') {
+		return false
+	}
+	clean := path.Clean(value)
+	return clean != ".." && !strings.HasPrefix(clean, "../")
 }
 
 func CatalogPath(sharePath, catalogName string) (string, error) {

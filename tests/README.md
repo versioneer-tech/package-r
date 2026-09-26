@@ -27,15 +27,20 @@ service-root navigation.
 The harness copies `tests/data` to a temporary bucket and does not change the
 source files. It checks:
 
-- directory listing and raw reads
-- create, copy, rename, and delete operations
-- a two-chunk TUS upload through the VFS write cache
-- authenticated and password-protected public presigned URLs
-- rejection of runtime share creation
-- public share redirects
-- catalog access through the VFS
-- STAC 1.1 validation of the live catalog endpoint
-- a fetch through a rewritten catalog asset URL
+- user, settings, share-management, and sign-up HTTP APIs are unavailable
+- S3 service-root and bucket listings work through the VFS
+- raw file reads work
+- create, copy, rename, presigned read, and delete operations work
+- a two-chunk TUS upload works through the VFS write cache
+- TUS accepts `HEAD` and rejects its old `GET` alias
+- authenticated presigned URLs work
+- password-protected public presigned URLs and redirects work
+- runtime share creation is unavailable
+- public catalogs load through the VFS with the GeoJSON media type
+- the live catalog endpoint passes STAC 1.1 validation
+- rewritten catalog asset URLs return the expected object
+- generated users can read and write their own home
+- generated users cannot read or write a sibling home
 
 Run the test with rclone 1.74 or newer:
 

@@ -50,14 +50,15 @@ example publishes the `catalog-sample` prefix from the `data` bucket:
 
 ```bash
 ./package-r config init
-./package-r users add admin change-this-password \
+./package-r users add admin my-password \
   --scope=/ \
   --perm.create=true \
   --perm.rename=true \
   --perm.modify=true \
   --perm.delete=true \
   --perm.download=true
-./package-r shares add admin my-share /data/catalog-sample
+./package-r shares add admin my-share /data/catalog-sample \
+  --catalog-name=catalog.parquet
 
 AWS_ACCESS_KEY_ID=my-access-key \
 AWS_SECRET_ACCESS_KEY=my-secret-key \
@@ -74,27 +75,11 @@ The public package is available without an account at
 `http://127.0.0.1:8888/share/my-share/`.
 
 We also provide a container image at
-`ghcr.io/versioneer-tech/package-r:latest`. Run it with your S3 settings:
-
-```bash
-docker run --rm -p 127.0.0.1:8888:8888 \
-  -e AWS_ACCESS_KEY_ID=my-access-key \
-  -e AWS_SECRET_ACCESS_KEY=my-secret-key \
-  -e AWS_REGION=us-east-1 \
-  -e SERVE_PACKAGE_R_PASSWORD=change-this-password \
-  -e SERVE_PACKAGE_R_DEFAULT_SHARES='my-share=/data/catalog-sample' \
-  ghcr.io/versioneer-tech/package-r:latest
-```
-
-`SERVE_PACKAGE_R_PASSWORD` sets the initial user password. It does not protect
-the public package. To require a share password, add
-`-e SERVE_PACKAGE_R_DEFAULT_SHARE_PASSWORDS='my-share=share-password'` to the
-Docker command.
-
-See the
-[configuration guide](https://package-r.versioneer.at/latest/how-to-guides/configuration/)
-for all settings. Public settings use `PACKAGE_R_`. Settings used only by the
-container serve script use `SERVE_PACKAGE_R_`.
+`ghcr.io/versioneer-tech/package-r:latest`. Its entrypoint starts packageR
+directly and expects an initialized database. For hosted deployments, prepare
+the database in a separate process before the application starts. See the
+[Kubernetes operator guide](https://package-r.versioneer.at/latest/how-to-guides/kubernetes/)
+for an init-container example.
 
 ## Development
 

@@ -16,7 +16,7 @@ export class AuthPage {
     await this.page.goto("/login");
   }
 
-  async loginAs(username = "admin", password = "admin") {
+  async loginAs(username = "admin", password = "my-password") {
     await this.page.getByPlaceholder("Username").fill(username);
     await this.page.getByPlaceholder("Password").fill(password);
     await this.page.getByRole("button", { name: "Login" }).click();

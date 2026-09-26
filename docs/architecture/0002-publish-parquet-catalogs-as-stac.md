@@ -44,16 +44,13 @@ to leave the share. An HTTP(S) URL is external in service-root mode because it
 does not identify a bucket. An `s3://` URL includes the bucket, so packageR can
 resolve it in service-root mode.
 
-An explicit mapping is an application setting, not share state. The
-`PACKAGE_R_CATALOG_ASSET_MAPPINGS` value is a JSON array:
+An explicit mapping is part of one share. Set it when you add the share. The
+`--asset-mappings` value is a JSON array:
 
-```json
-[
-  {
-    "from": "s3://data/",
-    "to": "."
-  }
-]
+```bash
+./package-r shares add admin my-share /catalog-sample \
+  --catalog-name=catalog.parquet \
+  --asset-mappings='[{"from":"s3://data/","to":"."}]'
 ```
 
 The `from` value is an exact string prefix. The `to` value is relative to each
@@ -76,15 +73,15 @@ remain bounded.
 ## Consequences
 
 Share configuration contains the share name, object path, catalog filename,
-and optional password. Catalogs can use relative, HTTP(S), or S3 asset URLs.
-External asset URLs remain external.
+optional password, and optional asset mappings. Catalogs can use relative,
+HTTP(S), or S3 asset URLs. External asset URLs remain external.
 
 Checking all asset keys avoids schema-specific settings. DuckDB must read
 candidate rows before packageR filters them by path. Catalog size and query
 limits bound this work.
 
-Explicit mappings apply to all configured shares in one process. Operators
-must use a narrow `from` prefix and the correct relative `to` path.
+Explicit mappings apply only to the share that contains them. Operators must
+use a narrow `from` prefix and the correct relative `to` path.
 
 ## Alternatives considered
 

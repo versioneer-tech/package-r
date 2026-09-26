@@ -91,9 +91,9 @@ export async function presign(url: string) {
   return (await data.json()).presignedURL;
 }
 
-export async function preview(url: string) {
+export async function stacBrowserURL(url: string) {
   const data = await shareAction(`${url}?preview=true`, "GET");
-  return (await data.json()).previewURL;
+  return (await data.json()).stacBrowserURL;
 }
 
 export function getDownloadURL(res: Resource, inline = false) {

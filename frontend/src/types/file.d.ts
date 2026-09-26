@@ -10,7 +10,7 @@ interface ResourceBase {
   type: ResourceType;
   url: string;
   presignedURL?: string;
-  previewURL?: string;
+  stacBrowserURL?: string;
 }
 
 interface Resource extends ResourceBase {

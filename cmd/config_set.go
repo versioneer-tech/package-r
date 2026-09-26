@@ -3,8 +3,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-
-	"github.com/versioneer-tech/package-r/settings"
 )
 
 func init() {
@@ -45,6 +43,16 @@ you want to change. Other options will remain unchanged.`,
 				ser.Port = mustGetString(flags, flag.Name)
 			case "log":
 				ser.Log = mustGetString(flags, flag.Name)
+			case "disable-thumbnails":
+				ser.EnableThumbnails = !mustGetBool(flags, flag.Name)
+			case "disable-preview-resize":
+				ser.ResizePreview = !mustGetBool(flags, flag.Name)
+			case "disable-exec":
+				ser.EnableExec = false
+			case "disable-type-detection-by-header":
+				ser.TypeDetectionByHeader = !mustGetBool(flags, flag.Name)
+			case "token-expiration-time":
+				ser.TokenExpirationTime = mustGetString(flags, flag.Name)
 			case "signup":
 				set.Signup = mustGetBool(flags, flag.Name)
 			case "auth.method":
@@ -53,6 +61,8 @@ you want to change. Other options will remain unchanged.`,
 				set.Shell = convertCmdStrToCmdArray(mustGetString(flags, flag.Name))
 			case "create-user-dir":
 				set.CreateUserDir = mustGetBool(flags, flag.Name)
+			case "stac-browser-url":
+				set.STACBrowserURL = mustGetString(flags, flag.Name)
 			case "branding.name":
 				set.Branding.Name = mustGetString(flags, flag.Name)
 			case "branding.color":
@@ -63,12 +73,6 @@ you want to change. Other options will remain unchanged.`,
 				set.Branding.DisableExternal = mustGetBool(flags, flag.Name)
 			case "branding.files":
 				set.Branding.Files = mustGetString(flags, flag.Name)
-			case "catalog.defaultName":
-				set.Catalog.DefaultName = mustGetString(flags, flag.Name)
-			case "catalog.previewURL":
-				set.Catalog.PreviewURL = mustGetString(flags, flag.Name)
-			case "catalog.assetMappings":
-				set.Catalog.AssetMappings = parseCatalogAssetMappings(mustGetString(flags, flag.Name))
 			}
 		})
 
@@ -89,10 +93,4 @@ you want to change. Other options will remain unchanged.`,
 		checkErr(err)
 		printSettings(ser, set, auther)
 	}, pythonConfig{}),
-}
-
-func parseCatalogAssetMappings(value string) []settings.CatalogAssetMapping {
-	mappings, err := settings.ParseCatalogAssetMappings(value)
-	checkErr(err)
-	return mappings
 }

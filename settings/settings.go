@@ -23,7 +23,7 @@ type Settings struct {
 	Defaults         UserDefaults        `json:"defaults"`
 	AuthMethod       AuthMethod          `json:"authMethod"`
 	Branding         Branding            `json:"branding"`
-	Catalog          Catalog             `json:"catalog"`
+	STACBrowserURL   string              `json:"stacBrowserURL"`
 	Tus              Tus                 `json:"tus"`
 	Commands         map[string][]string `json:"commands"`
 	Shell            []string            `json:"shell"`

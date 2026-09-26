@@ -13,6 +13,7 @@ nav:
       - Package, share, and preview data: how-to-guides/share-and-preview-data.md
   - Operator guides:
       - Configuration: how-to-guides/configuration.md
+      - Kubernetes: how-to-guides/kubernetes.md
   - Reference guides:
       - HTTP API: reference-guides/http-api.md
       - Architecture:

@@ -5,7 +5,18 @@ import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import legacy from "@vitejs/plugin-legacy";
 import { compression } from "vite-plugin-compression2";
 
+const playwrightSTACBrowserURL = process.env.PLAYWRIGHT_STAC_BROWSER_URL || "";
+
 const plugins = [
+  {
+    name: "development-config",
+    transformIndexHtml(html: string) {
+      return html.replace(
+        "__PLAYWRIGHT_STAC_BROWSER_URL__",
+        playwrightSTACBrowserURL
+      );
+    },
+  },
   vue(),
   VueI18nPlugin({
     include: [path.resolve(import.meta.dirname, "./src/i18n/**/*.json")],

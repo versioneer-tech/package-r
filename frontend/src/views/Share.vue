@@ -145,16 +145,16 @@
                 </a>
               </code>
             </p>
-            <p v-if="!req.isDir && canPreview">
-              <strong>Preview URL: </strong>
+            <p v-if="!req.isDir && canShowSTACBrowser">
+              <strong>STAC Browser URL: </strong>
               <code>
                 <a
-                  :href="previewURL || 'javascript:void(0)'"
-                  @click="preview"
-                  @keypress.enter="preview"
+                  :href="stacBrowserURL || 'javascript:void(0)'"
+                  @click="showSTACBrowserURL"
+                  @keypress.enter="showSTACBrowserURL"
                   tabindex="7"
                 >
-                  {{ previewURL || $t("prompts.show") }}
+                  {{ stacBrowserURL || $t("prompts.show") }}
                 </a>
               </code>
             </p>
@@ -265,7 +265,10 @@ import { computed, inject, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { StatusError } from "@/api/utils";
-import { name, catalogPreviewURL } from "@/utils/constants";
+import {
+  name,
+  stacBrowserURL as configuredSTACBrowserURL,
+} from "@/utils/constants";
 
 const error = ref<StatusError | null>(null);
 const showLimit = ref<number>(100);
@@ -322,7 +325,7 @@ const fetchData = async () => {
   fileStore.multiple = false;
 
   presignedURL.value = null;
-  previewURL.value = null;
+  stacBrowserURL.value = null;
 
   layoutStore.closeHovers();
 
@@ -411,7 +414,7 @@ onMounted(async () => {
   await fetchData();
 
   canPresign.value = true; // TBD
-  canPreview.value = catalogPreviewURL !== "";
+  canShowSTACBrowser.value = configuredSTACBrowserURL !== "";
 });
 
 onBeforeUnmount(() => {
@@ -419,9 +422,9 @@ onBeforeUnmount(() => {
 });
 
 const presignedURL = ref<string | null>(null);
-const previewURL = ref<string | null>(null);
+const stacBrowserURL = ref<string | null>(null);
 const canPresign = ref<boolean>(false);
-const canPreview = ref<boolean>(false);
+const canShowSTACBrowser = ref<boolean>(false);
 
 const checksum = async (event: Event, algo: string) => {
   event.preventDefault();
@@ -469,8 +472,8 @@ const presign = async (event: Event) => {
   }
 };
 
-const preview = async (event: Event) => {
-  if (typeof previewURL.value === "string") {
+const showSTACBrowserURL = async (event: Event) => {
+  if (typeof stacBrowserURL.value === "string") {
     return;
   }
 
@@ -481,8 +484,8 @@ const preview = async (event: Event) => {
     : route.path;
 
   try {
-    const value = await pub_api.preview(link || "");
-    previewURL.value = value;
+    const value = await pub_api.stacBrowserURL(link || "");
+    stacBrowserURL.value = value;
   } catch (e) {
     if (e instanceof Error) {
       $showError(e);

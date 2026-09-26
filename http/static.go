@@ -28,21 +28,21 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 	}
 
 	data := map[string]interface{}{
-		"Name":              d.settings.Branding.Name,
-		"DisableExternal":   d.settings.Branding.DisableExternal,
-		"Color":             d.settings.Branding.Color,
-		"BaseURL":           d.server.BaseURL,
-		"Version":           version.Version,
-		"StaticURL":         path.Join(d.server.BaseURL, "/static"),
-		"LoginPage":         auther.LoginPage(),
-		"CSS":               false,
-		"ReCaptcha":         false,
-		"Theme":             d.settings.Branding.Theme,
-		"EnableThumbs":      d.server.EnableThumbnails,
-		"ResizePreview":     d.server.ResizePreview,
-		"EnableExec":        d.server.EnableExec,
-		"TusSettings":       d.settings.Tus,
-		"CatalogPreviewURL": d.settings.Catalog.PreviewURL,
+		"Name":            d.settings.Branding.Name,
+		"DisableExternal": d.settings.Branding.DisableExternal,
+		"Color":           d.settings.Branding.Color,
+		"BaseURL":         d.server.BaseURL,
+		"Version":         version.Version,
+		"StaticURL":       path.Join(d.server.BaseURL, "/static"),
+		"LoginPage":       auther.LoginPage(),
+		"CSS":             false,
+		"ReCaptcha":       false,
+		"Theme":           d.settings.Branding.Theme,
+		"EnableThumbs":    d.server.EnableThumbnails,
+		"ResizePreview":   d.server.ResizePreview,
+		"EnableExec":      d.server.EnableExec,
+		"TusSettings":     d.settings.Tus,
+		"STACBrowserURL":  d.settings.STACBrowserURL,
 	}
 
 	if d.settings.Branding.Files != "" {

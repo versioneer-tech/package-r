@@ -54,9 +54,7 @@ func addConfigFlags(flags *pflag.FlagSet) {
 	flags.String("branding.files", "", "path to directory with images and custom styles")
 	flags.Bool("branding.disableExternal", false, "disable external links such as GitHub links")
 
-	flags.String("catalog.defaultName", settings.DefaultCatalogName, "default catalog name")
-	flags.String("catalog.previewURL", "", "(optional) preview URL")
-	flags.String("catalog.assetMappings", "", "(optional) JSON array of catalog asset URL-to-path mappings")
+	flags.String("stac-browser-url", "", "optional STAC Browser external-catalog URL")
 }
 
 func getAuthentication(flags *pflag.FlagSet, defaults ...interface{}) (settings.AuthMethod, auth.Auther) {
@@ -183,6 +181,7 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 	fmt.Fprintf(w, "Sign up:\t%t\n", set.Signup)
 	fmt.Fprintf(w, "Create User Dir:\t%t\n", set.CreateUserDir)
 	fmt.Fprintf(w, "Auth method:\t%s\n", set.AuthMethod)
+	fmt.Fprintf(w, "STAC Browser URL:\t%s\n", set.STACBrowserURL)
 	fmt.Fprintf(w, "Shell:\t%s\t\n", strings.Join(set.Shell, " "))
 	fmt.Fprintln(w, "\nBranding:")
 	fmt.Fprintf(w, "\tName:\t%s\n", set.Branding.Name)

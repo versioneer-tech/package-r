@@ -14,6 +14,7 @@ import (
 	"github.com/versioneer-tech/package-r/share"
 	"github.com/versioneer-tech/package-r/storage/bolt"
 	"github.com/versioneer-tech/package-r/users"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestPublicDownloadDoesNotRequireOwnerDownloadPermission(t *testing.T) {
@@ -72,7 +73,7 @@ func TestPublicShareBypassesGeneratedUserDirBaseRules(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	user := &users.User{Username: "alice", Password: "password", Scope: "/"}
+	user := &users.User{Username: "alice", Password: "my-password", Scope: "/"}
 	set.ApplyUserDefaults(user)
 	if err := store.Users.Save(user); err != nil {
 		t.Fatal(err)
@@ -110,7 +111,7 @@ func TestPublicSharePresignPathUsesSharedFilesystemPath(t *testing.T) {
 	}
 }
 
-func TestPublicSharePreviewUsesRequestSchemeAndBaseURL(t *testing.T) {
+func TestPublicShareSTACBrowserURLUsesRequestSchemeAndBaseURL(t *testing.T) {
 	root, store, user := newPresignTestStorage(t)
 	writePresignTestFile(t, root, "files/data.txt")
 	if err := store.Share.Save(&share.Link{Hash: "my-share", Path: "/files", UserID: user.ID}); err != nil {
@@ -120,7 +121,7 @@ func TestPublicSharePreviewUsesRequestSchemeAndBaseURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	set.Catalog.PreviewURL = "https://viewer.example/#/external/"
+	set.STACBrowserURL = "https://browser.moregeo.it/external/"
 	if err := store.Settings.Save(set); err != nil {
 		t.Fatal(err)
 	}
@@ -143,21 +144,25 @@ func TestPublicSharePreviewUsesRequestSchemeAndBaseURL(t *testing.T) {
 	result := recorder.Result()
 	defer result.Body.Close()
 	var file struct {
-		PreviewURL string `json:"previewURL"`
+		STACBrowserURL string `json:"stacBrowserURL"`
 	}
 	if err := json.NewDecoder(result.Body).Decode(&file); err != nil {
 		t.Fatal(err)
 	}
-	want := "https://viewer.example/#/external/http://127.0.0.1:8888/package-r/api/public/catalog/my-share/data.txt"
-	if file.PreviewURL != want {
-		t.Fatalf("expected preview URL %q, got %q", want, file.PreviewURL)
+	want := "https://browser.moregeo.it/external/http://127.0.0.1:8888/package-r/api/public/catalog/my-share/data.txt"
+	if file.STACBrowserURL != want {
+		t.Fatalf("expected STAC Browser URL %q, got %q", want, file.STACBrowserURL)
 	}
 }
 
 func TestAuthenticateShareRequest(t *testing.T) {
 	t.Parallel()
 
-	const passwordBcrypt = "$2y$10$TFAmdCbyd/mEZDe5fUeZJu.MaJQXRTwdqb/IQV.eTn6dWrF58gCSe" //nolint:gosec
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte("my-password"), bcrypt.MinCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	passwordBcrypt := string(passwordHash)
 	testCases := map[string]struct {
 		share          *share.Link
 		req            *http.Request
@@ -178,12 +183,12 @@ func TestAuthenticateShareRequest(t *testing.T) {
 		},
 		"Private share, authentication via invalid token, 401": {
 			share:          &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123"},
-			req:            newHTTPRequest(t, func(r *http.Request) { r.URL.RawQuery = "token=1234" }),
+			req:            newHTTPRequest(t, func(r *http.Request) { r.URL.RawQuery = "token=wrong-token" }),
 			expectedStatus: http.StatusUnauthorized,
 		},
 		"Private share, authentication via password": {
 			share: &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123"},
-			req:   newHTTPRequest(t, func(r *http.Request) { r.Header.Set("X-SHARE-PASSWORD", "password") }),
+			req:   newHTTPRequest(t, func(r *http.Request) { r.Header.Set("X-SHARE-PASSWORD", "my-password") }),
 		},
 		"Private share, authentication via invalid password, 401": {
 			share:          &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123"},

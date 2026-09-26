@@ -177,11 +177,7 @@ export PACKAGE_R_ROOT="${PACKAGE_R_ROOT:-$bucket_name}"
 export PACKAGE_R_DATABASE="${PACKAGE_R_DATABASE:-$tmp_dir/package-r.db}"
 export PACKAGE_R_ADDRESS="${PACKAGE_R_ADDRESS:-127.0.0.1}"
 export PACKAGE_R_PORT="${PACKAGE_R_PORT:-8888}"
-export PACKAGE_R_AUTH_METHOD=json
-export SERVE_PACKAGE_R_PASSWORD="${SERVE_PACKAGE_R_PASSWORD:-admin}"
-export SERVE_PACKAGE_R_ALLOW_CHANGING="${SERVE_PACKAGE_R_ALLOW_CHANGING:-true}"
-export PACKAGE_R_CATALOG_PREVIEW_URL="${PACKAGE_R_CATALOG_PREVIEW_URL:-https://radiantearth.github.io/stac-browser/#/external/}"
-export SERVE_PACKAGE_R_BIN="${SERVE_PACKAGE_R_BIN:-$repo_root/package-r}"
+package_r_bin="${PACKAGE_R_PLAYWRIGHT_BIN:-$repo_root/package-r}"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$tmp_dir/home/.cache}"
 export RCLONE_CONFIG=/dev/null
 export AWS_ACCESS_KEY_ID="$access_key_id"
@@ -190,14 +186,36 @@ export AWS_REGION=us-east-1
 
 mkdir -p "$XDG_CACHE_HOME"
 
-build_backend_if_needed "$SERVE_PACKAGE_R_BIN" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
+build_backend_if_needed "$package_r_bin" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
 
-bootstrap_shares="my-share=/catalog-sample"
-if [[ -n "${SERVE_PACKAGE_R_DEFAULT_SHARES:-}" ]]; then
-  bootstrap_shares="${SERVE_PACKAGE_R_DEFAULT_SHARES};${bootstrap_shares}"
-fi
-SERVE_PACKAGE_R_DEFAULT_SHARES="$bootstrap_shares" \
-  "$repo_root/scripts/serve.sh" >"$backend_log" 2>&1 &
+"$package_r_bin" config init \
+  --address="$PACKAGE_R_ADDRESS" \
+  --port="$PACKAGE_R_PORT" \
+  --root="$PACKAGE_R_ROOT" \
+  --stac-browser-url=https://browser.moregeo.it/external/ \
+  --auth.method=json \
+  --signup=false \
+  --create-user-dir=false \
+  --scope=/ \
+  --perm.create=true \
+  --perm.delete=true \
+  --perm.download=true \
+  --perm.modify=true \
+  --perm.rename=true \
+  >"$backend_log" 2>&1
+"$package_r_bin" users add admin my-password \
+  --scope=/ \
+  --perm.create=true \
+  --perm.delete=true \
+  --perm.download=true \
+  --perm.modify=true \
+  --perm.rename=true \
+  >>"$backend_log" 2>&1
+"$package_r_bin" shares add admin my-share /catalog-sample \
+  --catalog-name=catalog.parquet \
+  >>"$backend_log" 2>&1
+
+"$package_r_bin" >>"$backend_log" 2>&1 &
 server_pid=$!
 wait_for_backend
 wait "$server_pid"

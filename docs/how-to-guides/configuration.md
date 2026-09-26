@@ -1,8 +1,8 @@
 # Configuration
 
 packageR reads server options from command-line flags, `PACKAGE_R_`
-environment variables, or its configuration file. Runtime settings are
-cached in the packageR database and managed with `package-r config`.
+environment variables, or its configuration file. Application settings are
+stored in the packageR database and managed with `package-r config`.
 Object-storage credentials belong to the process and are not stored in the
 database or user records.
 
@@ -12,9 +12,10 @@ packageR is stateless. Object data stays in object storage. The local Bolt
 database is a runtime cache for settings, user records, and public shares. It
 is not the source of the stored data.
 
-For hosted deployments, keep the required configuration and secrets outside
-packageR. `scripts/serve.sh` rebuilds the database from this configuration at
-startup. The database does not need a backup or a persistent volume.
+For hosted deployments, use a separate process to prepare the database before
+packageR starts. The database does not need a backup or a persistent volume.
+The [Kubernetes guide](kubernetes.md) shows an init container and an
+`emptyDir` volume.
 
 ## Defaults
 
@@ -30,12 +31,6 @@ username/password authentication is the default.
 | `PACKAGE_R_LOG` | `stdout` | Log output. |
 | `PACKAGE_R_BASEURL` | Empty | URL path prefix. |
 | `PACKAGE_R_TOKEN_EXPIRATION_TIME` | `2h` | User session lifetime. |
-
-The container image starts with `scripts/serve.sh`. This wrapper prepares the
-database, applies hosted deployment defaults, and then starts packageR. It uses
-JSON username/password authentication unless `PACKAGE_R_AUTH_METHOD` selects
-another method. Public settings use the `PACKAGE_R_` prefix. Internal
-serve-script settings use `SERVE_PACKAGE_R_`.
 
 With empty AWS values, packageR uses the ambient AWS credential chain and AWS
 S3. Storage requests fail if that chain does not provide usable credentials.
@@ -106,21 +101,8 @@ Storage proxies must preserve range requests and `206` responses.
 ## Authentication and authorization
 
 packageR uses JSON username/password authentication by default. It does not
-create a default account. The container applies these environment variables
-before it starts packageR:
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `PACKAGE_R_AUTH_METHOD` | `json` | Use `proxy` for a trusted header or JWT. |
-| `PACKAGE_R_AUTH_HEADER` | `Authorization` | Header that contains the trusted identity or bearer JWT. |
-| `PACKAGE_R_AUTH_MAPPER` | `.sub` with `Authorization`, otherwise empty | Use the full header value, or set `.<claim>` to select a token claim. |
-| `PACKAGE_R_AUTH_JWT_JWKS_URL` | Empty | JWKS URL for strict JWT validation. |
-| `PACKAGE_R_AUTH_JWT_ISSUER` | Empty | Required issuer when JWKS validation is enabled. |
-| `PACKAGE_R_AUTH_JWT_AUDIENCE` | Empty | Optional expected JWT audience. |
-| `PACKAGE_R_AUTH_JWT_ALGORITHMS` | Effective value `RS256` | Comma-separated allowed JWT algorithms. |
-| `PACKAGE_R_AUTH_JWT_CLOCK_SKEW` | Effective value `1m` | Allowed JWT clock difference. |
-| `PACKAGE_R_SIGNUP` | `true` in the container | Create an internal user record when a valid new identity first connects. |
-| `PACKAGE_R_CREATE_USER_DIR` | `false` | Create and protect `/home/<username>`. Requires one bucket in `PACKAGE_R_ROOT`. |
+create a default account. Configure authentication when you prepare the
+database. The main process reads the result from that database.
 
 ### Username and password
 
@@ -129,12 +111,14 @@ The web interface and HTTP API do not manage user records.
 
 ### Trusted identity header
 
-Use a header that contains the username:
+Use a header that contains the username. Include these options in the
+`package-r config init` command:
 
-```ini
-PACKAGE_R_AUTH_METHOD=proxy
-PACKAGE_R_AUTH_HEADER=X-Username
-PACKAGE_R_AUTH_MAPPER=
+```bash
+./package-r config init \
+  --auth.method=proxy \
+  --auth.header=X-Username \
+  --auth.mapper=
 ```
 
 packageR trusts the complete header value. The upstream proxy must authenticate
@@ -145,13 +129,14 @@ the request and replace any client-supplied `X-Username` header.
 Use `Authorization: Bearer <token>`, a JWKS URL, and the claim that identifies
 the user:
 
-```ini
-PACKAGE_R_AUTH_METHOD=proxy
-PACKAGE_R_AUTH_HEADER=Authorization
-PACKAGE_R_AUTH_MAPPER=.sub
-PACKAGE_R_AUTH_JWT_JWKS_URL=https://identity.example/.well-known/jwks.json
-PACKAGE_R_AUTH_JWT_ISSUER=https://identity.example/
-PACKAGE_R_AUTH_JWT_AUDIENCE=package-r
+```bash
+./package-r config init \
+  --auth.method=proxy \
+  --auth.header=Authorization \
+  --auth.mapper=.sub \
+  --auth.jwt.jwks-url=https://identity.example/.well-known/jwks.json \
+  --auth.jwt.issuer=https://identity.example/ \
+  --auth.jwt.audience=package-r
 ```
 
 The mapper selects the packageR username. It does not limit token validation.
@@ -162,15 +147,10 @@ decodes the token. This is allowed for a trusted upstream proxy.
 
 ### On-demand users
 
-Enable on-demand user creation for proxy authentication:
-
-```ini
-PACKAGE_R_SIGNUP=true
-```
-
-The first request from a valid new identity then creates a user. Set
-`PACKAGE_R_CREATE_USER_DIR=true` to create `/home/<username>` and hide sibling
-home directories.
+Add `--signup=true` to the configuration command to enable on-demand user
+creation for proxy authentication. The first request from a valid new identity
+then creates a user. Add `--create-user-dir=true` to create
+`/home/<username>` and hide sibling home directories.
 
 New users have these defaults:
 
@@ -208,16 +188,22 @@ packageR applies these access controls in order:
 
 ## Catalogs
 
-The standalone binary reads these catalog environment variables directly.
-They override catalog settings stored in the database for the running process.
+Set a catalog name on each share with `package-r shares add --catalog-name`.
+Use `--asset-mappings` on the same command if that share needs URL-to-path
+mappings. Without `--catalog-name`, the share has no catalog.
 
-| Variable | Default | Description |
-| --- | --- | --- |
-| `PACKAGE_R_CATALOG_DEFAULT_NAME` | `catalog.parquet` | Relative Parquet catalog path inside a share. |
-| `PACKAGE_R_CATALOG_PREVIEW_URL` | Empty | Optional external viewer prefix for public catalog preview links. |
-| `PACKAGE_R_CATALOG_ASSET_MAPPINGS` | Empty | Optional JSON array of `from` URL prefixes and relative `to` paths. |
+Set the optional STAC Browser URL when you prepare the database:
 
-Catalog names must stay inside the shared path. Absolute names and parent-path
-escapes are invalid. Most catalogs do not need asset mappings.
+```bash
+./package-r config set \
+  --stac-browser-url=https://browser.moregeo.it/external/
+```
+
+The default is empty. packageR does not add a STAC Browser link unless you set
+this option.
+
+Catalog names and mapping targets must stay inside the shared path. Absolute
+names and parent-path escapes are invalid. Most catalogs do not need asset
+mappings.
 
 See the [HTTP API](../reference-guides/http-api.md) for route behavior.

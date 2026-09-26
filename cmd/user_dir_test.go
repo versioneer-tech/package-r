@@ -9,7 +9,7 @@ func TestUsersAddCreatesGeneratedUserDirRootScope(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
 	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath, "--create-user-dir", "--scope", "/")
-	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "alice", "password")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "alice", "my-password")
 
 	user, err := openTestStorage(t, dbPath).Users.Get(rootPath, "alice")
 	if err != nil {
@@ -25,7 +25,7 @@ func TestUsersAddCreatesGeneratedUserDirHomeScope(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
 	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath, "--create-user-dir", "--scope", ".")
-	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "alice", "password")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "alice", "my-password")
 
 	user, err := openTestStorage(t, dbPath).Users.Get(rootPath, "alice")
 	if err != nil {
@@ -44,7 +44,7 @@ func TestUsersAddSetsEachPermissionExplicitly(t *testing.T) {
 	runPackageRCommand(t,
 		"--config", configPath,
 		"--database", dbPath,
-		"users", "add", "initial", "password",
+		"users", "add", "initial", "my-password",
 		"--perm.execute=true",
 		"--perm.create=true",
 		"--perm.rename=true",

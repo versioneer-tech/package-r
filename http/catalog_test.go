@@ -80,7 +80,7 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	if err := store.Settings.Save(&settings.Settings{Key: []byte("test-key")}); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.Users.Save(&users.User{Username: "admin", Password: "password", Scope: "/"}); err != nil {
+	if err := store.Users.Save(&users.User{Username: "admin", Password: "my-password", Scope: "/"}); err != nil {
 		t.Fatal(err)
 	}
 	catalogUsers := &catalogTestUserStore{
@@ -175,6 +175,23 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	}
 	if !sawRangeRequest.Load() {
 		t.Fatal("expected DuckDB to read the catalog with an HTTP range request")
+	}
+
+	link.AssetMappings = []share.CatalogAssetMapping{{
+		From: "openaerialmap-assets/",
+		To:   "mapped-assets",
+	}}
+	if err := store.Share.Update(link); err != nil {
+		t.Fatal(err)
+	}
+	mappedCollection := callCatalog[struct {
+		Features []map[string]interface{} `json:"features"`
+	}](t, handler, "/api/public/catalog/my-share")
+	mappedFeature := findFeature(t, mappedCollection.Features, openAerialMapID)
+	expectedMappedThumbnail := "http://localhost:8888/package-r/api/public/share/my-share/mapped-assets/" +
+		openAerialMapID + "/thumbnail.png?presign&followRedirect"
+	if href := stacAssetHref(t, mappedFeature, "thumbnail"); href != expectedMappedThumbnail {
+		t.Fatalf("share asset mapping was not applied: %q", href)
 	}
 }
 

@@ -273,17 +273,21 @@ func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
 		server.Socket = ""
 	}
 
-	disableThumbnails, _ := getBoolParam(flags, "disable-thumbnails")
-	server.EnableThumbnails = !disableThumbnails
+	if disableThumbnails, set := getBoolParam(flags, "disable-thumbnails"); set {
+		server.EnableThumbnails = !disableThumbnails
+	}
 
-	disablePreviewResize, _ := getBoolParam(flags, "disable-preview-resize")
-	server.ResizePreview = !disablePreviewResize
+	if disablePreviewResize, set := getBoolParam(flags, "disable-preview-resize"); set {
+		server.ResizePreview = !disablePreviewResize
+	}
 
-	disableTypeDetectionByHeader, _ := getBoolParam(flags, "disable-type-detection-by-header")
-	server.TypeDetectionByHeader = !disableTypeDetectionByHeader
+	if disableTypeDetectionByHeader, set := getBoolParam(flags, "disable-type-detection-by-header"); set {
+		server.TypeDetectionByHeader = !disableTypeDetectionByHeader
+	}
 
-	disableExec, _ := getBoolParam(flags, "disable-exec")
-	server.EnableExec = !disableExec
+	if disableExec, set := getBoolParam(flags, "disable-exec"); set {
+		server.EnableExec = !disableExec
+	}
 
 	if val, set := getParamB(flags, "token-expiration-time"); set {
 		server.TokenExpirationTime = val

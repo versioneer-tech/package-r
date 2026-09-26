@@ -73,8 +73,8 @@ password hashes or access tokens. Configure packages with `package-r shares`.
 
 ## Public shares
 
-Public shares are declared during bootstrap. They do not need a packageR
-token.
+Public shares are declared when the runtime database is prepared. They do not
+need a packageR token.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -118,9 +118,9 @@ public share URLs with `?presign&followRedirect`. Other absolute URLs stay
 unchanged. [ADR-002](../architecture/0002-publish-parquet-catalogs-as-stac.md)
 defines the matching rules.
 
-`PACKAGE_R_CATALOG_ASSET_MAPPINGS` maps a nonstandard URL prefix to a path
-inside the share. The value is a JSON array of `from` and `to` strings. The
-`to` path must be relative and stay inside the share.
+The `package-r shares add --asset-mappings` option maps nonstandard URL
+prefixes to paths inside that share. Its value is a JSON array of `from` and
+`to` strings. Each `to` path must be relative and stay inside the share.
 
 Catalog queries have these limits:
 

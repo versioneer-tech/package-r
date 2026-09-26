@@ -15,7 +15,6 @@ control_endpoint="http://$control_address"
 access_key_id="${AWS_ACCESS_KEY_ID:-my-access-key}"
 secret_access_key="${AWS_SECRET_ACCESS_KEY:-my-secret-key}"
 server_owned=false
-package_r_pid=""
 
 usage() {
   printf 'Usage: %s dev|serve|stop\n' "$0" >&2
@@ -71,10 +70,6 @@ cleanup() {
   local status=$?
 
   trap - EXIT INT TERM
-  if [ -n "$package_r_pid" ]; then
-    kill "$package_r_pid" >/dev/null 2>&1 || true
-    wait "$package_r_pid" >/dev/null 2>&1 || true
-  fi
   if [ "$server_owned" = "true" ]; then
     stop_server >/dev/null 2>&1 || true
   fi
@@ -83,8 +78,9 @@ cleanup() {
 
 run_development_environment() {
   local attempt
-  local bootstrap_log="$state_dir/package-r-bootstrap.log"
-  local bootstrap_port="${PACKAGE_R_LOCAL_BOOTSTRAP_PORT:-18888}"
+  local database="${PACKAGE_R_DATABASE:-$state_dir/package-r.db}"
+  local package_r_bin="$repo_root/package-r"
+  local root="${PACKAGE_R_ROOT:-data}"
   local pid=""
   local status
 
@@ -130,38 +126,63 @@ run_development_environment() {
   fi
 
   make -C "$repo_root" build-backend-dev
-  development_shares="my-share=/catalog-sample"
-  if [ -n "${SERVE_PACKAGE_R_DEFAULT_SHARES:-}" ]; then
-    development_shares="${SERVE_PACKAGE_R_DEFAULT_SHARES};${development_shares}"
-  fi
-  SERVE_PACKAGE_R_BIN="${SERVE_PACKAGE_R_BIN:-$repo_root/package-r}" \
-    SERVE_PACKAGE_R_DEFAULT_SHARES="$development_shares" \
-    PACKAGE_R_ADDRESS=127.0.0.1 \
-    PACKAGE_R_PORT="$bootstrap_port" \
-    "$script_dir/serve.sh" >"$bootstrap_log" 2>&1 &
-  package_r_pid=$!
 
-  attempt=1
-  while [ "$attempt" -le 120 ]; do
-    if ! kill -0 "$package_r_pid" >/dev/null 2>&1; then
-      printf '[local-dev] packageR exited during setup\n' >&2
-      sed -n '1,160p' "$bootstrap_log" >&2 || true
-      return 1
-    fi
-    if curl --max-time 1 -fsS "http://127.0.0.1:$bootstrap_port/health" >/dev/null 2>&1; then
-      break
-    fi
-    sleep 0.25
-    attempt=$((attempt + 1))
-  done
-  if ! curl --max-time 1 -fsS "http://127.0.0.1:$bootstrap_port/health" >/dev/null 2>&1; then
-    printf '[local-dev] timed out while preparing packageR\n' >&2
-    sed -n '1,160p' "$bootstrap_log" >&2 || true
-    return 1
+  if [ ! -s "$database" ]; then
+    PACKAGE_R_DATABASE="$database" "$package_r_bin" config init \
+      --address=127.0.0.1 \
+      --port=8888 \
+      --root="$root" \
+      --auth.method=json \
+      --signup=false \
+      --create-user-dir=false \
+      --scope=/ \
+      --perm.create=true \
+      --perm.delete=true \
+      --perm.download=true \
+      --perm.modify=true \
+      --perm.rename=true \
+      >/dev/null
+  else
+    PACKAGE_R_DATABASE="$database" "$package_r_bin" config set \
+      --address=127.0.0.1 \
+      --port=8888 \
+      --root="$root" \
+      --auth.method=json \
+      --signup=false \
+      --create-user-dir=false \
+      --scope=/ \
+      --perm.create=true \
+      --perm.delete=true \
+      --perm.download=true \
+      --perm.modify=true \
+      --perm.rename=true \
+      >/dev/null
   fi
-  kill "$package_r_pid" >/dev/null 2>&1 || true
-  wait "$package_r_pid" >/dev/null 2>&1 || true
-  package_r_pid=""
+
+  if PACKAGE_R_DATABASE="$database" "$package_r_bin" users find admin >/dev/null 2>&1; then
+    PACKAGE_R_DATABASE="$database" "$package_r_bin" users update admin \
+      --password=my-password \
+      --scope=/ \
+      --perm.create=true \
+      --perm.delete=true \
+      --perm.download=true \
+      --perm.modify=true \
+      --perm.rename=true \
+      >/dev/null
+  else
+    PACKAGE_R_DATABASE="$database" "$package_r_bin" users add admin my-password \
+      --scope=/ \
+      --perm.create=true \
+      --perm.delete=true \
+      --perm.download=true \
+      --perm.modify=true \
+      --perm.rename=true \
+      >/dev/null
+  fi
+  PACKAGE_R_DATABASE="$database" "$package_r_bin" shares add \
+    admin my-share /catalog-sample \
+    --catalog-name=catalog.parquet \
+    >/dev/null
 
   printf '[local-dev] ready\n'
   if [ -n "$pid" ]; then

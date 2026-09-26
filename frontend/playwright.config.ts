@@ -86,7 +86,7 @@ export default defineConfig({
       timeout: 180 * 1000,
     },
     {
-      command: `PACKAGE_R_PORT=${backendPort} exec node node_modules/vite/bin/vite.js --port ${frontendPort}`,
+      command: `PLAYWRIGHT_STAC_BROWSER_URL=https://browser.moregeo.it/external/ PACKAGE_R_PORT=${backendPort} exec node node_modules/vite/bin/vite.js --port ${frontendPort}`,
       url: frontendURL,
       reuseExistingServer: !process.env.CI,
       gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },

@@ -38,24 +38,24 @@ var (
 // FileInfo describes a file.
 type FileInfo struct {
 	*Listing
-	Fs           afero.Fs          `json:"-"`
-	Path         string            `json:"path"`
-	Name         string            `json:"name"`
-	Size         int64             `json:"size"`
-	Extension    string            `json:"extension"`
-	ModTime      time.Time         `json:"modified"`
-	Mode         os.FileMode       `json:"mode"`
-	IsDir        bool              `json:"isDir"`
-	IsSymlink    bool              `json:"isSymlink"`
-	Type         string            `json:"type"`
-	Subtitles    []string          `json:"subtitles,omitempty"`
-	Content      string            `json:"content,omitempty"`
-	Checksums    map[string]string `json:"checksums,omitempty"`
-	Token        string            `json:"token,omitempty"`
-	currentDir   []os.FileInfo     `json:"-"`
-	Resolution   *ImageResolution  `json:"resolution,omitempty"`
-	PresignedURL string            `json:"presignedURL,omitempty"`
-	PreviewURL   string            `json:"previewURL,omitempty"`
+	Fs             afero.Fs          `json:"-"`
+	Path           string            `json:"path"`
+	Name           string            `json:"name"`
+	Size           int64             `json:"size"`
+	Extension      string            `json:"extension"`
+	ModTime        time.Time         `json:"modified"`
+	Mode           os.FileMode       `json:"mode"`
+	IsDir          bool              `json:"isDir"`
+	IsSymlink      bool              `json:"isSymlink"`
+	Type           string            `json:"type"`
+	Subtitles      []string          `json:"subtitles,omitempty"`
+	Content        string            `json:"content,omitempty"`
+	Checksums      map[string]string `json:"checksums,omitempty"`
+	Token          string            `json:"token,omitempty"`
+	currentDir     []os.FileInfo     `json:"-"`
+	Resolution     *ImageResolution  `json:"resolution,omitempty"`
+	PresignedURL   string            `json:"presignedURL,omitempty"`
+	STACBrowserURL string            `json:"stacBrowserURL,omitempty"`
 }
 
 // FileOptions are the options when getting a file info.
@@ -206,12 +206,12 @@ func (i *FileInfo) Checksum(algo string) error {
 	return nil
 }
 
-func (i *FileInfo) Preview() error {
+func (i *FileInfo) STACBrowser() error {
 	if i.IsDir {
 		return appErrors.ErrIsDirectory
 	}
 
-	i.PreviewURL = ""
+	i.STACBrowserURL = ""
 
 	return nil
 }

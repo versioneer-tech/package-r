@@ -15,10 +15,9 @@ RUN if ! getent group 100 >/dev/null; then groupadd --gid 100 package-r; fi \
  && chown -R 1000:100 /home/package-r
 
 COPY healthcheck.sh /healthcheck.sh
-COPY scripts/serve.sh /scripts/serve.sh
 COPY package-r /package-r
 
-RUN chmod 755 /package-r /scripts/serve.sh /healthcheck.sh
+RUN chmod 755 /package-r /healthcheck.sh
 
 ENV HOME=/home/package-r
 ENV PACKAGE_R_DATABASE=/tmp/package-r.db
@@ -29,6 +28,6 @@ HEALTHCHECK --start-period=2s --interval=5s --timeout=3s CMD /healthcheck.sh || 
 
 USER 1000:100
 
-ENTRYPOINT ["/scripts/serve.sh"]
+ENTRYPOINT ["/package-r"]
 
 EXPOSE 8888

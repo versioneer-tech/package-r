@@ -30,7 +30,7 @@ test("login has a visible keyboard focus state", async ({ page }) => {
   const auth = new AuthPage(page);
   await auth.goto();
   await page.getByPlaceholder("Username").fill("admin");
-  await page.getByPlaceholder("Password").fill("admin");
+  await page.getByPlaceholder("Password").fill("my-password");
   await page.keyboard.press("Tab");
   const button = page.getByRole("button", { name: "Login", exact: true });
   await expect(button).toBeFocused();
