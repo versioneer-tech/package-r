@@ -91,7 +91,6 @@
     "currentlyNavigating": "Jelenlegi helyzet:",
     "deleteMessageMultiple": "Biztosan törölni szeretne {count} fájlt?",
     "deleteMessageSingle": "Biztosan törölni szeretné ezt a fájl vagy mappát?",
-    "deleteMessageShare": "Biztosan törölni szeretné ezt a megosztást ({path})?",
     "deleteTitle": "Fájlok törlése",
     "displayName": "Megjelenített név:",
     "download": "Fájlok letöltése",

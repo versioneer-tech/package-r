@@ -20,6 +20,9 @@ func TestSharesAddKeepsCatalogEmptyByDefault(t *testing.T) {
 	if link.CatalogURL != "" {
 		t.Fatalf("expected no catalog, got %q", link.CatalogURL)
 	}
+	if link.Expire != 0 {
+		t.Fatalf("expected no expiration, got %d", link.Expire)
+	}
 	if len(link.AssetMappings) != 0 {
 		t.Fatalf("expected no asset mappings, got %#v", link.AssetMappings)
 	}
@@ -28,7 +31,7 @@ func TestSharesAddKeepsCatalogEmptyByDefault(t *testing.T) {
 	}
 }
 
-func TestSharesAddStoresOptionalPasswordAndCatalog(t *testing.T) {
+func TestSharesAddStoresOptionalConfiguration(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
 	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
@@ -39,6 +42,8 @@ func TestSharesAddStoresOptionalPasswordAndCatalog(t *testing.T) {
 		"--database", dbPath,
 		"shares", "add", "admin", "my-share", "/files",
 		"--password", "my-password",
+		"--description", "Example data",
+		"--expiration", "30d",
 		"--catalog-name", "catalogs/items.parquet",
 		"--asset-mappings", `[{"from":"s3://data/","to":"."}]`,
 	)
@@ -52,6 +57,12 @@ func TestSharesAddStoresOptionalPasswordAndCatalog(t *testing.T) {
 	}
 	if link.Token == "" {
 		t.Fatal("expected a protected share token")
+	}
+	if link.Description != "Example data" {
+		t.Fatalf("unexpected description: %q", link.Description)
+	}
+	if link.Expire == 0 {
+		t.Fatal("expected an expiration")
 	}
 	if link.CatalogURL != "/files/catalogs/items.parquet" {
 		t.Fatalf("unexpected catalog URL: %q", link.CatalogURL)

@@ -27,14 +27,15 @@ service-root navigation.
 The harness copies `tests/data` to a temporary bucket and does not change the
 source files. It checks:
 
-- user, settings, share-management, and sign-up HTTP APIs are unavailable
+- user, settings, and sign-up management HTTP APIs are unavailable
+- `GET /api/shares` returns safe links, while share-management writes are unavailable
 - S3 service-root and bucket listings work through the VFS
-- raw file reads work
+- raw file reads work and are logged
 - create, copy, rename, presigned read, and delete operations work
 - a two-chunk TUS upload works through the VFS write cache
 - TUS accepts `HEAD` and rejects its old `GET` alias
 - authenticated presigned URLs work
-- password-protected public presigned URLs and redirects work
+- password-protected public presigned URLs and temporary-token redirects work
 - runtime share creation is unavailable
 - public catalogs load through the VFS with the GeoJSON media type
 - the live catalog endpoint passes STAC 1.1 validation

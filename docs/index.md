@@ -1,7 +1,7 @@
 # packageR
 
 packageR publishes an S3-compatible object prefix as a public package.
-Recipients can browse or download the package without an account. An optional
+Recipients can browse and open package objects without an account. An optional
 share password controls access.
 
 The web interface also lets signed-in users browse and manage objects. A

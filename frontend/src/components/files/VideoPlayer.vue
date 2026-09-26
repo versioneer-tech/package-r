@@ -1,14 +1,6 @@
 <template>
   <video ref="videoPlayer" class="video-max video-js" controls preload="auto">
     <source />
-    <track
-      kind="subtitles"
-      v-for="(sub, index) in subtitles"
-      :key="index"
-      :src="sub"
-      :label="subLabel(sub)"
-      :default="index === 0"
-    />
     <p class="vjs-no-js">
       Sorry, your browser doesn't support embedded videos, but don't worry, you
       can <a :href="source">download it</a>
@@ -32,7 +24,6 @@ const player = ref<Player | null>(null);
 const props = withDefaults(
   defineProps<{
     source: string;
-    subtitles?: string[];
     options?: any;
   }>(),
   {
@@ -94,9 +85,6 @@ const getOptions = (...srcOpt: any[]) => {
         backward: 5,
       },
     },
-    html5: {
-      nativeTextTracks: false,
-    },
     plugins: {
       hotkeys: {
         volumeStep: 0.1,
@@ -115,26 +103,6 @@ const getSourceType = (source: string) => {
     return "video/mp4";
   }
   return "";
-};
-
-const subLabel = (subUrl: string) => {
-  let url: URL;
-  try {
-    url = new URL(subUrl);
-  } catch {
-    // treat it as a relative url
-    // we only need this for filename
-    url = new URL(subUrl, window.location.origin);
-  }
-
-  const label = decodeURIComponent(
-    url.pathname
-      .split("/")
-      .pop()!
-      .replace(/\.[^/.]+$/, "")
-  );
-
-  return label;
 };
 
 interface LanguageImports {

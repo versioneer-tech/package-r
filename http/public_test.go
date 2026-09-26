@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -16,36 +15,6 @@ import (
 	"github.com/versioneer-tech/package-r/users"
 	"golang.org/x/crypto/bcrypt"
 )
-
-func TestPublicDownloadDoesNotRequireOwnerDownloadPermission(t *testing.T) {
-	root, store, user := newPresignTestStorage(t)
-	writePresignTestFile(t, root, "files/data.txt")
-	user.Perm.Download = false
-	if err := store.Users.Update(user, "Perm"); err != nil {
-		t.Fatal(err)
-	}
-	if err := store.Share.Save(&share.Link{Hash: "my-share", Path: "/files", UserID: user.ID}); err != nil {
-		t.Fatal(err)
-	}
-
-	handler := handle(publicDlHandler, "/api/public/dl/", store, &settings.Server{Root: root})
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/dl/my-share/data.txt", http.NoBody)
-	recorder := httptest.NewRecorder()
-	handler.ServeHTTP(recorder, req)
-
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", recorder.Code)
-	}
-	result := recorder.Result()
-	defer result.Body.Close()
-	body, err := io.ReadAll(result.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(body) != "data" {
-		t.Fatalf("unexpected response body %q", body)
-	}
-}
 
 func TestPublicShareBypassesGeneratedUserDirBaseRules(t *testing.T) {
 	root := t.TempDir()
@@ -114,7 +83,12 @@ func TestPublicSharePresignPathUsesSharedFilesystemPath(t *testing.T) {
 func TestPublicShareSTACBrowserURLUsesRequestSchemeAndBaseURL(t *testing.T) {
 	root, store, user := newPresignTestStorage(t)
 	writePresignTestFile(t, root, "files/data.txt")
-	if err := store.Share.Save(&share.Link{Hash: "my-share", Path: "/files", UserID: user.ID}); err != nil {
+	if err := store.Share.Save(&share.Link{
+		Hash:       "my-share",
+		Path:       "/files",
+		UserID:     user.ID,
+		CatalogURL: "catalog.parquet",
+	}); err != nil {
 		t.Fatal(err)
 	}
 	set, err := store.Settings.Get()
@@ -152,6 +126,46 @@ func TestPublicShareSTACBrowserURLUsesRequestSchemeAndBaseURL(t *testing.T) {
 	want := "https://browser.moregeo.it/external/http://127.0.0.1:8888/package-r/api/public/catalog/my-share/data.txt"
 	if file.STACBrowserURL != want {
 		t.Fatalf("expected STAC Browser URL %q, got %q", want, file.STACBrowserURL)
+	}
+}
+
+func TestPublicShareDoesNotReturnSTACBrowserURLWithoutCatalog(t *testing.T) {
+	root, store, user := newPresignTestStorage(t)
+	writePresignTestFile(t, root, "files/data.txt")
+	if err := store.Share.Save(&share.Link{Hash: "my-share", Path: "/files", UserID: user.ID}); err != nil {
+		t.Fatal(err)
+	}
+	set, err := store.Settings.Get()
+	if err != nil {
+		t.Fatal(err)
+	}
+	set.STACBrowserURL = "https://browser.moregeo.it/external/"
+	if err := store.Settings.Save(set); err != nil {
+		t.Fatal(err)
+	}
+
+	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{Root: root})
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"http://127.0.0.1:8888/api/public/share/my-share/data.txt?preview=true",
+		http.NoBody,
+	)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+	result := recorder.Result()
+	defer result.Body.Close()
+	var file struct {
+		STACBrowserURL string `json:"stacBrowserURL"`
+	}
+	if err := json.NewDecoder(result.Body).Decode(&file); err != nil {
+		t.Fatal(err)
+	}
+	if file.STACBrowserURL != "" {
+		t.Fatalf("expected no STAC Browser URL, got %q", file.STACBrowserURL)
 	}
 }
 

@@ -25,6 +25,9 @@ func presignOrLocalURL(
 	}
 	linker, ok := store.(users.PublicLinker)
 	if !ok {
+		if localURL == "" {
+			return "", appErrors.ErrInvalidOption
+		}
 		return localURL, nil
 	}
 	return linker.PublicLink(r.Context(), user, filePath, lifetime)
@@ -32,10 +35,6 @@ func presignOrLocalURL(
 
 func localRawURL(r *http.Request, baseURL, filePath string) string {
 	return localRequestURL(r, baseURL, "/api/raw"+slashClean(filePath))
-}
-
-func localPublicDownloadURL(r *http.Request, baseURL string) string {
-	return localRequestURL(r, baseURL, "/api/public/dl/"+strings.TrimPrefix(r.URL.Path, "/"))
 }
 
 func localRequestURL(r *http.Request, baseURL, urlPath string) string {
@@ -49,6 +48,11 @@ func localRequestURL(r *http.Request, baseURL, urlPath string) string {
 		Host:   r.Host,
 		Path:   urlPath,
 	}).String()
+}
+
+func requestQueryEnabled(r *http.Request, name string) bool {
+	values, ok := r.URL.Query()[name]
+	return ok && len(values) > 0 && !strings.EqualFold(values[0], "false")
 }
 
 func requestScheme(r *http.Request) string {

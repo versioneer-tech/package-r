@@ -91,7 +91,6 @@
     "currentlyNavigating": "Aktueller Ort:",
     "deleteMessageMultiple": "Sind Sie sicher, dass Sie {count} Datei(en) löschen möchten?",
     "deleteMessageSingle": "Sind Sie sicher, dass Sie diesen Ordner/diese Datei löschen möchten?",
-    "deleteMessageShare": "Sind Sie sicher, dass Sie diese Freigabe löschen möchten ({path})?",
     "deleteTitle": "Lösche Dateien",
     "displayName": "Anzeigename:",
     "download": "Lade Dateien",

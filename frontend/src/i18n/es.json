@@ -92,7 +92,6 @@
     "currentlyNavigating": "Actualmente estás en:",
     "deleteMessageMultiple": "¿Estás seguro que quieres eliminar {count} archivo(s)?",
     "deleteMessageSingle": "¿Estás seguro que quieres eliminar este archivo/carpeta?",
-    "deleteMessageShare": "¿Está seguro de que quiere eliminar este recurso compartido({path})?",
     "deleteTitle": "Borrar archivos",
     "displayName": "Nombre:",
     "download": "Descargar archivos",

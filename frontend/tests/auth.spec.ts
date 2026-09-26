@@ -8,6 +8,19 @@ test("redirect to login", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?redirect=\/files\//);
 });
 
+test("login supports browser password managers", async ({ authPage, page }) => {
+  await authPage.goto();
+
+  await expect(page.locator('input[name="username"]')).toHaveAttribute(
+    "autocomplete",
+    "username"
+  );
+  await expect(page.locator('input[name="password"]')).toHaveAttribute(
+    "autocomplete",
+    "current-password"
+  );
+});
+
 test("login and logout", async ({ authPage, page, context }) => {
   await authPage.goto();
   await expect(page).toHaveTitle(/Login - packageR$/);

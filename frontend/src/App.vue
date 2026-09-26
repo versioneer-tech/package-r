@@ -1,10 +1,12 @@
 <template>
   <div>
     <router-view></router-view>
+    <prompts></prompts>
   </div>
 </template>
 
 <script setup lang="ts">
+import Prompts from "@/components/prompts/Prompts.vue";
 import { ref, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { setHtmlLocale } from "./i18n";

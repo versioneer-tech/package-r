@@ -16,10 +16,10 @@ interface TusSettings {
 
 type ChecksumAlg = "md5" | "sha1" | "sha256" | "sha512";
 
-interface Share {
+interface ConfiguredShare {
   hash: string;
   url: string;
-  expire?: any;
+  expire: number;
   description?: string;
 }
 

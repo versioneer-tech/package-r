@@ -11,7 +11,7 @@ import (
 	"github.com/versioneer-tech/package-r/share"
 )
 
-// configuredShare is the safe, read-only view of a bootstrap share.
+// configuredShare is the safe, read-only view of a configured public share.
 // Password hashes and access tokens must not be returned by this endpoint.
 type configuredShare struct {
 	Hash        string `json:"hash"`
@@ -21,11 +21,6 @@ type configuredShare struct {
 }
 
 var configuredShareGetsHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-	requestPath := cleanAccessPath(r.URL.Path)
-	if !d.Check(requestPath) {
-		return http.StatusForbidden, nil
-	}
-
 	links, err := d.store.Share.All()
 	if errors.Is(err, appErrors.ErrNotExist) {
 		return renderJSON(w, r, []configuredShare{})
@@ -34,40 +29,31 @@ var configuredShareGetsHandler = withUser(func(w http.ResponseWriter, r *http.Re
 		return http.StatusInternalServerError, err
 	}
 
-	targetPath := scopedSharePath(d.user.Scope, requestPath)
-	configured := configuredSharesForPath(links, targetPath, strings.HasSuffix(r.URL.Path, "/"))
+	configured := configuredSharesForUser(links, d.user.Scope, d.Check)
 	return renderJSON(w, r, configured)
 })
 
-func scopedSharePath(scope, requestPath string) string {
-	cleanScope := cleanAccessPath(scope)
-	if cleanScope == "/" {
-		return cleanAccessPath(requestPath)
-	}
-	return cleanAccessPath(path.Join(cleanScope, strings.TrimPrefix(requestPath, "/")))
-}
-
-func configuredSharesForPath(links []*share.Link, targetPath string, trailingSlash bool) []configuredShare {
-	targetPath = cleanAccessPath(targetPath)
+func configuredSharesForUser(links []*share.Link, scope string, allowed func(string) bool) []configuredShare {
+	scope = cleanAccessPath(scope)
 	configured := make([]configuredShare, 0)
 
 	for _, link := range links {
 		sharePath := cleanAccessPath(link.Path)
-		if !pathAtOrBelow(targetPath, sharePath) {
+		if !pathAtOrBelow(sharePath, scope) {
 			continue
 		}
 
-		relativePath := strings.TrimPrefix(targetPath, sharePath)
-		publicURL := path.Join("/share", link.Hash, strings.TrimPrefix(relativePath, "/"))
-		if trailingSlash && !strings.HasSuffix(publicURL, "/") {
-			publicURL += "/"
+		requestPath := strings.TrimPrefix(sharePath, scope)
+		requestPath = cleanAccessPath(requestPath)
+		if !allowed(requestPath) {
+			continue
 		}
 
 		configured = append(configured, configuredShare{
 			Hash:        link.Hash,
 			Description: link.Description,
 			Expire:      link.Expire,
-			URL:         publicURL,
+			URL:         path.Join("/share", link.Hash) + "/",
 		})
 	}
 

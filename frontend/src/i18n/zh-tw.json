@@ -98,7 +98,6 @@
     "currentlyNavigating": "目前目錄：",
     "deleteMessageMultiple": "你確定要刪除這 {count} 個檔案嗎?",
     "deleteMessageSingle": "你確定要刪除這個檔案/資料夾嗎?",
-    "deleteMessageShare": "你確定要刪除這個分享（{path}）嗎？",
     "deleteTitle": "刪除檔案",
     "displayName": "名稱：",
     "download": "下載檔案",

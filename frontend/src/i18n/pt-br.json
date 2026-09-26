@@ -92,7 +92,6 @@
     "currentlyNavigating": "Navegando em:",
     "deleteMessageMultiple": "Deseja apagar {count} arquivo(s)?",
     "deleteMessageSingle": "Deseja apagar esta pasta/arquivo?",
-    "deleteMessageShare": "Deseja apagar este compartilhamento ({path})?",
     "deleteTitle": "Apagar arquivos",
     "displayName": "Nome:",
     "download": "Baixar arquivos",

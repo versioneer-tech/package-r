@@ -37,6 +37,12 @@ func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
 	if err != nil {
 		return nil, err
 	}
+	if body.Expiration != "" {
+		expire, err = compactExpiration(body.Expiration, time.Now())
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	passwordHash, token, err := getPasswordAuth(body.Password)
 	if err != nil {
@@ -165,6 +171,50 @@ func getExpire(expires string, unit string) (int64, error) {
 	}
 
 	return time.Now().Add(add).Unix(), nil
+}
+
+func compactExpiration(value string, now time.Time) (int64, error) {
+	if value == "" {
+		return 0, nil
+	}
+	if len(value) < 2 {
+		return 0, invalidExpiration(value)
+	}
+
+	number := value[:len(value)-1]
+	for _, digit := range number {
+		if digit < '0' || digit > '9' {
+			return 0, invalidExpiration(value)
+		}
+	}
+	amount, err := strconv.Atoi(number)
+	if err != nil || amount <= 0 {
+		return 0, invalidExpiration(value)
+	}
+
+	var expires time.Time
+	switch value[len(value)-1] {
+	case 'd':
+		expires = now.AddDate(0, 0, amount)
+	case 'm':
+		expires = now.AddDate(0, amount, 0)
+	case 'H':
+		const maxHours = int64(^uint64(0)>>1) / int64(time.Hour)
+		if int64(amount) > maxHours {
+			return 0, invalidExpiration(value)
+		}
+		expires = now.Add(time.Duration(amount) * time.Hour)
+	case 'y':
+		expires = now.AddDate(amount, 0, 0)
+	default:
+		return 0, invalidExpiration(value)
+	}
+
+	return expires.Unix(), nil
+}
+
+func invalidExpiration(value string) error {
+	return fmt.Errorf("invalid expiration %q: use <number>d, <number>m, <number>H, or <number>y", value)
 }
 
 func getPasswordAuth(password string) (string, string, error) {

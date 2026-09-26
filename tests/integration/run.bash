@@ -236,7 +236,6 @@ env -i "${common_env[@]}" "${tmp_dir}/package-r" config init \
   --scope=/ \
   --perm.create=true \
   --perm.delete=true \
-  --perm.download=true \
   --perm.modify=true \
   --perm.rename=true \
   >>"${tmp_dir}/init.log" 2>&1
@@ -244,7 +243,6 @@ env -i "${common_env[@]}" "${tmp_dir}/package-r" users add admin my-password \
   --scope=/ \
   --perm.create=true \
   --perm.delete=true \
-  --perm.download=true \
   --perm.modify=true \
   --perm.rename=true \
   >>"${tmp_dir}/init.log" 2>&1
@@ -268,8 +266,8 @@ thumbnail="${FIXTURE_DIR}/${SHARED_PREFIX}/openaerialmap-assets/${ITEM_ID}/thumb
 resource_path="/${BUCKET}/${SHARED_PREFIX}/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
 public_path="openaerialmap-assets/${ITEM_ID}/thumbnail.png"
 
-log "Checking that user management APIs are unavailable"
-for api_path in users settings shares; do
+log "Checking that user and settings management APIs are unavailable"
+for api_path in users settings; do
   status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
     -H "${auth_header}" "${package_r_url}/api/${api_path}")"
   if [[ "${status}" != "404" ]]; then
@@ -277,6 +275,14 @@ for api_path in users settings shares; do
     exit 1
   fi
 done
+curl_test -fsS -H "${auth_header}" "${package_r_url}/api/shares" |
+  python3 -c 'import json, sys; shares = json.load(sys.stdin); assert len(shares) == 1; assert shares[0]["hash"] == sys.argv[1]; assert shares[0]["url"] == "/share/" + sys.argv[1] + "/"; assert "passwordHash" not in shares[0] and "token" not in shares[0] and "path" not in shares[0]' "${SHARE_NAME}"
+share_management_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "${auth_header}" "${package_r_url}/api/shares")"
+if [[ "${share_management_status}" != "404" ]]; then
+  printf 'Expected POST /api/shares to return 404, got %s\n' "${share_management_status}" >&2
+  exit 1
+fi
 signup_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
   -H 'Content-Type: application/json' \
   --data '{"username":"xyz","password":"my-password"}' \
@@ -285,7 +291,6 @@ if [[ "${signup_status}" != "404" ]]; then
   printf 'Expected /api/signup to return 404, got %s\n' "${signup_status}" >&2
   exit 1
 fi
-
 log "Checking VFS service-root browse and raw read"
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/" |
   python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert "my-bucket" in names'
@@ -297,6 +302,8 @@ curl_test -fsS -H "${auth_header}" \
   "${package_r_url}/api/raw${resource_path}" \
   --output "${tmp_dir}/raw-thumbnail.png"
 cmp "${thumbnail}" "${tmp_dir}/raw-thumbnail.png"
+grep -F "[DOWNLOAD] user=\"admin\" path=\"${resource_path}\" delivery=package_r" \
+  "${tmp_dir}/package-r.log" >/dev/null
 
 log "Checking VFS create, copy, rename, read, and delete"
 printf 'packageR rclone integration\n' >"${tmp_dir}/payload.txt"
@@ -366,9 +373,6 @@ curl_test -fsS -X DELETE -H "${auth_header}" \
   "${package_r_url}/api/resources/${BUCKET}/xyz/" >/dev/null
 
 log "Checking authenticated and public rclone presigned URLs"
-share_create_status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
-  -X POST -H "${auth_header}" "${package_r_url}/api/share/${BUCKET}/${SHARED_PREFIX}")"
-[[ "${share_create_status}" == "404" ]]
 authenticated_url="$(
 	curl_test -fsS -H "${auth_header}" \
     "${package_r_url}/api/resources${resource_path}?presign=true" |
@@ -385,16 +389,19 @@ public_url="$(
     json_field presignedURL
 )"
 fetch_and_compare "${public_url}" "${thumbnail}" "${tmp_dir}/share-thumbnail.png"
+share_token="$(
+	curl_test -fsS -H "${share_password_header}" \
+    "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}" |
+    json_field token
+)"
 
 redirect_status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
-  -H "${share_password_header}" \
-  "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}?presign=true&followRedirect=true")"
+  "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}?presign=true&follow=true&token=${share_token}")"
 [[ "${redirect_status}" == "307" ]]
 fetch_and_compare \
-  "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}?presign=true&followRedirect=true" \
+  "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}?presign=true&follow=true&token=${share_token}" \
   "${thumbnail}" \
-  "${tmp_dir}/share-redirect-thumbnail.png" \
-  -H "${share_password_header}"
+  "${tmp_dir}/share-redirect-thumbnail.png"
 
 log "Checking public catalog access"
 catalog_url="${package_r_url}/api/public/catalog/${SHARE_NAME}"
@@ -457,7 +464,6 @@ env -i "${home_env[@]}" "${tmp_dir}/package-r" config init \
   --scope=/ \
   --perm.create=true \
   --perm.delete=true \
-  --perm.download=true \
   --perm.modify=true \
   --perm.rename=true \
   >>"${tmp_dir}/init.log" 2>&1
@@ -465,7 +471,6 @@ env -i "${home_env[@]}" "${tmp_dir}/package-r" users add admin my-password \
   --scope=/ \
   --perm.create=true \
   --perm.delete=true \
-  --perm.download=true \
   --perm.modify=true \
   --perm.rename=true \
   >>"${tmp_dir}/init.log" 2>&1

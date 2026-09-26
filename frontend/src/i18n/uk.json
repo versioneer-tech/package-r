@@ -91,7 +91,6 @@
     "currentlyNavigating": "Поточний каталог:",
     "deleteMessageMultiple": "Видалити ці файли ({count})?",
     "deleteMessageSingle": "Видалити цей файл/каталог?",
-    "deleteMessageShare": "Видалити цей спільний файл/каталог ({path})?",
     "deleteTitle": "Видалити файли",
     "displayName": "Відображене ім'я:",
     "download": "Завантажити файли",

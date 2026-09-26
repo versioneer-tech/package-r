@@ -59,18 +59,15 @@ func NewHandler(
 	api.PathPrefix("/tus").Handler(monkey(tusPatchHandler(), "/api/tus")).Methods("PATCH")
 	api.PathPrefix("/tus").Handler(monkey(resourceDeleteHandler(fileCache), "/api/tus")).Methods("DELETE")
 
+	api.Handle("/shares", monkey(configuredShareGetsHandler, "/api/shares")).Methods("GET")
 	api.PathPrefix("/shares").Handler(http.NotFoundHandler())
-	api.PathPrefix("/share").Handler(monkey(configuredShareGetsHandler, "/api/share")).Methods("GET")
-	api.PathPrefix("/share").Handler(http.NotFoundHandler())
 
 	api.PathPrefix("/raw").Handler(monkey(rawHandler, "/api/raw")).Methods("GET")
 	api.PathPrefix("/preview/{size}/{path:.*}").
 		Handler(monkey(previewHandler(imgSvc, fileCache, server.EnableThumbnails, server.ResizePreview), "/api/preview")).Methods("GET")
 	api.PathPrefix("/command").Handler(monkey(commandsHandler, "/api/command")).Methods("GET")
-	api.PathPrefix("/subtitle").Handler(monkey(subtitleHandler, "/api/subtitle")).Methods("GET")
 
 	public := api.PathPrefix("/public").Subrouter()
-	public.PathPrefix("/dl").Handler(monkey(publicDlHandler, "/api/public/dl/")).Methods("GET")
 	public.PathPrefix("/share").Handler(monkey(publicShareHandler, "/api/public/share/")).Methods("GET", "HEAD")
 	public.PathPrefix("/catalog").Handler(monkey(catalogHandler, "/api/public/catalog/")).Methods("GET", "HEAD")
 

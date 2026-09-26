@@ -199,7 +199,6 @@ build_backend_if_needed "$package_r_bin" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
   --scope=/ \
   --perm.create=true \
   --perm.delete=true \
-  --perm.download=true \
   --perm.modify=true \
   --perm.rename=true \
   >"$backend_log" 2>&1
@@ -207,7 +206,6 @@ build_backend_if_needed "$package_r_bin" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
   --scope=/ \
   --perm.create=true \
   --perm.delete=true \
-  --perm.download=true \
   --perm.modify=true \
   --perm.rename=true \
   >>"$backend_log" 2>&1

@@ -10,7 +10,9 @@ Use the share command to map a public name to an object path. When
 `PACKAGE_R_ROOT` selects one bucket, the path is a prefix in that bucket:
 
 ```bash
-./package-r shares add admin public /deliverables/26-06
+./package-r shares add admin public /deliverables/26-06 \
+  --description="June 2026 deliverables" \
+  --expiration=30d
 ./package-r shares add admin f4ae91c8d2 /reports/report.tif
 ```
 
@@ -20,6 +22,14 @@ configured path.
 
 The package name is part of its URL. It must contain 1 to 20 lowercase letters,
 digits, dots, or hyphens.
+
+Use `--description` to add a short label. Signed-in users see it with the
+share link in **Settings**.
+
+Use `--expiration` to set the share lifetime. Use a positive number with days
+(`d`), calendar months (`m`), hours (`H`), or calendar years (`y`). For
+example, use `10d`, `2m`, `3H`, or `2y`. Leave it empty to create a share
+without an expiration.
 
 A hard-to-guess name can reduce accidental discovery, but it is not an access
 control. Add a share password when recipients must authenticate before they
@@ -46,8 +56,14 @@ For an authenticated or public file, select **Show** next to **Presigned URL**.
 packageR creates a direct S3 GET URL, so the file does not pass through
 packageR.
 
+On a public file page, select **Open in browser** to open the object through a
+presigned redirect. The public page has no download or directory archive
+action. A recipient can still save an object after the browser opens it.
+
+![Public file links](../imgs/screenshots/my-share-presign.png)
+
 The API can also return a `307 Temporary Redirect` to the direct URL. See the
-[HTTP API](../reference-guides/http-api.md#resources).
+[HTTP API](../reference-guides/http-api.md#public-shares).
 
 ## Preview a COG
 

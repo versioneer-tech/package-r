@@ -98,7 +98,6 @@
     "currentlyNavigating": "يتم اﻹنتقال حاليا إلى:",
     "deleteMessageMultiple": "هل تريد بالتأكيد حذف {count} ملف؟",
     "deleteMessageSingle": "هل تريد بالتأكيد حذف هذا الملف/المجلد؟",
-    "deleteMessageShare": "هل تريد بالتأكيد إلغاء مشاركة هذا الملف/المجلد ({path})؟",
     "deleteTitle": "حذف الملفات",
     "displayName": "عرض اﻹسم:",
     "download": "تحميل الملفات",

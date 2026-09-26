@@ -70,7 +70,6 @@
           v-else-if="fileStore.req?.type == 'video'"
           ref="player"
           :source="raw"
-          :subtitles="subtitles"
           :options="videoOptions"
         >
         </VideoPlayer>
@@ -188,13 +187,6 @@ const raw = computed(() => {
 const isPdf = computed(() => fileStore.req?.extension.toLowerCase() == ".pdf");
 
 const isResizeEnabled = computed(() => resizePreview);
-
-const subtitles = computed(() => {
-  if (fileStore.req?.subtitles) {
-    return api.getSubtitlesURL(fileStore.req);
-  }
-  return [];
-});
 
 const videoOptions = computed(() => {
   return { autoplay: autoPlay.value };

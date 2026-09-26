@@ -148,26 +148,32 @@ test.describe("packageR use-case UI", () => {
     );
   });
 
-  test("shows configured shares as read-only", async ({ page }) => {
+  test("shows configured shares only in settings", async ({ page }) => {
     await loginAsInitialUser(page);
     await page.goto("/files/");
 
-    await page.getByLabel(sharedPrefix, { exact: true }).click();
-    const shareButton = page.getByRole("button", {
-      name: "Share",
+    const settingsButton = page.getByRole("button", {
+      name: "Settings",
       exact: true,
     });
-    await expect(shareButton).toBeVisible();
-    await shareButton.click();
+    await expect(settingsButton).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Share", exact: true })
+    ).toHaveCount(0);
 
-    const dialog = page.locator("#share");
-    const link = dialog.getByRole("link", { name: /my-share/ });
-    await expect(link).toHaveAttribute("href", /\/share\/my-share\/$/);
-    await expect(dialog.getByRole("button", { name: "New" })).toHaveCount(0);
-    await expect(dialog.getByRole("button", { name: "Delete" })).toHaveCount(0);
+    await settingsButton.click();
+    const settings = page.locator("#settings");
+    await expect(settings).toBeVisible();
+    await expect(
+      settings.getByRole("link", { name: /my-share/ })
+    ).toHaveAttribute("href", /\/share\/my-share\/$/);
+    await expect(settings.getByRole("button", { name: "New" })).toHaveCount(0);
+    await expect(settings.getByRole("button", { name: "Delete" })).toHaveCount(
+      0
+    );
 
-    const response = await page.request.post(`/api/share/${sharedPrefix}/`);
-    expect(response.status()).toBe(404);
+    const settingsResponse = await page.request.get("/api/shares");
+    expect(settingsResponse.status()).toBe(200);
   });
 
   test("renders authenticated image preview", async ({ page }) => {
@@ -198,14 +204,30 @@ test.describe("packageR use-case UI", () => {
     );
   });
 
-  test("shows public share rclone presigned URL", async ({ page }) => {
+  test("opens a public file through a presigned redirect", async ({ page }) => {
     await prepareStableScreenshot(page);
 
     const infoBox = await openPublicShareThumbnail(page);
     await expect(infoBox.getByText("MD5:")).toBeVisible();
     await expect(
       infoBox.locator("a.button", { hasText: "Download" })
-    ).toBeVisible();
+    ).toHaveCount(0);
+    await expect(
+      infoBox.locator("a.button", { hasText: "Open file" })
+    ).toHaveCount(0);
+
+    const openLink = infoBox.getByRole("link", { name: "Open in browser" });
+    const openHref = await openLink.getAttribute("href");
+    if (openHref === null) {
+      throw new Error("Open in browser link has no href");
+    }
+    const openURL = new URL(openHref);
+    expect(openURL.pathname).toBe(
+      `/api/public/share/${publicShare}/${thumbnailPath}`
+    );
+    expect(openURL.searchParams.get("presign")).toBe("true");
+    expect(openURL.searchParams.get("follow")).toBe("true");
+
     const presignedLink = infoBox
       .locator("p", { hasText: "Presigned URL:" })
       .getByRole("link");
@@ -214,7 +236,7 @@ test.describe("packageR use-case UI", () => {
     await expectAndNormalizePresignedURL(
       presignedLink,
       `${sharedPrefix}/${thumbnailPath}`,
-      `${screenshotBackendBaseURL}/api/public/dl/${publicShare}/${thumbnailPath}`
+      `https://object-storage.example/${sharedPrefix}/${thumbnailPath}`
     );
     await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(

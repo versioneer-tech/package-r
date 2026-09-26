@@ -8,6 +8,12 @@
       title="Home"
     />
     <Action
+      v-if="authStore.user"
+      icon="settings"
+      :label="t('sidebar.settings')"
+      @action="layoutStore.showHover('settings')"
+    />
+    <Action
       v-if="showMenu && authStore.user"
       icon="exit_to_app"
       :label="t('sidebar.logout')"

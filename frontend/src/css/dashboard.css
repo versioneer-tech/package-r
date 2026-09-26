@@ -93,46 +93,26 @@ body.rtl .card .card-action {
   max-width: 15em;
 }
 
-.card#share ul {
+#settings-shares {
   list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
 }
 
-.card#share ul li {
+#settings-shares li {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 1em;
+  justify-content: space-between;
 }
 
-.card#share ul li a {
+#settings-shares a {
   color: var(--blue);
-  cursor: pointer;
-  margin-right: auto;
+  overflow-wrap: anywhere;
 }
 
-.card#share ul li .action i {
+#settings-shares .action i {
   font-size: 1rem;
-}
-
-.card#share .action.copy-clipboard::after {
-  content: "Copied!";
-  position: absolute;
-  left: -25%;
-  width: 150%;
-  font-size: 0.6em;
-  text-align: center;
-  background: #44a6f5;
-  color: #fff;
-  padding: 0.5em 0.2em;
-  border-radius: 0.4em;
-  top: -2em;
-  transition: 0.1s ease opacity;
-  opacity: 0;
-}
-
-.card#share .action.copy-clipboard.active::after {
-  opacity: 1;
 }
 
 .overlay {

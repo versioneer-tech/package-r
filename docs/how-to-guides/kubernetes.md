@@ -69,7 +69,6 @@ spec:
                 --scope=/ \
                 --perm.create=false \
                 --perm.delete=false \
-                --perm.download=false \
                 --perm.modify=false \
                 --perm.rename=false
 
@@ -77,7 +76,6 @@ spec:
                 --scope=/ \
                 --perm.create=true \
                 --perm.delete=true \
-                --perm.download=true \
                 --perm.modify=true \
                 --perm.rename=true
 

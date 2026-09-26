@@ -43,7 +43,6 @@ storage root.
 | `PUT` | `/api/resources/{path}` | Replace an existing file. |
 | `PATCH` | `/api/resources/{path}` | Copy or move an object. |
 | `DELETE` | `/api/resources/{path}` | Delete a file or directory tree. |
-| `GET` | `/api/raw/{path}` | Download a file or directory archive. |
 
 The request needs `X-Auth` and permission for the action. These query values
 control common operations:
@@ -55,21 +54,19 @@ control common operations:
 - `action=copy|rename` with a URL-encoded `destination` copies or moves an
   object in a `PATCH` request
 
-Presigned object URLs are valid for at most seven days. Directory downloads
-support `zip`, `tar`, `targz`, `tarbz2`, `tarxz`, `tarlz4`, and `tarsz` through
-the `algo` query value.
+Presigned object URLs are valid for at most seven days.
 
-## Configured packages
+## Settings
 
-An authenticated user can list public packages that contain an object path:
+Authenticated users can list the configured public shares available in their
+scope:
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/share/{path}` | Return read-only public package links for the path. |
+| `GET` | `/api/shares` | Return safe, read-only public share links. |
 
-The request needs `X-Auth` and access to the object path. The response includes
-the package name, description, expiry, and public URL. It does not include
-password hashes or access tokens. Configure packages with `package-r shares`.
+The response does not include password hashes or access tokens. Configure
+shares with `package-r shares`.
 
 ## Public shares
 
@@ -79,12 +76,14 @@ need a packageR token.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` or `HEAD` | `/api/public/share/{hash}/{path}` | List or inspect a shared resource. |
-| `GET` | `/api/public/dl/{hash}/{path}` | Download a shared file or directory archive. |
 
 For a share protected by a share password, send the URL-encoded share password
 in `X-SHARE-PASSWORD`. A successful response contains a temporary share token.
-Public file metadata supports the same checksum and presign query values as
-an authenticated resource.
+Send this token in the `token` query value for later requests. Public file
+metadata supports the same checksum and presign query values as an
+authenticated resource. With both `presign=true` and `follow=true`, it returns
+`307 Temporary Redirect` to object storage. Public shares do not provide a
+packageR download or directory archive endpoint.
 
 ## Public catalogs
 

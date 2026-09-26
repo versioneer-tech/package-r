@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -18,6 +19,7 @@ import (
 
 type catalogedFile struct {
 	File          *files.FileInfo
+	ShareHash     string
 	SharePath     string
 	CatalogURL    string
 	AssetMappings []share.CatalogAssetMapping
@@ -26,7 +28,7 @@ type catalogedFile struct {
 
 var withHashFile = func(fn handleFunc) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-		id, ifPath := ifPathWithName(r)
+		id, ifPath := splitSharePath(r)
 		link, err := d.store.Share.GetByHash(id)
 		if err != nil {
 			return errToStatus(err), err
@@ -85,6 +87,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 
 		d.raw = &catalogedFile{
 			File:          file,
+			ShareHash:     link.Hash,
 			SharePath:     link.Path,
 			CatalogURL:    link.CatalogURL,
 			AssetMappings: link.AssetMappings,
@@ -95,12 +98,8 @@ var withHashFile = func(fn handleFunc) handleFunc {
 	}
 }
 
-// Keep the download route compatible with older browsers.
-// `/api/public/dl/MEEuZK-v/file-name.txt` for old browsers to save file with correct name
-func ifPathWithName(r *http.Request) (id, filePath string) {
+func splitSharePath(r *http.Request) (id, filePath string) {
 	pathElements := strings.Split(r.URL.Path, "/")
-	// prevent maliciously constructed parameters like `/api/public/dl/XZzCDnK2_not_exists_hash_name`
-	// len(pathElements) will be 1, and golang will panic `runtime error: index out of range`
 
 	switch len(pathElements) {
 	case 1:
@@ -139,7 +138,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 			d.store.Users,
 			d.user,
 			publicSharePresignPath(cf),
-			localPublicDownloadURL(r, d.server.BaseURL),
+			"",
 			publicSharePresignLifetime(cf.ShareExpire),
 		)
 		if errors.Is(err, appErrors.ErrInvalidOption) {
@@ -150,14 +149,16 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 		file.PresignedURL = url
 	}
 
-	follow, ok := r.URL.Query()["followRedirect"]
-	if ok && !strings.EqualFold(follow[0], "false") && file.PresignedURL != "" {
+	follow := requestQueryEnabled(r, "follow") || requestQueryEnabled(r, "followRedirect")
+	if follow && file.PresignedURL != "" {
+		downloadPath := publicSharePresignPath(cf)
+		log.Printf("[DOWNLOAD] public_share=%q path=%q delivery=presigned_redirect", cf.ShareHash, downloadPath)
 		status := http.StatusTemporaryRedirect // 307 to preserve method
 		http.Redirect(w, r, file.PresignedURL, status)
 		return status, nil
 	}
 
-	if d.settings.STACBrowserURL != "" {
+	if cf.CatalogURL != "" && d.settings.STACBrowserURL != "" {
 		preview, ok := r.URL.Query()["preview"]
 		if ok && !strings.EqualFold(preview[0], "false") {
 			err := file.STACBrowser()
@@ -193,17 +194,6 @@ func publicSharePresignLifetime(expireUnix int64) time.Duration {
 	}
 	return presignLifetime
 }
-
-var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-	cf := d.raw.(*catalogedFile)
-	file := cf.File
-
-	if !file.IsDir {
-		return rawFileHandler(w, r, file)
-	}
-
-	return rawDirHandler(w, r, d, file)
-})
 
 func authenticateShareRequest(r *http.Request, l *share.Link) (int, error) {
 	if l.PasswordHash == "" {

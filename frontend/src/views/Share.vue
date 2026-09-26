@@ -4,13 +4,6 @@
       <title>{{ name }}</title>
 
       <action
-        v-if="fileStore.selectedCount"
-        icon="file_download"
-        :label="t('buttons.download')"
-        @action="download"
-        :counter="fileStore.selectedCount"
-      />
-      <action
         icon="check_circle"
         :label="t('buttons.selectMultiple')"
         @action="toggleMultipleSelection"
@@ -162,24 +155,14 @@
           <div class="share__box__element share__box__center">
             <a
               target="_blank"
-              :href="link"
-              class="button button--flat"
-              style="height: 4em"
-            >
-              <div>
-                <i class="material-icons">file_download</i
-                >{{ t("buttons.download") }}
-              </div>
-            </a>
-            <a
-              target="_blank"
-              :href="inlineLink"
+              rel="noopener noreferrer"
+              :href="openURL"
               class="button button--flat"
               v-if="!req.isDir"
             >
               <div>
                 <i class="material-icons">open_in_new</i
-                >{{ t("buttons.openFile") }}
+                >{{ t("buttons.openInBrowser") }}
               </div>
             </a>
           </div>
@@ -275,7 +258,6 @@ const showLimit = ref<number>(100);
 const password = ref<string>("");
 const attemptedPasswordLogin = ref<boolean>(false);
 const hash = ref<string>("");
-const token = ref<string>("");
 
 const $showError = inject<IToastError>("$showError")!;
 
@@ -292,11 +274,8 @@ watch(route, () => {
 
 const req = computed(() => fileStore.req);
 
-const link = computed(() =>
-  req.value ? pub_api.getDownloadURL(req.value) : ""
-);
-const inlineLink = computed(() =>
-  req.value ? pub_api.getDownloadURL(req.value, true) : ""
+const openURL = computed(() =>
+  req.value ? pub_api.getOpenURL(req.value) : ""
 );
 const humanSize = computed(() => {
   if (req.value) {
@@ -344,8 +323,6 @@ const fetchData = async () => {
     const file = await pub_api.fetch(url, password.value);
     file.hash = hash.value;
 
-    token.value = file.token || "";
-
     fileStore.updateRequest(file);
     document.title = `${file.name} - ${document.title}`;
   } catch (err) {
@@ -369,43 +346,6 @@ const keyEvent = (event: KeyboardEvent) => {
 
 const toggleMultipleSelection = () => {
   fileStore.toggleMultiple();
-};
-
-const isSingleFile = () =>
-  fileStore.selectedCount === 1 &&
-  !req.value?.items[fileStore.selected[0]].isDir;
-
-const download = () => {
-  if (!req.value) return false;
-
-  if (isSingleFile()) {
-    pub_api.download(
-      null,
-      hash.value,
-      token.value,
-      req.value.items[fileStore.selected[0]].path
-    );
-    return true;
-  }
-
-  layoutStore.showHover({
-    prompt: "download",
-    confirm: (format: DownloadFormat) => {
-      if (req.value === null) return false;
-      layoutStore.closeHovers();
-
-      const files: string[] = [];
-
-      for (const i of fileStore.selected) {
-        files.push(req.value.items[i].path);
-      }
-
-      pub_api.download(format, hash.value, token.value, ...files);
-      return true;
-    },
-  });
-
-  return true;
 };
 
 onMounted(async () => {

@@ -14,6 +14,8 @@ import (
 func init() {
 	sharesCmd.AddCommand(sharesAddCmd)
 	sharesAddCmd.Flags().String("password", "", "password required to open the share")
+	sharesAddCmd.Flags().String("description", "", "short share description")
+	sharesAddCmd.Flags().String("expiration", "", "share lifetime, e.g. 30d, 2m, 3H, or 1y")
 	sharesAddCmd.Flags().String("catalog-name", "", "relative catalog path inside the share")
 	sharesAddCmd.Flags().String("asset-mappings", "", "JSON array of catalog asset URL-to-path mappings")
 }
@@ -42,6 +44,8 @@ var sharesAddCmd = &cobra.Command{
 		body := share.CreateBody{
 			Hash:          args[1],
 			Password:      mustGetString(cmd.Flags(), "password"),
+			Description:   mustGetString(cmd.Flags(), "description"),
+			Expiration:    mustGetString(cmd.Flags(), "expiration"),
 			CatalogName:   mustGetString(cmd.Flags(), "catalog-name"),
 			AssetMappings: assetMappings,
 		}

@@ -214,11 +214,3 @@ export function getPreviewURL(file: ResourceItem, size: string) {
 
   return createURL("api/preview/" + size + file.path, params);
 }
-
-export function getSubtitlesURL(file: ResourceItem) {
-  const params = {
-    inline: "true",
-  };
-
-  return file.subtitles?.map((d) => createURL("api/subtitle" + d, params));
-}

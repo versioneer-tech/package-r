@@ -17,6 +17,7 @@ func TestWriteSharesIncludesShareConfiguration(t *testing.T) {
 		CatalogURL:   "/catalog-sample/catalog.parquet",
 		PasswordHash: "secret-hash",
 		Token:        "secret-token",
+		Description:  "Example data",
 		AssetMappings: []share.CatalogAssetMapping{{
 			From: "s3://data/",
 			To:   ".",
@@ -32,7 +33,9 @@ func TestWriteSharesIncludesShareConfiguration(t *testing.T) {
 		"Password protected",
 		"Catalog",
 		"Asset mappings",
+		"Description",
 		"yes",
+		"Example data",
 		"/catalog-sample/catalog.parquet",
 		`[{"from":"s3://data/","to":"."}]`,
 	} {

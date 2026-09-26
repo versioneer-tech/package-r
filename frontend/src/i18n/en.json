@@ -23,6 +23,7 @@
     "next": "Next",
     "ok": "OK",
     "open": "Open",
+    "openInBrowser": "Open in browser",
     "permalink": "Get Permanent Link",
     "previous": "Previous",
     "preview": "Preview",
@@ -102,7 +103,6 @@
     "currentlyNavigating": "Currently navigating on:",
     "deleteMessageMultiple": "Are you sure you wish to delete {count} file(s)?",
     "deleteMessageSingle": "Are you sure you wish to delete this file/folder?",
-    "deleteMessageShare": "Are you sure you wish to delete this share({path})?",
     "deleteTitle": "Delete files",
     "displayName": "Display Name:",
     "download": "Download files",
@@ -132,6 +132,8 @@
     "uploadFiles": "Uploading {files} files...",
     "uploadMessage": "Select an option to upload.",
     "optionalPassword": "Optional password",
+    "availableShares": "Available shares",
+    "noShares": "No shares are configured.",
     "resolution": "Resolution",
     "discardEditorChanges": "Are you sure you wish to discard the changes you've made?"
   },
@@ -142,7 +144,8 @@
     "myFiles": "My files",
     "newFile": "New file",
     "newFolder": "New folder",
-    "preview": "Preview"
+    "preview": "Preview",
+    "settings": "Settings"
   },
   "success": {
     "linkCopied": "Link copied!"

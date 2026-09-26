@@ -98,7 +98,6 @@
     "currentlyNavigating": "Actualment estàs a:",
     "deleteMessageMultiple": "Estàs segur que vols eliminar {count} fitxer(s)?",
     "deleteMessageSingle": "Estàs segur que vols eliminar aquest fitxer/carpeta?",
-    "deleteMessageShare": "Estàs segur que vols eliminar aquest recurs compartit ({path})?",
     "deleteTitle": "Esborrar fitxers",
     "displayName": "Nom:",
     "download": "Descarregar fitxers",

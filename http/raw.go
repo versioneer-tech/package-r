@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"log"
 	"net/http"
 	"net/url"
 	gopath "path"
@@ -97,10 +98,12 @@ var rawHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) 
 	}
 
 	if files.IsNamedPipe(file.Mode) {
+		log.Printf("[DOWNLOAD] user=%q path=%q delivery=package_r", d.user.Username, file.Path)
 		setContentDisposition(w, r, file)
 		return 0, nil
 	}
 
+	log.Printf("[DOWNLOAD] user=%q path=%q delivery=package_r", d.user.Username, file.Path)
 	if !file.IsDir {
 		return rawFileHandler(w, r, file)
 	}

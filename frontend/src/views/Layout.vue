@@ -11,7 +11,6 @@
         "
       />
     </main>
-    <prompts></prompts>
     <upload-files></upload-files>
   </div>
 </template>
@@ -21,7 +20,6 @@ import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
 import { useFileStore } from "@/stores/file";
 import { useUploadStore } from "@/stores/upload";
-import Prompts from "@/components/prompts/Prompts.vue";
 import Shell from "@/components/Shell.vue";
 import UploadFiles from "@/components/prompts/UploadFiles.vue";
 import { enableExec } from "@/utils/constants";

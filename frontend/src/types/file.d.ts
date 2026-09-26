@@ -21,13 +21,11 @@ interface Resource extends ResourceBase {
   hash?: string;
   token?: string;
   index: number;
-  subtitles?: string[];
   content?: string;
 }
 
 interface ResourceItem extends ResourceBase {
   index: number;
-  subtitles?: string[];
 }
 
 type ResourceType =

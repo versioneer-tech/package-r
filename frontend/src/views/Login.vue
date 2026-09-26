@@ -10,6 +10,8 @@
         autofocus
         class="input input--block"
         type="text"
+        name="username"
+        autocomplete="username"
         autocapitalize="off"
         v-model="username"
         :placeholder="t('login.username')"
@@ -18,6 +20,8 @@
         v-if="loginPage"
         class="input input--block"
         type="password"
+        name="password"
+        autocomplete="current-password"
         v-model="password"
         :placeholder="t('login.password')"
       />

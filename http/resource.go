@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -74,6 +75,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 
 	follow, ok := r.URL.Query()["followRedirect"]
 	if ok && !strings.EqualFold(follow[0], "false") && file.PresignedURL != "" {
+		log.Printf("[DOWNLOAD] user=%q path=%q delivery=presigned_redirect", d.user.Username, file.Path)
 		status := http.StatusTemporaryRedirect // 307 to preserve method
 		http.Redirect(w, r, file.PresignedURL, status)
 		return status, nil

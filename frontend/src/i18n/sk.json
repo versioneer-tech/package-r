@@ -91,7 +91,6 @@
     "currentlyNavigating": "Aktuálna cesta:",
     "deleteMessageMultiple": "Naozaj chcete odstrániť {count} súbor(ov)?",
     "deleteMessageSingle": "Naozaj chcete odstrániť tento súbor/priečinok?",
-    "deleteMessageShare": "Naozaj chcete odstrániť toto zdieľanie({path})?",
     "deleteTitle": "Odstránenie súborov",
     "displayName": "Zobrazený názov:",
     "download": "Stiahnuť súbory",

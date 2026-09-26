@@ -97,7 +97,6 @@
     "currentlyNavigating": "現在閲覧しているディレクトリ：",
     "deleteMessageMultiple": "{count} 個のファイルを削除してもよろしいですか？",
     "deleteMessageSingle": "このファイル／フォルダーを削除してもよろしいですか？",
-    "deleteMessageShare": "共有中のファイル（{path}）を削除してもよろしいですか？",
     "deleteTitle": "ファイルの削除",
     "displayName": "表示名：",
     "download": "ファイルのダウンロード",

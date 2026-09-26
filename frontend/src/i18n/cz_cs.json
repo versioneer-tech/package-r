@@ -98,7 +98,6 @@
     "currentlyNavigating": "Aktuálně navigujete v:",
     "deleteMessageMultiple": "Opravdu chcete smazat {count} soubor(ů)?",
     "deleteMessageSingle": "Opravdu chcete smazat tento soubor/složku?",
-    "deleteMessageShare": "Opravdu chcete smazat toto sdílení({path})?",
     "deleteTitle": "Smazat soubory",
     "displayName": "Zobrazované jméno:",
     "download": "Stáhnout soubory",

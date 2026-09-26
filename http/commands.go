@@ -76,6 +76,7 @@ var commandsHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *d
 		return 0, nil
 	}
 
+	log.Printf("[EXECUTE] user=%q path=%q command=%q", d.user.Username, r.URL.Path, command[0])
 	cmd := exec.Command(command[0], command[1:]...) //nolint:gosec
 	cmd.Dir = d.user.FullPath(r.URL.Path)
 
@@ -103,8 +104,12 @@ var commandsHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *d
 		}
 	}
 
-	if err := cmd.Wait(); err != nil {
-		wsErr(conn, r, http.StatusInternalServerError, err)
+	scanErr := s.Err()
+	waitErr := cmd.Wait()
+	if scanErr != nil {
+		wsErr(conn, r, http.StatusInternalServerError, scanErr)
+	} else if waitErr != nil {
+		wsErr(conn, r, http.StatusInternalServerError, waitErr)
 	}
 
 	return 0, nil

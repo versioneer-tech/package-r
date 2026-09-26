@@ -55,9 +55,9 @@ example publishes the `catalog-sample` prefix from the `data` bucket:
   --perm.create=true \
   --perm.rename=true \
   --perm.modify=true \
-  --perm.delete=true \
-  --perm.download=true
+  --perm.delete=true
 ./package-r shares add admin my-share /data/catalog-sample \
+  --description="Open aerial imagery sample" \
   --catalog-name=catalog.parquet
 
 AWS_ACCESS_KEY_ID=my-access-key \

@@ -94,7 +94,6 @@
     "currentlyNavigating": "Dossier courant :",
     "deleteMessageMultiple": "Êtes-vous sûr de vouloir supprimer ces {count} élément(s) ?",
     "deleteMessageSingle": "Êtes-vous sûr de vouloir supprimer cet élément ?",
-    "deleteMessageShare": "Êtes-vous sûr de vouloir supprimer ce partage ({path}) ?",
     "deleteTitle": "Supprimer",
     "displayName": "Nom :",
     "download": "Télécharger",

@@ -84,7 +84,7 @@ run_development_environment() {
   local pid=""
   local status
 
-  for command_name in "$rclone_bin" curl make; do
+  for command_name in "$rclone_bin" curl make node pnpm; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
       printf '[local-dev] %s is required\n' "$command_name" >&2
       return 1
@@ -125,6 +125,7 @@ run_development_environment() {
     printf '[local-s3] serving %s at %s\n' "$serve_root" "$endpoint"
   fi
 
+  pnpm --dir "$repo_root/frontend" install --frozen-lockfile
   make -C "$repo_root" build-backend-dev
 
   if [ ! -s "$database" ]; then
@@ -138,7 +139,6 @@ run_development_environment() {
       --scope=/ \
       --perm.create=true \
       --perm.delete=true \
-      --perm.download=true \
       --perm.modify=true \
       --perm.rename=true \
       >/dev/null
@@ -153,7 +153,6 @@ run_development_environment() {
       --scope=/ \
       --perm.create=true \
       --perm.delete=true \
-      --perm.download=true \
       --perm.modify=true \
       --perm.rename=true \
       >/dev/null
@@ -165,7 +164,6 @@ run_development_environment() {
       --scope=/ \
       --perm.create=true \
       --perm.delete=true \
-      --perm.download=true \
       --perm.modify=true \
       --perm.rename=true \
       >/dev/null
@@ -174,7 +172,6 @@ run_development_environment() {
       --scope=/ \
       --perm.create=true \
       --perm.delete=true \
-      --perm.download=true \
       --perm.modify=true \
       --perm.rename=true \
       >/dev/null

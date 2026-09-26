@@ -6,7 +6,6 @@ toolchain go1.27.1
 
 require (
 	github.com/asdine/storm/v3 v3.2.1
-	github.com/asticode/go-astisub v0.45.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/dsoprea/go-exif/v3 v3.0.1
 	github.com/duckdb/duckdb-go/v2 v2.10505.0
@@ -38,8 +37,6 @@ require (
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/andybalholm/brotli v1.2.5 // indirect
 	github.com/apache/arrow-go/v18 v18.8.0 // indirect
-	github.com/asticode/go-astikit v0.59.0 // indirect
-	github.com/asticode/go-astits v1.16.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.47.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.20 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.33.6 // indirect
