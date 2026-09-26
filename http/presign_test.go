@@ -49,12 +49,12 @@ func TestResourcePresignFallsBackToLocalRawURLWithoutRcloneStorage(t *testing.T)
 func TestPublicSharePresignRedirectsToLocalDownloadURLWithoutRcloneStorage(t *testing.T) {
 	root, store, _ := newPresignTestStorage(t)
 	writePresignTestFile(t, root, "files/data.txt")
-	if err := store.Share.Save(&share.Link{Hash: "public-share", Path: "/files", UserID: 1}); err != nil {
+	if err := store.Share.Save(&share.Link{Hash: "my-share", Path: "/files", UserID: 1}); err != nil {
 		t.Fatal(err)
 	}
 
 	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{Root: root})
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/share/public-share/data.txt?presign=true&followRedirect=true", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/share/my-share/data.txt?presign=true&followRedirect=true", http.NoBody)
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(recorder, req)
@@ -62,7 +62,7 @@ func TestPublicSharePresignRedirectsToLocalDownloadURLWithoutRcloneStorage(t *te
 	if recorder.Code != http.StatusTemporaryRedirect {
 		t.Fatalf("expected temporary redirect, got %d", recorder.Code)
 	}
-	if location := recorder.Header().Get("Location"); location != "http://localhost:8888/api/public/dl/public-share/data.txt" {
+	if location := recorder.Header().Get("Location"); location != "http://localhost:8888/api/public/dl/my-share/data.txt" {
 		t.Fatalf("expected local public download fallback URL, got %q", location)
 	}
 }
@@ -70,12 +70,12 @@ func TestPublicSharePresignRedirectsToLocalDownloadURLWithoutRcloneStorage(t *te
 func TestPublicSharePresignRejectsHead(t *testing.T) {
 	root, store, _ := newPresignTestStorage(t)
 	writePresignTestFile(t, root, "files/data.txt")
-	if err := store.Share.Save(&share.Link{Hash: "public-share", Path: "/files", UserID: 1}); err != nil {
+	if err := store.Share.Save(&share.Link{Hash: "my-share", Path: "/files", UserID: 1}); err != nil {
 		t.Fatal(err)
 	}
 
 	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{Root: root})
-	req := httptest.NewRequest(http.MethodHead, "http://localhost:8888/api/public/share/public-share/data.txt?presign=true", http.NoBody)
+	req := httptest.NewRequest(http.MethodHead, "http://localhost:8888/api/public/share/my-share/data.txt?presign=true", http.NoBody)
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(recorder, req)
@@ -94,7 +94,7 @@ func TestPublicSharePresignDoesNotOutliveShare(t *testing.T) {
 	store.Users = linker
 	expire := time.Now().Add(5 * time.Minute).Unix()
 	if err := store.Share.Save(&share.Link{
-		Hash:   "public-share",
+		Hash:   "my-share",
 		Path:   "/files",
 		UserID: 1,
 		Expire: expire,
@@ -103,7 +103,7 @@ func TestPublicSharePresignDoesNotOutliveShare(t *testing.T) {
 	}
 
 	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{Root: root})
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/share/public-share/data.txt?presign=true", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/share/my-share/data.txt?presign=true", http.NoBody)
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(recorder, req)

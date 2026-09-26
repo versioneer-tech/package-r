@@ -24,6 +24,7 @@ import (
 
 const openAerialMapID = "67793f0b9478720001790586"
 
+//nolint:gocyclo
 func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	repoRoot := testRepoRoot(t)
 	root := t.TempDir()
@@ -89,7 +90,7 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	}
 	store.Users = catalogUsers
 	link := &share.Link{
-		Hash:       "public-share",
+		Hash:       "my-share",
 		Path:       "/public",
 		UserID:     1,
 		CatalogURL: "/public/catalog.parquet",
@@ -101,28 +102,56 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	handler := handle(catalogHandler, "/api/public/catalog/", store, &settings.Server{Root: root})
 
 	collection := callCatalog[struct {
-		Type     string                   `json:"type"`
-		Features []map[string]interface{} `json:"features"`
-	}](t, handler, "/api/public/catalog/public-share")
+		Type        string                   `json:"type"`
+		STACVersion string                   `json:"stac_version"`
+		Links       []map[string]interface{} `json:"links"`
+		Features    []map[string]interface{} `json:"features"`
+	}](t, handler, "/api/public/catalog/my-share")
 	if collection.Type != "FeatureCollection" || len(collection.Features) != 3 {
 		t.Fatalf("expected STAC FeatureCollection with 3 features, got %#v", collection)
+	}
+	if collection.STACVersion != "1.1.0" {
+		t.Fatalf("expected STAC version 1.1.0, got %q", collection.STACVersion)
+	}
+	if collection.Links == nil {
+		t.Fatal("expected STAC FeatureCollection links")
 	}
 
 	feature := findFeature(t, collection.Features, openAerialMapID)
 	if feature["type"] != "Feature" {
 		t.Fatalf("expected STAC Feature, got %#v", feature)
 	}
+	properties, ok := feature["properties"].(map[string]interface{})
+	if !ok || properties["datetime"] == nil {
+		t.Fatalf("expected STAC datetime in item properties, got %#v", feature["properties"])
+	}
+	if _, exists := feature["collection"]; exists {
+		t.Fatalf("expected collection without a link to move into properties, got %#v", feature)
+	}
+	if properties["collection"] != "openaerialmap" {
+		t.Fatalf("expected source collection metadata in properties, got %#v", properties["collection"])
+	}
+	if links, ok := feature["links"].([]interface{}); !ok || len(links) != 1 {
+		t.Fatalf("expected STAC item links, got %#v", feature["links"])
+	}
 
-	expectedThumbnail := "http://localhost:8888/api/public/share/public-share/openaerialmap-assets/" +
+	expectedThumbnail := "http://localhost:8888/api/public/share/my-share/openaerialmap-assets/" +
 		openAerialMapID + "/thumbnail.png?presign&followRedirect"
 	if href := stacAssetHref(t, feature, "thumbnail"); href != expectedThumbnail {
 		t.Fatalf("unexpected rewritten asset href: %q", href)
 	}
 
-	item := callCatalog[map[string]interface{}](t, handler, "/api/public/catalog/public-share/openaerialmap-assets/"+
+	item := callCatalog[map[string]interface{}](t, handler, "/api/public/catalog/my-share/openaerialmap-assets/"+
 		openAerialMapID+"/thumbnail.png")
 	if item["id"] != openAerialMapID {
 		t.Fatalf("expected STAC item %q, got %#v", openAerialMapID, item)
+	}
+	links := feature["links"].([]interface{})
+	selfLink := links[0].(map[string]interface{})
+	expectedSelfHref := "http://localhost:8888/api/public/catalog/my-share/openaerialmap-assets/" +
+		openAerialMapID + "/metadata.json"
+	if selfLink["href"] != expectedSelfHref {
+		t.Fatalf("expected resolvable STAC self link %q, got %#v", expectedSelfHref, selfLink)
 	}
 
 	link.CatalogURL = "/workspace/public/catalog.parquet"
@@ -131,7 +160,7 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	}
 	legacyCollection := callCatalog[struct {
 		Features []map[string]interface{} `json:"features"`
-	}](t, handler, "/api/public/catalog/public-share")
+	}](t, handler, "/api/public/catalog/my-share")
 	if len(legacyCollection.Features) != 3 {
 		t.Fatalf("expected legacy catalog path to use the VFS, got %#v", legacyCollection)
 	}

@@ -1,8 +1,15 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
+	"path"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/versioneer-tech/package-r/settings"
 )
 
 func init() {
@@ -69,6 +76,8 @@ you want to change. Other options will remain unchanged.`,
 				set.Catalog.DefaultName = mustGetString(flags, flag.Name)
 			case "catalog.previewURL":
 				set.Catalog.PreviewURL = mustGetString(flags, flag.Name)
+			case "catalog.assetMappings":
+				set.Catalog.AssetMappings = parseCatalogAssetMappings(mustGetString(flags, flag.Name))
 			}
 		})
 
@@ -89,4 +98,30 @@ you want to change. Other options will remain unchanged.`,
 		checkErr(err)
 		printSettings(ser, set, auther)
 	}, pythonConfig{}),
+}
+
+func parseCatalogAssetMappings(value string) []settings.CatalogAssetMapping {
+	if value == "" {
+		return nil
+	}
+
+	var mappings []settings.CatalogAssetMapping
+	checkErr(json.Unmarshal([]byte(value), &mappings))
+	for i, mapping := range mappings {
+		if mapping.From == "" {
+			checkErr(fmt.Errorf("catalog asset mapping %d has an empty from value", i))
+		}
+		if !catalogMappingPathIsRelative(mapping.To) {
+			checkErr(fmt.Errorf("catalog asset mapping %d to value must stay inside the share", i))
+		}
+	}
+	return mappings
+}
+
+func catalogMappingPathIsRelative(value string) bool {
+	if strings.HasPrefix(value, "/") || strings.ContainsRune(value, '\x00') {
+		return false
+	}
+	clean := path.Clean(value)
+	return clean != ".." && !strings.HasPrefix(clean, "../")
 }

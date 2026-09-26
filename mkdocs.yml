@@ -12,13 +12,14 @@ nav:
       - Run packageR: how-to-guides/run-package-r.md
   - User guides:
       - Work with objects: how-to-guides/work-with-objects.md
-      - Share and preview data: how-to-guides/share-and-preview-data.md
+      - Package, share, and preview data: how-to-guides/share-and-preview-data.md
   - Operator guides:
       - Configuration: how-to-guides/configuration.md
   - Reference guides:
       - HTTP API: reference-guides/http-api.md
       - Architecture:
           - ADR-001 Embedded rclone VFS: architecture/0001-use-rclone-vfs-for-object-storage.md
+          - ADR-002 Parquet catalogs as STAC: architecture/0002-publish-parquet-catalogs-as-stac.md
 plugins:
   - search
   - mike

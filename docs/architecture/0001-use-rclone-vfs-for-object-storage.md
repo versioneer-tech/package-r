@@ -1,7 +1,7 @@
 # ADR-001: Use rclone VFS for object storage
 
 - Status: Accepted
-- Date: 2026-09-24
+- Date: 2026-08-30
 
 ## Context
 

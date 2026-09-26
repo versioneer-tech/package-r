@@ -2,10 +2,18 @@
 
 # packageR
 
-packageR is a web file browser for S3-compatible object storage. The Go
-service opens the S3 service root or one bucket through an embedded rclone
-VFS. It uses the same rclone backend to browse objects and to create
-time-limited download URLs.
+packageR makes it easy to package and distribute a prefix of S3-compatible
+bucket objects. An operator maps the prefix to a public package name, and
+recipients open the package in a browser without an account or login. The name
+can be simple, such as `public`, arbitrary within the supported URL format, or
+hard to guess. An optional share password provides access protection. If the
+share contains a Parquet catalog that lists its objects, packageR can also
+expose it as [SpatioTemporal Asset Catalog
+(STAC)](https://stacspec.org/)-compatible JSON.
+
+packageR also provides a web file browser. The Go service opens the S3 service
+root or one bucket through an embedded rclone VFS. It uses the same rclone
+backend to browse objects and to create time-limited download URLs.
 Production does not need an object-storage mount or a separate rclone service.
 
 The current design uses one process-owned S3 credential source. It can use a
@@ -19,19 +27,23 @@ direction and are not currently planned.
 
 packageR provides:
 
+- public, browser-accessible packages for configured object prefixes, with no
+  recipient login and an optional share password;
 - directory navigation and common File Browser operations;
 - uploads, downloads, and access rules;
-- public shares declared during bootstrap, with optional PINs;
 - presigned GET URLs for authenticated files and public shares;
 - TIFF and Cloud Optimized GeoTIFF (COG) previews; and
 - STAC-compatible Parquet catalogs exposed as public STAC JSON.
 
 See the [packageR documentation](https://package-r.versioneer.at/) for
+[packaging and sharing data](https://package-r.versioneer.at/latest/how-to-guides/share-and-preview-data/),
 [configuration](https://package-r.versioneer.at/latest/how-to-guides/configuration/),
 [operation](https://package-r.versioneer.at/latest/how-to-guides/run-package-r/),
 the [HTTP API](https://package-r.versioneer.at/latest/reference-guides/http-api/),
+the
+[rclone VFS architecture decision](https://package-r.versioneer.at/latest/architecture/0001-use-rclone-vfs-for-object-storage/),
 and the
-[rclone VFS architecture decision](https://package-r.versioneer.at/latest/architecture/0001-use-rclone-vfs-for-object-storage/).
+[STAC catalog architecture decision](https://package-r.versioneer.at/latest/architecture/0002-publish-parquet-catalogs-as-stac/).
 
 ## Development
 
@@ -44,7 +56,7 @@ Open **Run and Debug** and start **run packageR**. The launch configuration:
 
 1. Starts local S3 on `127.0.0.1:19100`.
 2. Builds the development backend.
-3. Bootstraps `.vscode/package-r.db` and shares `/public` as `public-share`.
+3. Bootstraps `.vscode/package-r.db` and shares `/public` as `my-share`.
    This directory contains the test catalog and its assets. The bucket root
    contains image, JSON, PDF, and text fixtures for manual checks.
 4. Starts packageR on `127.0.0.1:8888` under the Go debugger.
@@ -76,7 +88,7 @@ The integration harness starts `rclone serve s3` on a loopback address. It
 copies `tests/data` into a temporary test bucket and does not need cloud
 credentials.
 
-Run the frontend tests with Playwright and Chromium:
+Run the local-only frontend tests with Playwright and Chromium:
 
 ```bash
 make test-frontend

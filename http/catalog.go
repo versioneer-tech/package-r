@@ -56,13 +56,25 @@ var catalogHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d
 	}
 
 	assetsURL := requestScheme(r) + "://" + r.Host + "/api/public/share/" + parts[0] // TBD consider configurable base path
+	catalogEndpoint := requestScheme(r) + "://" + r.Host + "/api/public/catalog/" + parts[0]
+	assetMappings := make([]catalog.AssetMapping, 0, len(d.settings.Catalog.AssetMappings))
+	for _, mapping := range d.settings.Catalog.AssetMappings {
+		assetMappings = append(assetMappings, catalog.AssetMapping{From: mapping.From, To: mapping.To})
+	}
 
-	result, err := catalog.QueryCatalogParquet(r.Context(), catalogURL, cf.FilterField, cf.AssetsBaseURL, cf.File.Path, assetsURL, cf.SharePath)
+	result, err := catalog.QueryCatalogParquet(r.Context(), catalog.QueryOptions{
+		CatalogURL:      catalogURL,
+		RequestPath:     cf.File.Path,
+		AssetsURL:       assetsURL,
+		CatalogEndpoint: catalogEndpoint,
+		SharePath:       cf.SharePath,
+		AssetMappings:   assetMappings,
+	})
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 
-	return renderJSON(w, r, result)
+	return renderJSONWithContentType(w, result, "application/geo+json; charset=utf-8")
 })
 
 func catalogPathInShare(catalogURL, root, sharePath string) (string, error) {

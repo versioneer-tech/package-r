@@ -33,28 +33,32 @@ types. The harness does not change the source fixtures. It checks:
 - directory browse and raw reads;
 - create, copy, rename, and delete operations;
 - a two-chunk TUS upload through the VFS write cache;
-- authenticated and PIN-protected public presigned URLs;
+- authenticated and share-password-protected public presigned URLs;
 - rejection of authenticated runtime share creation;
-- public-share redirects; and
-- catalog access through the VFS with one rewritten asset fetch.
+- public share redirects; and
+- catalog access through the VFS;
+- STAC 1.1 validation of the live catalog endpoint; and
+- one rewritten catalog asset fetch.
 
-Run it with rclone 1.74 or newer:
+Install the pinned STAC validator and run the test with rclone 1.74 or newer:
 
 ```bash
+python3 -m pip install -r tests/requirements.txt
 make test-integration
 ```
 
 Set `RCLONE_BIN` when rclone is not on `PATH`. The harness uses fixed synthetic
-credentials and does not need cloud credentials or an external service.
+credentials and does not need cloud credentials. `stac-check` can retrieve the
+schemas referenced by catalog extensions during validation.
 
 Add an integration check only when the behavior depends on the real rclone VFS,
 the S3 protocol, presigned URLs, or several API operations working together.
 
 ## Frontend Integration Tests
 
-Frontend tests use Playwright and Chromium. They start local rclone, the Go
-development backend, and Vite on loopback addresses. They cover login,
-settings, public shares, previews, and visible user flows.
+Frontend tests run locally only. They use Playwright and Chromium and start
+local rclone, the Go development backend, and Vite on loopback addresses. They
+cover login, settings, public shares, previews, and visible user flows.
 
 Install the Chromium runtime once, then run the suite:
 

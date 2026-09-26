@@ -75,17 +75,18 @@ responses.
 | `FB_DATABASE`           | Ephemeral Bolt database path. The default is `/tmp/package-r.db`.          |
 | `FB_SERVER_PORT`        | HTTP port. The default is `8888`.                                          |
 | `FB_DEFAULT_SHARES`     | Semicolon-separated `hash=path` shares to create during bootstrap.         |
-| `FB_DEFAULT_SHARE_PINS` | Optional semicolon-separated `hash=pin` protection for configured shares.  |
+| `FB_DEFAULT_SHARE_PINS` | Optional semicolon-separated `hash=password` protection for configured shares. |
 
 `init.sh --add-shares hash=path` adds shares to `FB_DEFAULT_SHARES` for one
-bootstrap run. `--add-share-pins hash=pin` does the same for PINs. Do not put
-PIN values in logs. Inject `FB_DEFAULT_SHARE_PINS` from a secret when possible.
+bootstrap run. `--add-share-pins hash=password` does the same for share
+passwords. Do not put share-password values in logs. Inject
+`FB_DEFAULT_SHARE_PINS` from a secret when possible.
 `init.sh --serve` starts the service after bootstrap.
 
 Keep `FB_DATABASE` on ephemeral storage. Bolt contains only runtime state that
 `init.sh` reconstructs for a packageR instance. Do not use the database as the
 source of truth and do not mount it on persistent storage. Declare public
-shares and their PINs in bootstrap configuration.
+shares and their share passwords in bootstrap configuration.
 
 ## Authentication and user scope
 
@@ -110,9 +111,9 @@ checks.
 
 The bootstrap default scope is `/`. A user with this scope can access content
 outside `/home` when other rules allow it. If changing is enabled, the user can
-also change that content. The legacy scope `.` limits the identity to
-`/home/<username>`. Other explicit scopes are kept. The home base can be
-changed in the global settings, for example from `/home` to `/users`.
+also change that content. An explicit scope limits the identity to that path.
+The home base can be changed in the global settings, for example from `/home`
+to `/users`.
 
 packageR refuses to start when `FB_CREATE_USER_DIR=true` and `FB_ROOT=/`.
 An S3 service root contains buckets, so `/home/<username>` cannot be a user
@@ -163,14 +164,16 @@ credentials or storage roots are not currently planned.
 
 ## Permissions and catalogs
 
-| Variable                  | Description                                                                                     |
-| ------------------------- | ----------------------------------------------------------------------------------------------- |
-| `FB_ALLOW_CHANGING`       | Enables create, delete, modify, and rename for default non-admin identities. The default is `false`. |
-| `FB_CATALOG_DEFAULT_NAME` | Relative STAC-compatible Parquet catalog path inside a share. The default is `catalog.parquet`. |
-| `FB_CATALOG_PREVIEW_URL`  | Optional external viewer prefix for public catalog preview links.                               |
+| Variable                    | Description                                                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------------------- |
+| `FB_ALLOW_CHANGING`         | Enables create, delete, modify, and rename for default non-admin identities. The default is `false`. |
+| `FB_CATALOG_DEFAULT_NAME`   | Relative STAC-compatible Parquet catalog path inside a share. The default is `catalog.parquet`.      |
+| `FB_CATALOG_PREVIEW_URL`    | Optional external viewer prefix for public catalog preview links.                                   |
+| `FB_CATALOG_ASSET_MAPPINGS` | Optional JSON array of `from` URL prefixes and relative `to` paths for nonstandard asset URLs.        |
 
 Catalog names must stay inside the shared object path. Absolute names and
-parent-path escapes are rejected.
+parent-path escapes are rejected. Asset mappings are an advanced escape hatch.
+Automatic path matching is the default and needs no mapping configuration.
 
 ## Bootstrap behavior
 
@@ -179,7 +182,7 @@ parent-path escapes are rejected.
 - It disables commands and command execution.
 - It disables generated thumbnails and server-side preview resize.
 - It creates or updates the bootstrap runtime configuration.
-- It creates the configured public shares and applies their PINs.
+- It creates the configured public shares and applies their share passwords.
 - It disables authenticated share creation and deletion.
 
 The selected static or ambient credential source must be available to the

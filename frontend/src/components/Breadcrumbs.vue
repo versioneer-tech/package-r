@@ -13,7 +13,9 @@
       <span class="chevron"
         ><i class="material-icons">keyboard_arrow_right</i></span
       >
-      <component :is="element" :to="link.url">{{ link.name }}</component>
+      <component :is="element" :to="link.url" :title="link.name">{{
+        link.name
+      }}</component>
     </span>
   </div>
 </template>

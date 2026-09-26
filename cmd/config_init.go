@@ -43,6 +43,11 @@ override the options.`,
 				Theme:                 mustGetString(flags, "branding.theme"),
 				Files:                 mustGetString(flags, "branding.files"),
 			},
+			Catalog: settings.Catalog{
+				DefaultName:   mustGetString(flags, "catalog.defaultName"),
+				PreviewURL:    mustGetString(flags, "catalog.previewURL"),
+				AssetMappings: parseCatalogAssetMappings(mustGetString(flags, "catalog.assetMappings")),
+			},
 		}
 
 		ser := &settings.Server{

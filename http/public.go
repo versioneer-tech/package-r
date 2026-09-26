@@ -17,12 +17,10 @@ import (
 )
 
 type catalogedFile struct {
-	File          *files.FileInfo
-	SharePath     string
-	CatalogURL    string
-	FilterField   string
-	AssetsBaseURL string
-	ShareExpire   int64
+	File        *files.FileInfo
+	SharePath   string
+	CatalogURL  string
+	ShareExpire int64
 }
 
 var withHashFile = func(fn handleFunc) handleFunc {
@@ -85,12 +83,10 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		}
 
 		d.raw = &catalogedFile{
-			File:          file,
-			SharePath:     link.Path,
-			CatalogURL:    link.CatalogURL,
-			FilterField:   link.FiltersField,
-			AssetsBaseURL: link.AssetsBaseURL,
-			ShareExpire:   link.Expire,
+			File:        file,
+			SharePath:   link.Path,
+			CatalogURL:  link.CatalogURL,
+			ShareExpire: link.Expire,
 		}
 
 		return fn(w, r, d)

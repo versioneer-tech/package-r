@@ -47,7 +47,7 @@ func TestPublicShareBypassesGeneratedUserDirBaseRules(t *testing.T) {
 	}
 
 	if err := store.Share.Save(&share.Link{
-		Hash:   "public-share",
+		Hash:   "my-share",
 		Path:   "/home/bob",
 		UserID: user.ID,
 	}); err != nil {
@@ -55,7 +55,7 @@ func TestPublicShareBypassesGeneratedUserDirBaseRules(t *testing.T) {
 	}
 
 	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{Root: root})
-	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/share/public-share/data.txt", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/share/my-share/data.txt", http.NoBody)
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(recorder, req)

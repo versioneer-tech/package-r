@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const backendPort = process.env.FB_SERVER_PORT || "8888";
+const frontendPort = process.env.PLAYWRIGHT_FRONTEND_PORT || "5173";
+const backendURL = `http://127.0.0.1:${backendPort}`;
+const frontendURL = `http://127.0.0.1:${frontendPort}`;
+
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
@@ -24,7 +29,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://127.0.0.1:5173",
+    baseURL: frontendURL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
@@ -74,15 +79,15 @@ export default defineConfig({
   /* Run local backend and frontend dev servers before starting the tests */
   webServer: [
     {
-      command: "FB_SERVER_PORT=8888 exec ../scripts/playwright_backend.sh",
-      url: "http://127.0.0.1:8888/health",
+      command: `FB_SERVER_PORT=${backendPort} exec ../scripts/playwright_backend.sh`,
+      url: `${backendURL}/health`,
       reuseExistingServer: !process.env.CI,
       gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
       timeout: 180 * 1000,
     },
     {
-      command: "FB_SERVER_PORT=8888 exec node node_modules/vite/bin/vite.js",
-      url: "http://127.0.0.1:5173",
+      command: `FB_SERVER_PORT=${backendPort} exec node node_modules/vite/bin/vite.js --port ${frontendPort}`,
+      url: frontendURL,
       reuseExistingServer: !process.env.CI,
       gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
       timeout: 180 * 1000,

@@ -1,0 +1,2 @@
+# STAC endpoint conformance test.
+stac-check==1.13.0

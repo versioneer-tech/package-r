@@ -2,8 +2,9 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { AuthPage } from "./fixtures/auth";
 
 const itemId = "67793f0b9478720001790586";
-const publicShare = "public-share";
-const backendBaseURL = "http://127.0.0.1:8888";
+const publicShare = "my-share";
+const backendBaseURL = `http://127.0.0.1:${process.env.FB_SERVER_PORT || "8888"}`;
+const screenshotBackendBaseURL = "http://127.0.0.1:8888";
 const thumbnailPath = `openaerialmap-assets/${itemId}/thumbnail.png`;
 const publicShareThumbnailPath = `/share/${publicShare}/${thumbnailPath}`;
 const catalogPreviewBaseURL =
@@ -147,6 +148,30 @@ test.describe("packageR use-case UI", () => {
     );
   });
 
+  test("shows configured shares as read-only", async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto("/files/");
+
+    await page.getByLabel("public", { exact: true }).click();
+    const shareButton = page.getByRole("button", {
+      name: "Share",
+      exact: true,
+    });
+    await expect(shareButton).toBeVisible();
+    await shareButton.click();
+
+    const dialog = page.locator("#share");
+    const link = dialog.getByRole("link", { name: /my-share/ });
+    await expect(link).toHaveAttribute("href", /\/share\/my-share\/$/);
+    await expect(dialog.getByRole("button", { name: "New" })).toHaveCount(0);
+    await expect(dialog.getByRole("button", { name: "Delete" })).toHaveCount(
+      0
+    );
+
+    const response = await page.request.post("/api/share/public/");
+    expect(response.status()).toBe(404);
+  });
+
   test("renders authenticated image preview", async ({ page }) => {
     await prepareStableScreenshot(page);
     await loginAsAdmin(page);
@@ -170,7 +195,7 @@ test.describe("packageR use-case UI", () => {
     await expect(page.getByText("catalog.parquet")).toBeVisible();
     await normalizeRelativeTimes(page);
     await expect(page.locator(".share").first()).toHaveScreenshot(
-      "public-share-directory.png",
+      "my-share-directory.png",
       screenshotOptions
     );
   });
@@ -187,11 +212,11 @@ test.describe("packageR use-case UI", () => {
     await expectAndNormalizePresignedURL(
       presignedLink,
       `public/${thumbnailPath}`,
-      `${backendBaseURL}/api/public/dl/${publicShare}/${thumbnailPath}`
+      `${screenshotBackendBaseURL}/api/public/dl/${publicShare}/${thumbnailPath}`
     );
     await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
-      "public-share-presign.png",
+      "my-share-presign.png",
       screenshotOptions
     );
   });
@@ -208,9 +233,27 @@ test.describe("packageR use-case UI", () => {
     await expect(infoBox).toContainText(
       `/api/public/catalog/${publicShare}/${thumbnailPath}`
     );
+    await infoBox.locator("p", { hasText: "Preview URL:" }).evaluate(
+      (element) => {
+        for (const link of element.querySelectorAll("a")) {
+          link.textContent =
+            link.textContent?.replace(
+              /(https?:\/\/127\.0\.0\.1):\d+/g,
+              "$1:8888"
+            ) || "";
+          link.setAttribute(
+            "href",
+            (link.getAttribute("href") || "").replace(
+              /(https?:\/\/127\.0\.0\.1):\d+/g,
+              "$1:8888"
+            )
+          );
+        }
+      }
+    );
     await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
-      "public-share-preview-url.png",
+      "my-share-preview-url.png",
       screenshotOptions
     );
   });
@@ -242,7 +285,7 @@ test.describe("packageR use-case UI", () => {
     await expectAndNormalizePresignedURL(
       presignedLink,
       `public/${thumbnailPath}`,
-      `${backendBaseURL}/api/raw/public/${thumbnailPath}`
+      `${screenshotBackendBaseURL}/api/raw/public/${thumbnailPath}`
     );
     await normalizeRelativeTimes(page);
     await expect(modal).toHaveScreenshot(

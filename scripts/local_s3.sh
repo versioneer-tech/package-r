@@ -124,7 +124,7 @@ run_local_environment() {
 
   make -C "$repo_root" build-backend-dev
   FB_FILEBROWSER_BIN="${FB_FILEBROWSER_BIN:-$repo_root/filebrowser}" \
-    "$repo_root/init.sh" --add-shares public-share=/public
+    "$repo_root/init.sh" --add-shares my-share=/public
 
   printf '[local-dev] ready\n'
   if [ -n "$pid" ]; then

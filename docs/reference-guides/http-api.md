@@ -60,6 +60,20 @@ Presigned object URLs are valid for at most seven days. Directory downloads
 support `zip`, `tar`, `targz`, `tarbz2`, `tarxz`, `tarlz4`, and `tarsz` through
 the `algo` query value.
 
+## Configured packages
+
+An authenticated user can discover the public packages that contain an object
+path:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/share/{path}` | Return read-only public package links for the path. |
+
+The request needs `X-Auth` and access to the object path. The response contains
+only the package name, description, expiry, and public URL. It does not expose
+share-password hashes or access tokens. Create, update, and delete methods are
+not available. Configure packages through `init.sh`.
+
 ## Public shares
 
 Public shares are declared during bootstrap. They do not need a packageR
@@ -70,10 +84,10 @@ token.
 | `GET` or `HEAD` | `/api/public/share/{hash}/{path}` | List or inspect a shared resource. |
 | `GET` | `/api/public/dl/{hash}/{path}` | Download a shared file or directory archive. |
 
-For a PIN-protected share, send the URL-encoded PIN in
-`X-SHARE-PASSWORD`. A successful response contains a temporary share token.
-Public file metadata supports the same checksum and presign query values as an
-authenticated resource.
+For a share protected by a share password, send the URL-encoded share password
+in `X-SHARE-PASSWORD`. A successful response contains a temporary share token.
+Public file metadata supports the same checksum and presign query values as
+an authenticated resource.
 
 ## Public catalogs
 
@@ -84,19 +98,35 @@ Request a share's complete catalog or select entries below a package path:
 /api/public/catalog/{hash}/{path}
 ```
 
-The route accepts `GET` and `HEAD`. PIN-protected shares use
-`X-SHARE-PASSWORD`. One matching row returns a STAC `Feature`; zero or multiple
-rows return a `FeatureCollection`.
+The route accepts `GET` and `HEAD`. Shares protected by a share password use
+`X-SHARE-PASSWORD`. One matching row returns a STAC `Feature`; zero or
+multiple rows return a versioned `FeatureCollection` with a `links` array.
+Responses use the `application/geo+json` media type.
 
 The STAC-compatible Parquet catalog does not need full STAC GeoParquet
 compliance. Each row must contain:
 
 1. `id`;
 2. `assets` as a JSON object whose asset entries contain `href`; and
-3. optional `geometry`, `bbox`, `properties`, and `repository` values.
+3. `datetime` or another valid STAC temporal range, either flattened or in
+   `properties`.
 
-Matching asset `href` values become public-share URLs with
-`?presign&followRedirect`. Catalog queries have these limits:
+Rows can also contain `geometry`, `bbox`, `properties`, and `repository`.
+packageR moves flattened Item metadata into `properties`, supplies the STAC
+version and required empty link arrays, and derives missing geometry from
+`bbox` when possible.
+
+packageR checks all assets when it selects catalog rows. Matching asset `href`
+values become public share URLs with `?presign&followRedirect`. This includes
+relative paths, root-relative paths, and absolute HTTP(S) or `s3://` URLs whose
+object path contains the shared path. Other absolute URLs remain unchanged.
+
+`FB_CATALOG_ASSET_MAPPINGS` can map a nonstandard URL prefix to a relative path
+inside the share. The value is a JSON array of `from` and `to` strings.
+Mappings take priority over automatic matching. The `to` path cannot be
+absolute or contain a parent-path escape.
+
+Catalog queries have these limits:
 
 - The catalog must be inside the shared tree.
 - One catalog cannot exceed 256 MiB.

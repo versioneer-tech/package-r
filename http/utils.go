@@ -12,13 +12,17 @@ import (
 )
 
 func renderJSON(w http.ResponseWriter, _ *http.Request, data interface{}) (int, error) {
+	return renderJSONWithContentType(w, data, "application/json; charset=utf-8")
+}
+
+func renderJSONWithContentType(w http.ResponseWriter, data interface{}, contentType string) (int, error) {
 	marsh, err := json.Marshal(data)
 
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Type", contentType)
 	if _, err := w.Write(marsh); err != nil {
 		return http.StatusInternalServerError, err
 	}

@@ -52,16 +52,14 @@ func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
 	}
 
 	return &Link{
-		Path:          opts.Path,
-		Hash:          hash,
-		Expire:        expire,
-		Description:   body.Description,
-		CatalogURL:    catalogURL,
-		FiltersField:  body.FiltersField,
-		AssetsBaseURL: body.AssetsBaseURL,
-		UserID:        opts.UserID,
-		PasswordHash:  passwordHash,
-		Token:         token,
+		Path:         opts.Path,
+		Hash:         hash,
+		Expire:       expire,
+		Description:  body.Description,
+		CatalogURL:   catalogURL,
+		UserID:       opts.UserID,
+		PasswordHash: passwordHash,
+		Token:        token,
 	}, nil
 }
 

@@ -73,6 +73,7 @@ func NewHandler(
 
 	api.PathPrefix("/usage").Handler(monkey(diskUsage, "/api/usage")).Methods("GET")
 	api.Path("/shares").Handler(http.NotFoundHandler())
+	api.PathPrefix("/share").Handler(monkey(configuredShareGetsHandler, "/api/share")).Methods("GET")
 	api.PathPrefix("/share").Handler(http.NotFoundHandler())
 
 	api.Handle("/settings", monkey(settingsGetHandler, "")).Methods("GET")

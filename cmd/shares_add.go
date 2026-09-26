@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -50,7 +48,6 @@ var sharesAddCmd = &cobra.Command{
 		}
 		if settings.Catalog.DefaultName != "" {
 			body.CatalogName = settings.Catalog.DefaultName
-			body.AssetsBaseURL = defaultShareAssetsBaseURL(args[2])
 		}
 
 		link, err := share.NewLink(body, opts)
@@ -63,8 +60,6 @@ var sharesAddCmd = &cobra.Command{
 				existingByHash.Expire = link.Expire
 				existingByHash.Description = link.Description
 				existingByHash.CatalogURL = link.CatalogURL
-				existingByHash.FiltersField = link.FiltersField
-				existingByHash.AssetsBaseURL = link.AssetsBaseURL
 				existingByHash.PasswordHash = link.PasswordHash
 				existingByHash.Token = link.Token
 				checkErr(d.store.Share.Update(existingByHash))
@@ -92,13 +87,4 @@ var sharesAddCmd = &cobra.Command{
 		checkErr(err)
 		printShares([]*share.Link{link})
 	}, pythonConfig{}),
-}
-
-func defaultShareAssetsBaseURL(sharePath string) string {
-	cleanSharePath := path.Clean("/" + strings.TrimPrefix(sharePath, "/"))
-	parent := path.Dir(cleanSharePath)
-	if parent == "/" || parent == "." {
-		return ""
-	}
-	return parent
 }

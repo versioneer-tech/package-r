@@ -183,7 +183,7 @@ fetch_and_compare() {
   cmp "${expected}" "${output}"
 }
 
-for command_name in cmp curl go python3; do
+for command_name in cmp curl go python3 stac-check; do
   require_command "${command_name}"
 done
 require_command "${RCLONE_BIN}"
@@ -351,9 +351,17 @@ fetch_and_compare \
   -H "${share_pin_header}"
 
 log "Checking public catalog access"
-curl_test -fsS -H "${share_pin_header}" \
-  "${package_r_url}/api/public/catalog/${PUBLIC_SHARE_HASH}" \
-  --output "${tmp_dir}/catalog.json"
+catalog_url="${package_r_url}/api/public/catalog/${PUBLIC_SHARE_HASH}"
+catalog_content_type="$(curl_test -fsS -H "${share_pin_header}" \
+  --write-out '%{content_type}' \
+  "${catalog_url}" \
+  --output "${tmp_dir}/catalog.json")"
+[[ "${catalog_content_type}" == application/geo+json* ]]
+stac-check "${catalog_url}" \
+  --item-collection \
+  --links \
+  --no-assets-urls \
+  --header X-SHARE-PASSWORD "${PUBLIC_SHARE_PIN}"
 catalog_asset_url="$(python3 -c '
 import json, sys
 value = json.load(open(sys.argv[1], encoding="utf-8"))
