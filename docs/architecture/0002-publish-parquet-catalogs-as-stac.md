@@ -9,13 +9,13 @@ packageR packages an object-storage prefix as a public share. A recipient can
 open the package without a packageR login. A share can also contain a Parquet
 catalog that describes its objects.
 
-Catalog producers use different asset `href` forms:
+Catalogs use different asset `href` forms:
 
-- a path relative to the shared directory;
-- a path from an object-storage root;
-- an absolute HTTP(S) object URL;
-- an `s3://` URL; or
-- a CDN URL whose path does not match the object path.
+- a path relative to the shared directory
+- a path from an object-storage root
+- an absolute HTTP(S) object URL
+- an `s3://` URL
+- a CDN URL whose path does not match the object path
 
 The public response must be valid STAC JSON even when the source Parquet file
 is not full STAC GeoParquet. Asset URLs must remain inside the share unless the
@@ -26,10 +26,9 @@ catalog intentionally refers to an external resource.
 A share stores its catalog path. Asset selection and URL resolution are
 automatic.
 
-packageR reads each candidate Parquet row and checks every asset. For a request
-below `/api/public/catalog/{share}`, a row matches when any internal asset is
-at the requested relative path or below it. The full catalog endpoint includes
-all rows that contain an asset `href`.
+packageR checks every asset in each candidate row. A row matches a catalog
+path when an internal asset is at or below that path. The full catalog endpoint
+includes all rows that contain an asset `href`.
 
 packageR resolves and rewrites an asset in this order:
 
@@ -40,10 +39,10 @@ packageR resolves and rewrites an asset in this order:
 5. Match an `s3://` bucket and object path against the shared path.
 6. Leave the URL unchanged when it does not identify an object in the share.
 
-Path matching uses path-segment boundaries. Relative paths and mapped paths
-cannot use `..` to leave the share. HTTP(S) URLs are not treated as internal
-for a service-root share because their bucket identity is ambiguous. An
-`s3://` URL includes the bucket and can be resolved at the service root.
+Path matching uses path boundaries. Relative and mapped paths cannot use `..`
+to leave the share. An HTTP(S) URL is external in service-root mode because it
+does not identify a bucket. An `s3://` URL includes the bucket, so packageR can
+resolve it in service-root mode.
 
 An explicit mapping is a deployment setting, not share state. The
 `PACKAGE_R_CATALOG_ASSET_MAPPINGS` value is a JSON array:
@@ -57,15 +56,15 @@ An explicit mapping is a deployment setting, not share state. The
 ]
 ```
 
-The `from` value is an exact string prefix. The `to` value is a path relative
-to every configured share. Mappings exist only for URL layouts that automatic
-matching cannot identify.
+The `from` value is an exact string prefix. The `to` value is relative to each
+configured share. Use mappings only when automatic matching cannot identify
+the object path.
 
-For each returned row, packageR supplies or normalizes the fields required for
-a STAC Item. It moves flattened metadata into `properties`, supplies
+For each returned row, packageR supplies or normalizes required STAC Item
+fields. It moves flattened metadata into `properties`, supplies
 `stac_version`, normalizes geometry and bounding boxes when possible, and adds
-links. Multiple or zero matches produce a STAC `FeatureCollection`. One match
-produces a STAC `Feature`. Responses use `application/geo+json`.
+links. One match produces a STAC `Feature`. Zero or multiple matches produce a
+STAC `FeatureCollection`. Responses use `application/geo+json`.
 
 The catalog file must be inside the share. packageR checks the file through the
 scoped rclone VFS and gives DuckDB a short-lived signed read URL. DuckDB uses
@@ -74,26 +73,22 @@ remain bounded.
 
 ## Consequences
 
-The common share configuration contains only the share name, object path,
-catalog filename, and optional share password. Catalog producers can use
-relative, HTTP(S), or S3 asset URLs without per-share URL settings. External
-asset URLs remain external.
+Share configuration contains the share name, object path, catalog filename,
+and optional password. Catalogs can use relative, HTTP(S), or S3 asset URLs.
+External asset URLs remain external.
 
-Filtering all asset keys removes schema-specific configuration. It also means
-that DuckDB reads candidate rows before packageR applies path filtering. The
-catalog size and concurrency limits bound this cost. A future optimization can
-push general asset matching into DuckDB without adding an asset-key field to
-the public model.
+Checking all asset keys avoids schema-specific settings. DuckDB must read
+candidate rows before packageR filters them by path. Catalog size and query
+limits bound this work.
 
-Explicit mappings apply to all configured shares in one packageR process.
-Operators must use a narrow `from` prefix and a `to` path that matches the
-layout inside each share.
+Explicit mappings apply to all configured shares in one process. Operators
+must use a narrow `from` prefix and the correct relative `to` path.
 
 ## Alternatives considered
 
-Require relative asset paths. This is simple but rejects common STAC catalogs
-that use absolute object or CDN URLs.
+Require relative asset paths. This rejects common STAC catalogs that use
+absolute object or CDN URLs.
 
-Rewrite every absolute URL. This can redirect an external asset through a
-share where that object does not exist. packageR instead rewrites only URLs it
-can resolve inside the share or through an explicit mapping.
+Rewrite every absolute URL. This can send an external asset through a share
+where the object does not exist. packageR rewrites only URLs that it can
+resolve inside the share or through an explicit mapping.

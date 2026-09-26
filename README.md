@@ -1,55 +1,39 @@
-<img src="frontend/public/img/logo.png" height="40" alt="packageR"/>
+<h1><img src="frontend/public/img/logo.png" height="48" alt="packageR logo" /> packageR</h1>
 
-# packageR
+[![Tests](https://github.com/versioneer-tech/package-r/actions/workflows/pr.yaml/badge.svg?branch=main&event=push)](https://github.com/versioneer-tech/package-r/actions/workflows/pr.yaml)
+[![Latest release](https://img.shields.io/github/v/release/versioneer-tech/package-r)](https://github.com/versioneer-tech/package-r/releases/latest)
+[![Go version](https://img.shields.io/github/go-mod/go-version/versioneer-tech/package-r)](go.mod)
+[![License](https://img.shields.io/github/license/versioneer-tech/package-r)](LICENSE)
 
 > [!NOTE]
 > This is the third packageR iteration: v1 used the AWS S3 SDK directly, v2
 > required an external S3 mount, and the current implementation uses an
 > embedded rclone VFS.
 
-packageR makes it easy to package and distribute a prefix of S3-compatible
-bucket objects. An operator maps the prefix to a public package name, and
-recipients open the package in a browser without an account or login. The name
-can be simple, such as `public`, arbitrary within the supported URL format, or
-hard to guess. An optional share password provides access protection. If the
-share contains a Parquet catalog that lists its objects, packageR can also
-expose it as [SpatioTemporal Asset Catalog
-(STAC)](https://stacspec.org/)-compatible JSON.
+packageR publishes a prefix of S3-compatible objects as a public package.
+Recipients can open it in a browser without an account. An optional share
+password controls access.
 
-packageR also provides a web interface for object browsing. The Go service
-opens the S3 service root or one bucket through an embedded rclone VFS. It uses
-the same rclone backend to browse objects and to create time-limited download
-URLs.
+The Go service also provides a web interface for object storage. It uses an
+embedded rclone VFS to browse objects and create time-limited download URLs.
 Production does not need an object-storage mount or a separate rclone service.
-
-The current design uses one process-owned S3 credential source. It can use a
-standard S3 access-key pair or provider-supported workload identity, such as
-AWS IRSA. All sessions use that storage identity. packageR can narrow access
-with identity scopes, path rules, and action permissions. User-directory mode
-protects sibling home directories and their shared parent. Action permissions
-separately control changes to allowed paths. User-directory mode does not
-select credentials. Per-user object-storage credentials are a possible future
-direction and are not currently planned.
 
 packageR provides:
 
 - public, browser-accessible packages for configured object prefixes, with no
-  recipient login and an optional share password;
-- directory navigation and common object operations;
-- uploads, downloads, and access rules;
-- presigned GET URLs for authenticated files and public shares;
-- TIFF and Cloud Optimized GeoTIFF (COG) previews; and
-- STAC-compatible Parquet catalogs exposed as public STAC JSON.
+  recipient login and an optional share password
+- directory navigation and common object operations
+- uploads, downloads, and access rules
+- presigned GET URLs for authenticated files and public shares
+- TIFF and Cloud Optimized GeoTIFF (COG) previews
+- STAC-compatible Parquet catalogs exposed as public STAC JSON
 
-See the [packageR documentation](https://package-r.versioneer.at/) for
-[packaging and sharing data](https://package-r.versioneer.at/latest/how-to-guides/share-and-preview-data/),
-[configuration](https://package-r.versioneer.at/latest/how-to-guides/configuration/),
-[operation](https://package-r.versioneer.at/latest/how-to-guides/run-package-r/),
-the [HTTP API](https://package-r.versioneer.at/latest/reference-guides/http-api/),
-the
-[rclone VFS architecture decision](https://package-r.versioneer.at/latest/architecture/0001-use-rclone-vfs-for-object-storage/),
-and the
-[STAC catalog architecture decision](https://package-r.versioneer.at/latest/architecture/0002-publish-parquet-catalogs-as-stac/).
+All sessions use one S3 identity. Its storage policy sets the maximum access.
+packageR can reduce access with user scopes, path rules, and action
+permissions.
+
+See the [packageR documentation](https://package-r.versioneer.at/) for setup,
+configuration, public packages, the HTTP API, and architecture decisions.
 
 ## Download and run
 
@@ -159,9 +143,19 @@ Stop a previous local S3 process with:
 The launch fails if port `19100` has a different server or if the rclone
 control endpoint on port `19101` is not available.
 
-packageR is derived from
-[File Browser](https://github.com/filebrowser/filebrowser). Keep packageR
-changes narrow where practical so that upstream updates remain manageable.
+## Thanks
+
+packageR is based on the now-deprecated
+[File Browser](https://github.com/filebrowser/filebrowser) project and still
+uses many of its dependencies. It relies heavily on
+[rclone](https://rclone.org/) and on tools and standards from the
+[Cloud-Native Geospatial Foundation](https://cloudnativegeo.org/) ecosystem.
+
+packageR is used in the
+[EOEPCA Reference Architecture](https://eoepca.readthedocs.io/projects/architecture/en/latest/),
+an [ESA](https://www.esa.int/)-supported approach to building Earth
+observation platforms. packageR helps Earth observation and Earth science
+communities inspect, share, and use data assets.
 
 ## License
 

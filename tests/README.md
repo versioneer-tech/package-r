@@ -1,14 +1,13 @@
-# Test Strategy
+# Test strategy
 
-packageR has two backend test levels: unit tests and local integration tests.
-Frontend behavior is tested with Playwright. Lint, type checks, documentation
-builds, and release builds are verification tasks, not separate test suites.
+packageR has Go unit tests, API integration tests, and browser tests. Lint,
+type checks, documentation builds, and release builds are separate checks.
 
-## Unit Tests
+## Unit tests
 
 Go unit tests are next to the packages that they test. They use temporary
-directories, memory filesystems, and small test doubles. They must not require
-an external service.
+directories, memory filesystems, and small test doubles. They do not use
+external services.
 
 Run all unit tests:
 
@@ -16,49 +15,46 @@ Run all unit tests:
 make test-unit
 ```
 
-Add a unit test when behavior can be checked at a package boundary. Prefer a
-small focused test over another process-level scenario.
+Use a unit test when you can check behavior at a package boundary.
 
-## API Integration Tests
+## API integration tests
 
 The integration harness is `tests/integration/run.bash`. It starts `rclone
-serve s3` and packageR on loopback addresses. packageR accesses the test bucket
-through its in-process rclone VFS. The API test uses `PACKAGE_R_ROOT=/` so it also
-checks bucket navigation from the S3 service root.
+serve s3` and packageR on loopback addresses. packageR reads the test bucket
+with its embedded rclone VFS. The test uses `PACKAGE_R_ROOT=/` to include S3
+service-root navigation.
 
-The harness copies `tests/data` to a temporary bucket. The `public` directory
-contains the catalog and its assets. Root-level sample files cover common file
-types. The harness does not change the source fixtures. It checks:
+The harness copies `tests/data` to a temporary bucket and does not change the
+source files. It checks:
 
-- directory browse and raw reads;
-- create, copy, rename, and delete operations;
-- a two-chunk TUS upload through the VFS write cache;
-- authenticated and share-password-protected public presigned URLs;
-- rejection of authenticated runtime share creation;
-- public share redirects; and
-- catalog access through the VFS;
-- STAC 1.1 validation of the live catalog endpoint; and
-- one rewritten catalog asset fetch.
+- directory listing and raw reads
+- create, copy, rename, and delete operations
+- a two-chunk TUS upload through the VFS write cache
+- authenticated and password-protected public presigned URLs
+- rejection of runtime share creation
+- public share redirects
+- catalog access through the VFS
+- STAC 1.1 validation of the live catalog endpoint
+- a fetch through a rewritten catalog asset URL
 
-Install the pinned STAC validator and run the test with rclone 1.74 or newer:
+Run the test with rclone 1.74 or newer:
 
 ```bash
-python3 -m pip install -r tests/requirements.txt
 make test-integration
 ```
 
-Set `RCLONE_BIN` when rclone is not on `PATH`. The harness uses fixed synthetic
-credentials and does not need cloud credentials. `stac-check` can retrieve the
-schemas referenced by catalog extensions during validation.
+Set `RCLONE_BIN` when rclone is not on `PATH`. The test uses fixed credentials
+and does not need cloud access. If `stac-check` is not on `PATH`, the Make
+target runs the pinned validator with `uv`.
 
-Add an integration check only when the behavior depends on the real rclone VFS,
-the S3 protocol, presigned URLs, or several API operations working together.
+Use an integration test for behavior that needs rclone VFS, the S3 protocol,
+presigned URLs, or several API operations.
 
-## Frontend Integration Tests
+## Browser tests
 
-Frontend tests run locally only. They use Playwright and Chromium and start
-local rclone, the Go development backend, and Vite on loopback addresses. They
-cover login, settings, public shares, previews, and visible user flows.
+Browser tests use Playwright and Chromium. They start rclone, packageR, and
+Vite on loopback addresses. They cover login, settings, public shares,
+previews, and other user workflows.
 
 Install the Chromium runtime once, then run the suite:
 
@@ -69,14 +65,15 @@ cd ..
 make test-frontend
 ```
 
-Add a Playwright test only for behavior that a user can see or operate. Keep
-backend rules in Go unit tests or in the rclone integration harness.
+Use Playwright only for behavior that a user can see or control. Test backend
+rules with Go unit or API integration tests.
 
-## Run All Tests
+## Run all tests
 
 ```bash
 make test
 ```
 
-This runs Go unit tests, the local rclone integration harness, and Playwright.
-Use the focused targets during development when only one level changed.
+This command checks the required tools before it starts the tests. Run
+`make test-check` to check the tools without running tests. Use a focused
+target when you change only one part of the application.

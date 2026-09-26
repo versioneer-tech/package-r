@@ -31,7 +31,15 @@ build-backend-dev: ## Build backend with filesystem frontend assets for local/de
 # ------------------------------------------------------------------------------
 
 .PHONY: test
-test: test-unit test-integration test-frontend ## Run all tests
+test: ## Check prerequisites and run all tests
+	$Q bash tests/check-tools.bash
+	$Q $(MAKE) --no-print-directory test-unit
+	$Q $(MAKE) --no-print-directory test-integration
+	$Q $(MAKE) --no-print-directory test-frontend
+
+.PHONY: test-check
+test-check: ## Check tools required by the full test suite
+	$Q bash tests/check-tools.bash
 
 .PHONY: test-unit
 test-unit: ## Run Go unit tests
@@ -39,7 +47,12 @@ test-unit: ## Run Go unit tests
 
 .PHONY: test-integration
 test-integration: ## Run API integration tests with local rclone S3
-	$Q tests/integration/run.bash
+	$Q if command -v stac-check >/dev/null 2>&1; then \
+		tests/integration/run.bash; \
+	else \
+		uv run --no-project --with-requirements tests/requirements.txt \
+			tests/integration/run.bash; \
+	fi
 
 .PHONY: test-frontend
 test-frontend: ## Run frontend Playwright tests

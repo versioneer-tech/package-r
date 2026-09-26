@@ -6,62 +6,49 @@
 ## Context
 
 packageR must let users browse and manage S3-compatible object data. It must
-also create direct, time-limited URLs for previews and downloads. File access
-and URL generation must use the same storage root, endpoint, credentials, and
-user scope.
+also create time-limited URLs for previews and downloads. File access and URL
+generation must use the same root, endpoint, credentials, and user scope.
 
-An external object-storage mount gives the application a filesystem view, but
-it separates file access from URL generation. It also adds a runtime service,
-privileged mount behavior, or platform storage integration.
+An external mount gives the application a filesystem view. It does not create
+signed object URLs. It also needs another service, a privileged mount, or
+platform storage support.
 
 ## Decision
 
 packageR embeds rclone in the Go process.
 
-- rclone creates an S3 backend at the service root or at one bucket.
-- The service root supports navigation across all accessible buckets.
-- rclone VFS is adapted to packageR's inherited `afero.Fs` interface.
-- One VFS instance is reused for the process-owned storage configuration. It
-  uses either a standard S3 access-key pair or a provider-supported ambient
-  credential chain, including workload identity such as AWS IRSA.
-- A user's logical scope is applied once below the backend root.
-- Browse, read, create, upload, copy, move, rename, and delete operations use
-  this scoped VFS.
-- Presigned GET URLs use `PublicLink` from the same rclone backend.
-- Production does not use an external storage mount or rclone service.
-- Integration tests use `rclone serve s3` over temporary test data.
-- Parquet catalog paths and sizes are checked through the scoped VFS. DuckDB
-  reads each catalog from a short-lived signed URL with HTTP range requests.
+- rclone creates an S3 backend at the service root or one bucket
+- The service root shows all buckets that the credentials can access
+- An adapter exposes rclone VFS as the inherited `afero.Fs` interface
+- One VFS instance holds the process storage configuration
+- A user scope selects a path below the backend root
+- Object operations use the scoped VFS
+- Presigned GET URLs use `PublicLink` from the same rclone backend
+- Production does not need an external mount or rclone service
+- Integration tests use `rclone serve s3` with temporary data
+- DuckDB reads checked catalog files from short-lived signed URLs
 
-The packageR database is ephemeral runtime state that bootstrap
-configuration reconstructs. `PACKAGE_R_ROOT=/` exposes permitted buckets. A bucket
-name in `PACKAGE_R_ROOT` exposes that bucket as `/`. Object-storage credentials, the
-endpoint, and `PACKAGE_R_ROOT` are not taken from user records. Public shares are
-declared before startup instead of through the authenticated API.
+Bootstrap configuration rebuilds the packageR database. The database is
+temporary runtime state. `PACKAGE_R_ROOT=/` exposes permitted buckets. A
+bucket name exposes that bucket as `/`. User records do not set the storage
+root, endpoint, or credentials. Public shares are set before startup.
 
-The current target is one S3 storage identity per packageR process. The
-provider's storage policy is the access ceiling. packageR can narrow access
-with scopes, rules, and action permissions. User-directory mode denies access
-to sibling homes and prevents recursive changes to their shared parent. It
-does not limit access to content outside the home base or select credentials.
-Action permissions define read-only versus write access. Per-user
-object-storage credentials are a possible future evolution and are not
-currently planned.
+One S3 identity is used by each packageR process. Its storage policy sets the
+maximum access. User scopes, path rules, and action permissions can reduce
+this access. User-directory mode hides sibling homes and protects their shared
+parent. It does not select different storage credentials.
 
 ## Consequences
 
-File operations and presigned URLs now share one configuration and path model.
-The deployment has no object-mount lifecycle and needs no privileged mount
-access. S3-compatible services can use the same API contract, and the browser
-can use direct object URLs for formats such as COG.
+File operations and presigned URLs share one configuration and path model.
+The deployment does not need a privileged mount. The browser can use direct
+object URLs for formats such as COG.
 
-The application owns the lifetime of its rclone VFS instances. Object-store
-operations keep object semantics: a rename can be a copy followed by a delete,
-and POSIX ownership or mode changes are compatibility operations rather than
-bucket permissions.
+The application owns the rclone VFS lifetime. Object operations keep S3
+semantics. For example, a rename can copy an object and then delete the source.
+POSIX ownership and mode changes do not change bucket permissions.
 
-Current public links support GET only. DuckDB catalog queries need the
-`httpfs` extension and object storage
-that supports HTTP range requests. Bucket capacity is not the same as local
-host disk capacity, so the local disk-usage API is unavailable. Chunked object
-uploads require a local rclone VFS write cache.
+Public links support GET only. DuckDB catalog queries need the `httpfs`
+extension and HTTP range requests. Bucket capacity is not local disk capacity,
+so the local disk-usage API is unavailable. Chunked uploads need a local
+rclone VFS write cache.
