@@ -10,10 +10,10 @@ import (
 var (
 	// ErrMissingCredentials reports an incomplete static credential pair.
 	ErrMissingCredentials = errors.New("set both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, or neither to use ambient AWS credentials")
-	// ErrInvalidRoot reports an FB_ROOT value that is not / or one bucket name.
-	ErrInvalidRoot = errors.New("FB_ROOT must be / or one S3 bucket name without /")
+	// ErrInvalidRoot reports an PACKAGE_R_ROOT value that is not / or one bucket name.
+	ErrInvalidRoot = errors.New("PACKAGE_R_ROOT must be / or one S3 bucket name without /")
 	// ErrUserDirNeedsBucket reports a generated user directory without one bucket.
-	ErrUserDirNeedsBucket = errors.New("FB_CREATE_USER_DIR=true requires FB_ROOT to name one S3 bucket; FB_ROOT=/ exposes the S3 service root")
+	ErrUserDirNeedsBucket = errors.New("PACKAGE_R_CREATE_USER_DIR=true requires PACKAGE_R_ROOT to name one S3 bucket; PACKAGE_R_ROOT=/ exposes the S3 service root")
 	// ErrInvalidObjectPath reports a path outside the user's storage scope.
 	ErrInvalidObjectPath = errors.New("invalid object path")
 )
@@ -36,7 +36,7 @@ func Load() Config {
 		SessionToken:    os.Getenv("AWS_SESSION_TOKEN"),
 		Endpoint:        os.Getenv("AWS_ENDPOINT_URL"),
 		Region:          os.Getenv("AWS_REGION"),
-		Bucket:          bucketFromRoot(os.Getenv("FB_ROOT")),
+		Bucket:          bucketFromRoot(os.Getenv("PACKAGE_R_ROOT")),
 	}
 }
 

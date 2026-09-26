@@ -102,9 +102,9 @@ jobs:
           short_commit="${GITHUB_SHA:0:7}"
           CGO_ENABLED=1 go build \
             -ldflags "-s -w -X github.com/versioneer-tech/package-r/version.Version=${RELEASE_VERSION} -X github.com/versioneer-tech/package-r/version.CommitSHA=${short_commit}" \
-            -o filebrowser
+            -o package-r
           mkdir -p dist
-          tar -czf dist/linux-amd64-package-r.tar.gz filebrowser
+          tar -czf dist/linux-amd64-package-r.tar.gz package-r
 
       - name: Publish container image
         shell: bash

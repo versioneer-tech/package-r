@@ -15,7 +15,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/settings"
 	"github.com/versioneer-tech/package-r/users"
 )
@@ -286,15 +286,15 @@ func (a ProxyAuth) Extract(r *http.Request) (string, bool) {
 func (a ProxyAuth) Auth(r *http.Request, usr users.Store, setting *settings.Settings, srv *settings.Server) (*users.User, error) {
 	if a.Header == "" {
 		log.Println("Missing auth.header config")
-		return nil, fbErrors.ErrInvalidAuthMethod
+		return nil, appErrors.ErrInvalidAuthMethod
 	}
 	username, ok := a.Extract(r)
 	if !ok {
 		log.Printf("No value can be inferred from header %s with mapper %s", a.Header, a.Mapper)
-		return nil, fbErrors.ErrNotExist
+		return nil, appErrors.ErrNotExist
 	}
 	user, err := usr.Get(srv.Root, username)
-	if errors.Is(err, fbErrors.ErrNotExist) {
+	if errors.Is(err, appErrors.ErrNotExist) {
 		if setting.Signup {
 			return a.createUser(usr, setting, username)
 		}

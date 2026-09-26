@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/users"
 )
 
@@ -21,7 +21,7 @@ func presignOrLocalURL(
 	lifetime time.Duration,
 ) (string, error) {
 	if r.Method != http.MethodGet {
-		return "", fbErrors.ErrInvalidOption
+		return "", appErrors.ErrInvalidOption
 	}
 	linker, ok := store.(users.PublicLinker)
 	if !ok {

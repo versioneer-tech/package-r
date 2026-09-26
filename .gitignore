@@ -42,7 +42,7 @@ dist/
 /docs/generated/
 
 # Project-local generated files
-/filebrowser
+/package-r
 
 # Frontend build and test artifacts
 /frontend/dist/*

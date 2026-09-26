@@ -44,11 +44,11 @@ presigned URLs.
 
 The storage policy associated with the credentials defines maximum access.
 packageR can narrow access with identity scopes, path rules, and action
-permissions. With `FB_CREATE_USER_DIR=true`, a non-admin user can access their
+permissions. With `PACKAGE_R_CREATE_USER_DIR=true`, a non-admin user can access their
 own directory below `/home` but cannot access a sibling home. The `/home`
 directory remains readable for navigation, but users cannot modify it or an
 ancestor. Content outside `/home` remains available when the user's scope and
-other rules allow it. `FB_ALLOW_CHANGING` controls whether the user can change
+other rules allow it. `PACKAGE_R_ALLOW_CHANGING` controls whether the user can change
 allowed paths. Neither setting selects per-user credentials. The current proxy
 flow does not derive storage or permission profiles from login claims.
 

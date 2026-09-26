@@ -15,7 +15,7 @@ builds:
     ldflags:
       - -s -w -X github.com/versioneer-tech/package-r/version.Version={{ .Version }} -X github.com/versioneer-tech/package-r/version.CommitSHA={{ .ShortCommit }}
     main: main.go
-    binary: filebrowser
+    binary: package-r
     goos:
       - linux
     goarch:

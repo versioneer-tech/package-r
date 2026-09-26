@@ -121,7 +121,7 @@ values become public share URLs with `?presign&followRedirect`. This includes
 relative paths, root-relative paths, and absolute HTTP(S) or `s3://` URLs whose
 object path contains the shared path. Other absolute URLs remain unchanged.
 
-`FB_CATALOG_ASSET_MAPPINGS` can map a nonstandard URL prefix to a relative path
+`PACKAGE_R_CATALOG_ASSET_MAPPINGS` can map a nonstandard URL prefix to a relative path
 inside the share. The value is a JSON array of `from` and `to` strings.
 Mappings take priority over automatic matching. The `to` path cannot be
 absolute or contain a parent-path escape.

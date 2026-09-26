@@ -48,7 +48,7 @@ const test = base.extend<{ settingsPage: SettingsPage }>({
     const authPage = new AuthPage(page);
     await authPage.goto();
     await authPage.loginAs();
-    await expect(page).toHaveTitle(/.*Files - File Browser$/);
+    await expect(page).toHaveTitle(/.*Files - packageR$/);
     // Use signed-in page in the test.
     await use(page);
   },

@@ -20,7 +20,7 @@ packageR embeds rclone in the Go process.
 
 - rclone creates an S3 backend at the service root or at one bucket.
 - The service root supports navigation across all accessible buckets.
-- rclone VFS is adapted to the `afero.Fs` interface used by File Browser.
+- rclone VFS is adapted to packageR's inherited `afero.Fs` interface.
 - One VFS instance is reused for the process-owned storage configuration. It
   uses either a standard S3 access-key pair or a provider-supported ambient
   credential chain, including workload identity such as AWS IRSA.
@@ -33,10 +33,10 @@ packageR embeds rclone in the Go process.
 - Parquet catalog paths and sizes are checked through the scoped VFS. DuckDB
   reads each catalog from a short-lived signed URL with HTTP range requests.
 
-The File Browser database is ephemeral runtime state that bootstrap
-configuration reconstructs. `FB_ROOT=/` exposes permitted buckets. A bucket
-name in `FB_ROOT` exposes that bucket as `/`. Object-storage credentials, the
-endpoint, and `FB_ROOT` are not taken from user records. Public shares are
+The packageR database is ephemeral runtime state that bootstrap
+configuration reconstructs. `PACKAGE_R_ROOT=/` exposes permitted buckets. A bucket
+name in `PACKAGE_R_ROOT` exposes that bucket as `/`. Object-storage credentials, the
+endpoint, and `PACKAGE_R_ROOT` are not taken from user records. Public shares are
 declared before startup instead of through the authenticated API.
 
 The current target is one S3 storage identity per packageR process. The

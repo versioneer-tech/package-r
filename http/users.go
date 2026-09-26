@@ -12,7 +12,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/users"
 )
 
@@ -36,7 +36,7 @@ func getUserID(r *http.Request) (uint, error) {
 
 func getUser(_ http.ResponseWriter, r *http.Request) (*modifyUserRequest, error) {
 	if r.Body == nil {
-		return nil, fbErrors.ErrEmptyRequest
+		return nil, appErrors.ErrEmptyRequest
 	}
 
 	req := &modifyUserRequest{}
@@ -46,7 +46,7 @@ func getUser(_ http.ResponseWriter, r *http.Request) (*modifyUserRequest, error)
 	}
 
 	if req.What != "user" {
-		return nil, fbErrors.ErrInvalidDataType
+		return nil, appErrors.ErrInvalidDataType
 	}
 
 	return req, nil
@@ -87,7 +87,7 @@ var usersGetHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *
 
 var userGetHandler = withSelfOrAdmin(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	u, err := d.store.Users.Get(d.server.Root, d.raw.(uint))
-	if errors.Is(err, fbErrors.ErrNotExist) {
+	if errors.Is(err, appErrors.ErrNotExist) {
 		return http.StatusNotFound, err
 	}
 
@@ -122,7 +122,7 @@ var userPostHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *
 	}
 
 	if req.Data.Password == "" {
-		return http.StatusBadRequest, fbErrors.ErrEmptyPassword
+		return http.StatusBadRequest, appErrors.ErrEmptyPassword
 	}
 
 	req.Data.Password, err = users.HashPwd(req.Data.Password)

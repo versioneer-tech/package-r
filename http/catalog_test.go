@@ -28,7 +28,7 @@ const openAerialMapID = "67793f0b9478720001790586"
 func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	repoRoot := testRepoRoot(t)
 	root := t.TempDir()
-	catalogData, err := os.ReadFile(filepath.Join(repoRoot, "tests", "data", "public", "catalog.parquet"))
+	catalogData, err := os.ReadFile(filepath.Join(repoRoot, "tests", "data", "catalog-sample", "catalog.parquet"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	}))
 	t.Cleanup(catalogServer.Close)
 	thumbnailPath := filepath.Join("openaerialmap-assets", openAerialMapID, "thumbnail.png")
-	thumbnailData, err := os.ReadFile(filepath.Join(repoRoot, "tests", "data", "public", thumbnailPath))
+	thumbnailData, err := os.ReadFile(filepath.Join(repoRoot, "tests", "data", "catalog-sample", thumbnailPath))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	db, err := storm.Open(filepath.Join(t.TempDir(), "filebrowser.db"))
+	db, err := storm.Open(filepath.Join(t.TempDir(), "package-r.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

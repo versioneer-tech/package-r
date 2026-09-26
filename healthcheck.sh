@@ -1,6 +1,6 @@
 #!/bin/sh
-port=${FB_SERVER_PORT:-8888}
-address=${FB_ADDRESS:-127.0.0.1}
+port=${PACKAGE_R_SERVER_PORT:-8888}
+address=${PACKAGE_R_ADDRESS:-127.0.0.1}
 
 case "$address" in
   ""|0.0.0.0|::|\[::\])

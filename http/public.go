@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/crypto/bcrypt"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/files"
 	"github.com/versioneer-tech/package-r/share"
 )
@@ -93,7 +93,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 	}
 }
 
-// ref to https://github.com/filebrowser/filebrowser/pull/727
+// Keep the download route compatible with older browsers.
 // `/api/public/dl/MEEuZK-v/file-name.txt` for old browsers to save file with correct name
 func ifPathWithName(r *http.Request) (id, filePath string) {
 	pathElements := strings.Split(r.URL.Path, "/")
@@ -120,7 +120,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 	if checksum := r.URL.Query().Get("checksum"); checksum != "" {
 		err := file.Checksum(checksum)
-		if errors.Is(err, fbErrors.ErrInvalidOption) {
+		if errors.Is(err, appErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {
 			return http.StatusInternalServerError, err
@@ -143,7 +143,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 			localPublicDownloadURL(r),
 			publicSharePresignLifetime(cf.ShareExpire),
 		)
-		if errors.Is(err, fbErrors.ErrInvalidOption) {
+		if errors.Is(err, appErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {
 			return http.StatusInternalServerError, err
@@ -162,7 +162,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 		preview, ok := r.URL.Query()["preview"]
 		if ok && !strings.EqualFold(preview[0], "false") {
 			err := file.Preview()
-			if errors.Is(err, fbErrors.ErrInvalidOption) {
+			if errors.Is(err, appErrors.ErrInvalidOption) {
 				return http.StatusBadRequest, nil
 			} else if err != nil {
 				return http.StatusInternalServerError, err

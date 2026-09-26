@@ -16,14 +16,14 @@ RUN if ! getent group 100 >/dev/null; then groupadd --gid 100 package-r; fi \
 
 COPY healthcheck.sh /healthcheck.sh
 COPY init.sh /init.sh
-COPY filebrowser /filebrowser
+COPY package-r /package-r
 
-RUN chmod 755 /filebrowser /init.sh /healthcheck.sh
+RUN chmod 755 /package-r /init.sh /healthcheck.sh
 
 ENV HOME=/home/package-r
-ENV FB_DATABASE=/tmp/package-r.db
-ENV FB_ROOT=/
-ENV FB_SERVER_PORT=8888
+ENV PACKAGE_R_DATABASE=/tmp/package-r.db
+ENV PACKAGE_R_ROOT=/
+ENV PACKAGE_R_SERVER_PORT=8888
 
 HEALTHCHECK --start-period=2s --interval=5s --timeout=3s CMD /healthcheck.sh || exit 1
 

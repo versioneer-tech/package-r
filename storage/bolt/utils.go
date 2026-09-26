@@ -5,13 +5,13 @@ import (
 
 	"github.com/asdine/storm/v3"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 )
 
 func get(db *storm.DB, name string, to interface{}) error {
 	err := db.Get("config", name, to)
 	if errors.Is(err, storm.ErrNotFound) {
-		return fbErrors.ErrNotExist
+		return appErrors.ErrNotExist
 	}
 
 	return err

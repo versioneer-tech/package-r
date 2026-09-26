@@ -19,8 +19,8 @@
       },
       "env": {
         "CGO_ENABLED": "1",
-        "FB_DATABASE": "${workspaceFolder}/.vscode/package-r.db",
-        "FB_ROOT": "data",
+        "PACKAGE_R_DATABASE": "${workspaceFolder}/.vscode/package-r.db",
+        "PACKAGE_R_ROOT": "data",
         "AWS_ACCESS_KEY_ID": "my-access-key",
         "AWS_SECRET_ACCESS_KEY": "my-secret-key",
         "AWS_ENDPOINT_URL": "http://127.0.0.1:19100",

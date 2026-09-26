@@ -46,7 +46,7 @@ for a service-root share because their bucket identity is ambiguous. An
 `s3://` URL includes the bucket and can be resolved at the service root.
 
 An explicit mapping is a deployment setting, not share state. The
-`FB_CATALOG_ASSET_MAPPINGS` value is a JSON array:
+`PACKAGE_R_CATALOG_ASSET_MAPPINGS` value is a JSON array:
 
 ```json
 [

@@ -4,7 +4,7 @@ import { AuthPage } from "./fixtures/auth";
 const itemId = "67793f0b9478720001790586";
 const publicShare = "my-share";
 const sharedPrefix = "catalog-sample";
-const backendBaseURL = `http://127.0.0.1:${process.env.FB_SERVER_PORT || "8888"}`;
+const backendBaseURL = `http://127.0.0.1:${process.env.PACKAGE_R_SERVER_PORT || "8888"}`;
 const screenshotBackendBaseURL = "http://127.0.0.1:8888";
 const thumbnailPath = `openaerialmap-assets/${itemId}/thumbnail.png`;
 const publicShareThumbnailPath = `/share/${publicShare}/${thumbnailPath}`;
@@ -59,7 +59,7 @@ async function loginAsAdmin(page: Page) {
   const authPage = new AuthPage(page);
   await authPage.goto();
   await authPage.loginAs("admin", "admin");
-  await expect(page).toHaveTitle(/.*Files - File Browser$/);
+  await expect(page).toHaveTitle(/.*Files - packageR$/);
 }
 
 async function expectImageLoaded(image: Locator) {

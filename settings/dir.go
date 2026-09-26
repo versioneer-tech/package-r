@@ -25,7 +25,7 @@ func (s *Settings) ResolveUserScope(username, userScope string) (string, error) 
 			log.Printf("create user: invalid user for home scope: [%s]", username)
 			return "", errors.New("invalid user for home scope")
 		}
-		// "." preserves the legacy File Browser home-only mode. packageR's
+		// "." preserves the inherited home-only mode. packageR's
 		// explicit full-bucket default is "/" and keeps the stored scope at root.
 		if userScope == "." {
 			userScope = path.Join(s.userHomeBasePath(), username)

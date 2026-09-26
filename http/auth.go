@@ -12,7 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golang-jwt/jwt/v5/request"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/users"
 )
 
@@ -115,7 +115,7 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 		switch {
 		case errors.Is(err, os.ErrPermission):
 			return http.StatusForbidden, nil
-		case errors.Is(err, fbErrors.ErrNotExist):
+		case errors.Is(err, appErrors.ErrNotExist):
 			return http.StatusNotFound, nil
 		case err != nil:
 			return http.StatusInternalServerError, err
@@ -171,7 +171,7 @@ var signupHandler = func(_ http.ResponseWriter, r *http.Request, d *data) (int, 
 	log.Printf("new user: %s, scope: [%s].", user.Username, userScope)
 
 	err = d.store.Users.Save(user)
-	if errors.Is(err, fbErrors.ErrExist) {
+	if errors.Is(err, appErrors.ErrExist) {
 		return http.StatusConflict, err
 	} else if err != nil {
 		return http.StatusInternalServerError, err

@@ -8,7 +8,7 @@ Build the frontend bundle and Go binary from the repository root:
 make build
 ```
 
-The result is the `filebrowser` binary.
+The result is the `package-r` binary.
 
 ## Configure an object store
 
@@ -21,14 +21,14 @@ export AWS_ACCESS_KEY_ID=my-access-key
 export AWS_SECRET_ACCESS_KEY=my-secret-key
 export AWS_ENDPOINT_URL=https://objects.example.invalid
 export AWS_REGION=us-east-1
-export FB_ROOT=my-bucket
+export PACKAGE_R_ROOT=my-bucket
 
-export FB_DATABASE=/tmp/package-r.db
-export FB_AUTH_METHOD=proxy
-export FB_AUTH_HEADER=X-Username
-export FB_ALLOW_CHANGING=true
-export FB_DEFAULT_SHARES='my-share=/catalog-sample'
-export FB_DEFAULT_SHARE_PINS='my-share=1234'
+export PACKAGE_R_DATABASE=/tmp/package-r.db
+export PACKAGE_R_AUTH_METHOD=proxy
+export PACKAGE_R_AUTH_HEADER=X-Username
+export PACKAGE_R_ALLOW_CHANGING=true
+export PACKAGE_R_DEFAULT_SHARES='my-share=/catalog-sample'
+export PACKAGE_R_DEFAULT_SHARE_PASSWORDS='my-share=1234'
 ```
 
 Replace all example values. Do not store credentials in the repository.
@@ -42,8 +42,8 @@ The bucket becomes `/` in packageR. For example,
 `s3://my-bucket/catalog-sample/report.tif` appears as
 `/catalog-sample/report.tif`.
 
-Set `FB_ROOT=/` to show permitted buckets as top-level directories. This mode
-needs permission to list buckets. Keep `FB_CREATE_USER_DIR=false` in this
+Set `PACKAGE_R_ROOT=/` to show permitted buckets as top-level directories. This mode
+needs permission to list buckets. Keep `PACKAGE_R_CREATE_USER_DIR=false` in this
 mode.
 
 ## Bootstrap and start
@@ -54,7 +54,7 @@ Create the configured public shares and start the service:
 ./init.sh --serve
 ```
 
-Open `http://127.0.0.1:8888`. Normal File Browser actions such as browse,
+Open `http://127.0.0.1:8888`. Normal packageR actions such as browse,
 upload, create, rename, copy, move, and delete run through rclone VFS. The
 available actions still depend on the packageR user permissions and the S3
 credentials.

@@ -14,7 +14,7 @@ import (
 
 	"github.com/spf13/afero"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/files"
 	"github.com/versioneer-tech/package-r/fileutils"
 )
@@ -41,7 +41,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 
 	if checksum := r.URL.Query().Get("checksum"); checksum != "" {
 		err := file.Checksum(checksum)
-		if errors.Is(err, fbErrors.ErrInvalidOption) {
+		if errors.Is(err, appErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {
 			return http.StatusInternalServerError, err
@@ -64,7 +64,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 			localRawURL(r, file.Path),
 			presignLifetime,
 		)
-		if errors.Is(err, fbErrors.ErrInvalidOption) {
+		if errors.Is(err, appErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {
 			return http.StatusInternalServerError, err
@@ -258,7 +258,7 @@ func checkParent(src, dst string) error {
 
 	rel = filepath.ToSlash(rel)
 	if !strings.HasPrefix(rel, "../") && rel != ".." && rel != "." {
-		return fbErrors.ErrSourceIsParent
+		return appErrors.ErrSourceIsParent
 	}
 
 	return nil
@@ -327,13 +327,13 @@ func patchAction(ctx context.Context, action, src, dst string, d *data, fileCach
 	switch action {
 	case "copy":
 		if !d.user.Perm.Create {
-			return fbErrors.ErrPermissionDenied
+			return appErrors.ErrPermissionDenied
 		}
 
 		return fileutils.Copy(d.user.Fs, src, dst)
 	case "rename":
 		if !d.user.Perm.Rename {
-			return fbErrors.ErrPermissionDenied
+			return appErrors.ErrPermissionDenied
 		}
 		src = path.Clean("/" + src)
 		dst = path.Clean("/" + dst)
@@ -358,7 +358,7 @@ func patchAction(ctx context.Context, action, src, dst string, d *data, fileCach
 
 		return fileutils.MoveFile(d.user.Fs, src, dst)
 	default:
-		return fmt.Errorf("unsupported action %s: %w", action, fbErrors.ErrInvalidRequestParams)
+		return fmt.Errorf("unsupported action %s: %w", action, appErrors.ErrInvalidRequestParams)
 	}
 }
 

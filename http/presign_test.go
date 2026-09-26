@@ -186,7 +186,7 @@ func newPresignTestStorage(t *testing.T) (string, *storage.Storage, *users.User)
 	t.Helper()
 
 	root := t.TempDir()
-	db, err := storm.Open(filepath.Join(t.TempDir(), "filebrowser.db"))
+	db, err := storm.Open(filepath.Join(t.TempDir(), "package-r.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -16,9 +16,10 @@ share contains a Parquet catalog that lists its objects, packageR can also
 expose it as [SpatioTemporal Asset Catalog
 (STAC)](https://stacspec.org/)-compatible JSON.
 
-packageR also provides a web file browser. The Go service opens the S3 service
-root or one bucket through an embedded rclone VFS. It uses the same rclone
-backend to browse objects and to create time-limited download URLs.
+packageR also provides a web interface for object browsing. The Go service
+opens the S3 service root or one bucket through an embedded rclone VFS. It uses
+the same rclone backend to browse objects and to create time-limited download
+URLs.
 Production does not need an object-storage mount or a separate rclone service.
 
 The current design uses one process-owned S3 credential source. It can use a
@@ -34,7 +35,7 @@ packageR provides:
 
 - public, browser-accessible packages for configured object prefixes, with no
   recipient login and an optional share password;
-- directory navigation and common File Browser operations;
+- directory navigation and common object operations;
 - uploads, downloads, and access rules;
 - presigned GET URLs for authenticated files and public shares;
 - TIFF and Cloud Optimized GeoTIFF (COG) previews; and
@@ -58,7 +59,7 @@ Download and unpack the latest prebuilt Linux AMD64 release:
 curl -fL -o package-r.tar.gz \
   https://github.com/versioneer-tech/package-r/releases/latest/download/linux-amd64-package-r.tar.gz
 tar -xzf package-r.tar.gz
-./filebrowser version
+./package-r version
 ```
 
 We also provide a container image at
@@ -69,9 +70,9 @@ docker run --rm -p 127.0.0.1:8888:8888 \
   -e AWS_ACCESS_KEY_ID=my-access-key \
   -e AWS_SECRET_ACCESS_KEY=my-secret-key \
   -e AWS_REGION=us-east-1 \
-  -e FB_ROOT=my-bucket \
-  -e FB_AUTH_METHOD=none \
-  -e FB_DEFAULT_SHARES='my-share=/catalog-sample' \
+  -e PACKAGE_R_ROOT=my-bucket \
+  -e PACKAGE_R_AUTH_METHOD=none \
+  -e PACKAGE_R_DEFAULT_SHARES='my-share=/catalog-sample' \
   ghcr.io/versioneer-tech/package-r:latest
 ```
 

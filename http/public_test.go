@@ -18,7 +18,7 @@ func TestPublicShareBypassesGeneratedUserDirBaseRules(t *testing.T) {
 	root := t.TempDir()
 	writePresignTestFile(t, root, "home/bob/data.txt")
 
-	db, err := storm.Open(filepath.Join(t.TempDir(), "filebrowser.db"))
+	db, err := storm.Open(filepath.Join(t.TempDir(), "package-r.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

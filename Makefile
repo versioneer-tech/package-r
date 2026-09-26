@@ -19,12 +19,12 @@ build-frontend: ## Build frontend
 .PHONY: build-backend
 build-backend: | build-frontend ## Build backend and embed the current frontend bundle
 	$Q CGO_ENABLED=1 \
-	$(go) build -ldflags '$(LDFLAGS)' -o filebrowser
+	$(go) build -ldflags '$(LDFLAGS)' -o package-r
 
 .PHONY: build-backend-dev
 build-backend-dev: ## Build backend with filesystem frontend assets for local/dev harnesses
 	$Q CGO_ENABLED=1 \
-	$(go) build -tags dev -ldflags '$(LDFLAGS)' -o filebrowser
+	$(go) build -tags dev -ldflags '$(LDFLAGS)' -o package-r
 
 # ------------------------------------------------------------------------------
 # Test Targets

@@ -99,9 +99,9 @@ func python(fn pythonFunc, cfg pythonConfig) cobraFunc {
 		} else if exists && cfg.noDB {
 			log.Fatal(absPath + " already exists")
 		} else if !exists && !cfg.noDB && !cfg.allowNoDB {
-			log.Fatal(absPath + " does not exist. Please run 'filebrowser config init' first.")
+			log.Fatal(absPath + " does not exist. Please run 'package-r config init' first.")
 		} else if !exists && !cfg.noDB {
-			log.Println("Warning: filebrowser.db can't be found. Initialing in " + strings.TrimSuffix(absPath, "filebrowser.db"))
+			log.Println("Warning: package-r.db can't be found. Initializing in " + strings.TrimSuffix(absPath, "package-r.db"))
 		}
 
 		log.Println("Using database: " + absPath)

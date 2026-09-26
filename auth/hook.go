@@ -10,7 +10,7 @@ import (
 	"os/exec"
 	"strings"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/files"
 	"github.com/versioneer-tech/package-r/settings"
 	"github.com/versioneer-tech/package-r/users"
@@ -145,7 +145,7 @@ func (a *HookAuth) GetValues(s string) {
 // SaveUser updates the existing user or creates a new one when not found
 func (a *HookAuth) SaveUser() (*users.User, error) {
 	u, err := a.Users.Get(a.Server.Root, a.Cred.Username)
-	if err != nil && !errors.Is(err, fbErrors.ErrNotExist) {
+	if err != nil && !errors.Is(err, appErrors.ErrNotExist) {
 		return nil, err
 	}
 

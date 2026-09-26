@@ -7,12 +7,12 @@ in the web interface, but they cannot create, change, or delete them there.
 
 ## Package an object prefix
 
-Set `FB_DEFAULT_SHARES` before packageR starts. Each entry maps a public package
-name to an object path. When `FB_ROOT` selects one bucket, the object path is a
+Set `PACKAGE_R_DEFAULT_SHARES` before packageR starts. Each entry maps a public package
+name to an object path. When `PACKAGE_R_ROOT` selects one bucket, the object path is a
 prefix in that bucket:
 
 ```bash
-export FB_DEFAULT_SHARES='public=/deliverables/26-06;f4ae91c8d2=/reports/report.tif'
+export PACKAGE_R_DEFAULT_SHARES='public=/deliverables/26-06;f4ae91c8d2=/reports/report.tif'
 ./init.sh --serve
 ```
 
@@ -32,10 +32,10 @@ open the package.
 
 ## Protect a package with a share password
 
-Map a configured share to a share password with `FB_DEFAULT_SHARE_PINS`:
+Map a configured share to a share password with `PACKAGE_R_DEFAULT_SHARE_PASSWORDS`:
 
 ```bash
-export FB_DEFAULT_SHARE_PINS='f4ae91c8d2=1234'
+export PACKAGE_R_DEFAULT_SHARE_PASSWORDS='f4ae91c8d2=1234'
 ```
 
 The browser asks for this share password before it opens the package. API
@@ -84,11 +84,11 @@ for package matching. A request below the catalog endpoint selects a row when
 any internal asset is at that path or below it.
 
 Most catalogs do not need asset mapping configuration. If a CDN URL does not
-contain the shared object path, set `FB_CATALOG_ASSET_MAPPINGS` to a JSON array.
+contain the shared object path, set `PACKAGE_R_CATALOG_ASSET_MAPPINGS` to a JSON array.
 Each entry replaces an exact URL prefix with a path relative to the share:
 
 ```yaml
-FB_CATALOG_ASSET_MAPPINGS: >-
+PACKAGE_R_CATALOG_ASSET_MAPPINGS: >-
   [{"from":"https://imagery.example.org/openaerialmap/","to":"openaerialmap-assets"}]
 ```
 
@@ -100,7 +100,7 @@ configured share. This layout matches the included OpenAerialMap test data.
 The `to` value must be relative and cannot leave the share. Explicit mappings
 take priority over automatic matching.
 
-Set `FB_CATALOG_DEFAULT_NAME` to the catalog's relative path before bootstrap.
+Set `PACKAGE_R_CATALOG_DEFAULT_NAME` to the catalog's relative path before bootstrap.
 The value applies to each configured share. The default is `catalog.parquet`.
 
 For a share named `my-share`, request the full catalog:
@@ -120,7 +120,7 @@ rewrites matching asset links to public share URLs that can redirect to
 presigned S3 URLs.
 
 Use the absolute endpoint URL as the external catalog URL in a STAC Browser.
-Set `FB_CATALOG_PREVIEW_URL` to the browser's external-catalog prefix so that
+Set `PACKAGE_R_CATALOG_PREVIEW_URL` to the browser's external-catalog prefix so that
 packageR also provides a **Preview URL** that opens the current package path in
 that browser.
 

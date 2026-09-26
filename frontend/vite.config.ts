@@ -25,8 +25,8 @@ const resolve = {
 };
 
 const backendURL =
-  process.env.FB_BACKEND_URL ||
-  `http://127.0.0.1:${process.env.FB_SERVER_PORT || "8888"}`;
+  process.env.PACKAGE_R_BACKEND_URL ||
+  `http://127.0.0.1:${process.env.PACKAGE_R_SERVER_PORT || "8888"}`;
 const backendWsURL = backendURL.replace(/^http/, "ws");
 
 // https://vitejs.dev/config/

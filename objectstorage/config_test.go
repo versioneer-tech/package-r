@@ -12,12 +12,12 @@ func TestLoadUsesProcessSettings(t *testing.T) {
 		"AWS_SESSION_TOKEN",
 		"AWS_ENDPOINT_URL",
 		"AWS_REGION",
-		"FB_ROOT",
+		"PACKAGE_R_ROOT",
 	} {
 		t.Setenv(key, "")
 	}
 	t.Setenv("AWS_REGION", "process-region")
-	t.Setenv("FB_ROOT", "process-bucket")
+	t.Setenv("PACKAGE_R_ROOT", "process-bucket")
 
 	t.Setenv("AWS_ACCESS_KEY_ID", "process-access")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "process-secret")
@@ -90,7 +90,7 @@ func TestLoadRoot(t *testing.T) {
 		{name: "bucket", root: "reports", want: "reports"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Setenv("FB_ROOT", test.root)
+			t.Setenv("PACKAGE_R_ROOT", test.root)
 			config := Load()
 			if config.Root() != test.want {
 				t.Fatalf("expected root %q, got %q", test.want, config.Root())

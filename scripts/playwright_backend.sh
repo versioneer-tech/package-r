@@ -8,7 +8,7 @@ created_tmp=false
 if [ -z "${PACKAGE_R_PLAYWRIGHT_TMPDIR:-}" ]; then
   created_tmp=true
 fi
-backend_log="$tmp_dir/filebrowser.log"
+backend_log="$tmp_dir/package-r.log"
 rclone_log="$tmp_dir/rclone.log"
 server_pid=""
 rclone_pid=""
@@ -167,7 +167,7 @@ start_rclone() {
 }
 
 wait_for_backend() {
-  local ready_url="${FB_PLAYWRIGHT_READY_URL:-http://127.0.0.1:${FB_SERVER_PORT}/health}"
+  local ready_url="${PACKAGE_R_PLAYWRIGHT_READY_URL:-http://127.0.0.1:${PACKAGE_R_SERVER_PORT}/health}"
 
   PACKAGE_R_LOG_PREFIX=playwright-backend \
     PACKAGE_R_WAIT_ATTEMPTS="${PACKAGE_R_PLAYWRIGHT_READY_TIMEOUT:-120}" \
@@ -183,15 +183,15 @@ require_command "$rclone_bin"
 require_compatible_rclone
 start_rclone
 
-export FB_ROOT="${FB_ROOT:-$bucket_name}"
-export FB_DATABASE="${FB_DATABASE:-$tmp_dir/filebrowser.db}"
-export FB_ADDRESS="${FB_ADDRESS:-127.0.0.1}"
-export FB_SERVER_PORT="${FB_SERVER_PORT:-8888}"
-export FB_AUTH_METHOD="${FB_AUTH_METHOD:-json}"
-export FB_PASSWORD="${FB_PASSWORD:-admin}"
-export FB_ALLOW_CHANGING="${FB_ALLOW_CHANGING:-true}"
-export FB_CATALOG_PREVIEW_URL="${FB_CATALOG_PREVIEW_URL:-https://radiantearth.github.io/stac-browser/#/external/}"
-export FB_FILEBROWSER_BIN="${FB_FILEBROWSER_BIN:-$repo_root/filebrowser}"
+export PACKAGE_R_ROOT="${PACKAGE_R_ROOT:-$bucket_name}"
+export PACKAGE_R_DATABASE="${PACKAGE_R_DATABASE:-$tmp_dir/package-r.db}"
+export PACKAGE_R_ADDRESS="${PACKAGE_R_ADDRESS:-127.0.0.1}"
+export PACKAGE_R_SERVER_PORT="${PACKAGE_R_SERVER_PORT:-8888}"
+export PACKAGE_R_AUTH_METHOD="${PACKAGE_R_AUTH_METHOD:-json}"
+export PACKAGE_R_PASSWORD="${PACKAGE_R_PASSWORD:-admin}"
+export PACKAGE_R_ALLOW_CHANGING="${PACKAGE_R_ALLOW_CHANGING:-true}"
+export PACKAGE_R_CATALOG_PREVIEW_URL="${PACKAGE_R_CATALOG_PREVIEW_URL:-https://radiantearth.github.io/stac-browser/#/external/}"
+export PACKAGE_R_BIN="${PACKAGE_R_BIN:-$repo_root/package-r}"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$tmp_dir/home/.cache}"
 export RCLONE_CONFIG=/dev/null
 export AWS_ACCESS_KEY_ID="$access_key_id"
@@ -200,9 +200,9 @@ export AWS_REGION=us-east-1
 
 mkdir -p "$XDG_CACHE_HOME"
 
-build_backend_if_needed "$FB_FILEBROWSER_BIN" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
+build_backend_if_needed "$PACKAGE_R_BIN" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
 
 ./init.sh --add-shares my-share=/catalog-sample
-start_backend "$FB_FILEBROWSER_BIN" "$FB_ADDRESS" "$FB_SERVER_PORT" "$backend_log"
+start_backend "$PACKAGE_R_BIN" "$PACKAGE_R_ADDRESS" "$PACKAGE_R_SERVER_PORT" "$backend_log"
 wait_for_backend
 wait "$server_pid"

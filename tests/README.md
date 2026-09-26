@@ -23,7 +23,7 @@ small focused test over another process-level scenario.
 
 The integration harness is `tests/integration/run.bash`. It starts `rclone
 serve s3` and packageR on loopback addresses. packageR accesses the test bucket
-through its in-process rclone VFS. The API test uses `FB_ROOT=/` so it also
+through its in-process rclone VFS. The API test uses `PACKAGE_R_ROOT=/` so it also
 checks bucket navigation from the S3 service root.
 
 The harness copies `tests/data` to a temporary bucket. The `public` directory

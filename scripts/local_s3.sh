@@ -123,7 +123,7 @@ run_local_environment() {
   fi
 
   make -C "$repo_root" build-backend-dev
-  FB_FILEBROWSER_BIN="${FB_FILEBROWSER_BIN:-$repo_root/filebrowser}" \
+  PACKAGE_R_BIN="${PACKAGE_R_BIN:-$repo_root/package-r}" \
     "$repo_root/init.sh" --add-shares my-share=/catalog-sample
 
   printf '[local-dev] ready\n'

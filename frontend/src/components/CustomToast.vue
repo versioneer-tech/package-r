@@ -15,7 +15,7 @@ defineProps<{
 }>();
 
 const clicked = () => {
-  window.open("https://github.com/filebrowser/filebrowser/issues/new/choose");
+  window.open("https://github.com/versioneer-tech/package-r/issues/new/choose");
 };
 </script>
 

@@ -51,14 +51,7 @@
         <a href="https://github.com/versioneer-tech/package-r" target="_blank">
           <strong>packageR</strong>
         </a>
-        {{ version }}, built on
-        <a href="https://filebrowser.org" target="_blank">
-          <img
-            src="https://raw.githubusercontent.com/filebrowser/logo/master/banner.png"
-            alt="Filebrowser"
-            class="logo fb-logo"
-          /> </a
-        >, reassembled by
+        {{ version }}, maintained by
         <a href="https://versioneer.at" target="_blank">
           <img
             src="https://raw.githubusercontent.com/versioneer-inc/versioneer-inc.github.io/master/logo_versioneer_white.png"

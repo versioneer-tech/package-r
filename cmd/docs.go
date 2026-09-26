@@ -49,7 +49,7 @@ var docsCmd = &cobra.Command{
 				return err
 			}
 
-			if !strings.HasPrefix(info.Name(), "filebrowser") {
+			if !strings.HasPrefix(info.Name(), "package-r") {
 				return nil
 			}
 

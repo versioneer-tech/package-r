@@ -110,7 +110,7 @@ func TestManagerReusesConfigurationAndSeparatesRotation(t *testing.T) {
 		"AWS_SESSION_TOKEN",
 		"AWS_ENDPOINT_URL",
 		"AWS_REGION",
-		"FB_ROOT",
+		"PACKAGE_R_ROOT",
 	} {
 		t.Setenv(key, "")
 	}
@@ -150,7 +150,7 @@ func TestManagerReusesConfigurationAndSeparatesRotation(t *testing.T) {
 }
 
 func TestManagerUsesConfiguredRootInsteadOfUserOrProcessRoot(t *testing.T) {
-	t.Setenv("FB_ROOT", "process-bucket")
+	t.Setenv("PACKAGE_R_ROOT", "process-bucket")
 	t.Setenv("AWS_ACCESS_KEY_ID", "access")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "secret")
 	t.Setenv("AWS_ENDPOINT_URL", "http://127.0.0.1:1")

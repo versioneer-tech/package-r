@@ -122,7 +122,7 @@ func TestWrappedStorePublicLinkIncludesUserScope(t *testing.T) {
 }
 
 func TestWrappedStoreCreatesUserHomeWhenEnabled(t *testing.T) {
-	t.Setenv("FB_ROOT", "reports")
+	t.Setenv("PACKAGE_R_ROOT", "reports")
 	base := afero.NewMemMapFs()
 	original := &fakeUserStore{
 		user: &users.User{ID: 1, Username: "alice", Scope: "/"},
@@ -143,7 +143,7 @@ func TestWrappedStoreCreatesUserHomeWhenEnabled(t *testing.T) {
 }
 
 func TestWrappedStoreDoesNotCreateAdminHome(t *testing.T) {
-	t.Setenv("FB_ROOT", "reports")
+	t.Setenv("PACKAGE_R_ROOT", "reports")
 	base := afero.NewMemMapFs()
 	original := &fakeUserStore{
 		user: &users.User{

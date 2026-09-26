@@ -9,8 +9,8 @@ import (
 func TestConfigStoresCatalogAssetMappings(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
-	runFilebrowserCommand(
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
+	runPackageRCommand(
 		t,
 		"--config", configPath,
 		"--database", dbPath,
@@ -34,10 +34,10 @@ func TestConfigStoresCatalogAssetMappings(t *testing.T) {
 func TestSharesAddStoresDefaultCatalogInSharedFolder(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "config", "set", "--catalog.defaultName", "catalog.parquet")
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "admin", "password")
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "shares", "add", "admin", "my-share", "/files")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "set", "--catalog.defaultName", "catalog.parquet")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "admin", "password")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "shares", "add", "admin", "my-share", "/files")
 
 	link, err := openTestStorage(t, dbPath).Share.GetByHash("my-share")
 	if err != nil {
@@ -49,20 +49,20 @@ func TestSharesAddStoresDefaultCatalogInSharedFolder(t *testing.T) {
 	}
 }
 
-func TestSharesAddStoresConfiguredPIN(t *testing.T) {
+func TestSharesAddStoresConfiguredPassword(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "admin", "password")
-	t.Setenv("FB_SHARE_PIN", "1234")
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "shares", "add", "admin", "my-share", "/files")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "admin", "password")
+	t.Setenv("PACKAGE_R_SHARE_PASSWORD", "1234")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "shares", "add", "admin", "my-share", "/files")
 
 	link, err := openTestStorage(t, dbPath).Share.GetByHash("my-share")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(link.PasswordHash), []byte("1234")); err != nil {
-		t.Fatalf("configured PIN does not match the stored password hash: %v", err)
+		t.Fatalf("configured password does not match the stored password hash: %v", err)
 	}
 	if link.Token == "" {
 		t.Fatal("expected a protected share token")

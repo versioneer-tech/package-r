@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/share"
 )
 
@@ -27,7 +27,7 @@ var configuredShareGetsHandler = withUser(func(w http.ResponseWriter, r *http.Re
 	}
 
 	links, err := d.store.Share.All()
-	if errors.Is(err, fbErrors.ErrNotExist) {
+	if errors.Is(err, appErrors.ErrNotExist) {
 		return renderJSON(w, r, []configuredShare{})
 	}
 	if err != nil {

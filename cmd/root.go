@@ -24,7 +24,7 @@ import (
 	"github.com/versioneer-tech/package-r/auth"
 	"github.com/versioneer-tech/package-r/diskcache"
 	"github.com/versioneer-tech/package-r/frontend"
-	fbhttp "github.com/versioneer-tech/package-r/http"
+	apphttp "github.com/versioneer-tech/package-r/http"
 	"github.com/versioneer-tech/package-r/img"
 	"github.com/versioneer-tech/package-r/objectstorage"
 	"github.com/versioneer-tech/package-r/rclonefs"
@@ -41,7 +41,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	cobra.MousetrapHelpText = ""
 
-	rootCmd.SetVersionTemplate("File Browser version {{printf \"%s\" .Version}}\n")
+	rootCmd.SetVersionTemplate("packageR version {{printf \"%s\" .Version}}\n")
 
 	flags := rootCmd.Flags()
 	persistent := rootCmd.PersistentFlags()
@@ -75,13 +75,13 @@ func addServerFlags(flags *pflag.FlagSet) {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "filebrowser",
-	Short: "A stylish web-based file browser",
-	Long: `File Browser CLI lets you create the database to use with File Browser,
+	Use:   "package-r",
+	Short: "Package and browse object-storage data",
+	Long: `The packageR CLI lets you create the packageR database,
 manage your users and all the configurations without accessing the
 web interface.
 
-If you've never run File Browser, you'll need to have a database for
+If you have never run packageR, you need a database for
 it. Don't worry: you don't need to setup a separate database server.
 We're using Bolt DB which is a single file database and all managed
 by ourselves.
@@ -91,11 +91,11 @@ For this specific command, all the flags you have available (except
 environment variables or configuration files.
 
 If you don't set "config", it will look for a configuration file called
-.filebrowser.{json, toml, yaml, yml} in the following directories:
+.package-r.{json, toml, yaml, yml} in the following directories:
 
 - ./
 - $HOME/
-- /etc/filebrowser/
+- /etc/package-r/
 
 The precedence of the configuration values are as follows:
 
@@ -105,11 +105,11 @@ The precedence of the configuration values are as follows:
 - database values
 - defaults
 
-The environment variables are prefixed by "FB_" followed by the option
+The environment variables are prefixed by "PACKAGE_R_" followed by the option
 name in caps, with dots and dashes replaced by underscores. So to set
-"database" via an env variable, you should set FB_DATABASE.
+"database" via an env variable, you should set PACKAGE_R_DATABASE.
 
-Also, if the database path doesn't exist, File Browser will enter into
+Also, if the database path doesn't exist, packageR will enter into
 the quick setup mode and a new database will be bootstrapped and a new
 user created with the credentials from options "username" and "password".`,
 	Run: python(func(cmd *cobra.Command, _ []string, d pythonData) {
@@ -189,7 +189,7 @@ user created with the credentials from options "username" and "password".`,
 			panic(err)
 		}
 
-		handler, err := fbhttp.NewHandler(imgSvc, fileCache, d.store, server, assetsFs)
+		handler, err := apphttp.NewHandler(imgSvc, fileCache, d.store, server, assetsFs)
 		checkErr(err)
 
 		defer listener.Close()
@@ -432,13 +432,13 @@ func initConfig() {
 		checkErr(err)
 		v.AddConfigPath(".")
 		v.AddConfigPath(home)
-		v.AddConfigPath("/etc/filebrowser/")
-		v.SetConfigName(".filebrowser")
+		v.AddConfigPath("/etc/package-r/")
+		v.SetConfigName(".package-r")
 	} else {
 		v.SetConfigFile(cfgFile)
 	}
 
-	v.SetEnvPrefix("FB")
+	v.SetEnvPrefix("PACKAGE_R")
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/share"
 	"github.com/versioneer-tech/package-r/users"
 )
@@ -38,7 +38,7 @@ var sharesAddCmd = &cobra.Command{
 		body := share.CreateBody{
 			Hash:        args[1],
 			Description: "default share",
-			Password:    os.Getenv("FB_SHARE_PIN"),
+			Password:    os.Getenv("PACKAGE_R_SHARE_PASSWORD"),
 		}
 		settings, err := d.store.Settings.Get()
 		checkErr(err)
@@ -67,7 +67,7 @@ var sharesAddCmd = &cobra.Command{
 				return
 			}
 			checkErr(fmt.Errorf("share hash already exists: %s", args[1]))
-		case !errors.Is(err, fbErrors.ErrNotExist):
+		case !errors.Is(err, appErrors.ErrNotExist):
 			checkErr(err)
 		}
 
@@ -79,7 +79,7 @@ var sharesAddCmd = &cobra.Command{
 				return
 			}
 			checkErr(fmt.Errorf("permanent share already exists for path %s and user %s", args[2], owner.Username))
-		case !errors.Is(err, fbErrors.ErrNotExist):
+		case !errors.Is(err, appErrors.ErrNotExist):
 			checkErr(err)
 		}
 

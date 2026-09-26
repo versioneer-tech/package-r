@@ -205,23 +205,23 @@ package_r_url="http://127.0.0.1:${package_r_port}"
 log "Building the Go backend"
 (
   cd "${REPO_ROOT}"
-  CGO_ENABLED=1 go build -tags dev -o "${tmp_dir}/filebrowser" .
+  CGO_ENABLED=1 go build -tags dev -o "${tmp_dir}/package-r" .
 )
 
 common_env=(
   "HOME=${tmp_dir}/home"
   "PATH=${PATH}"
   "RCLONE_CONFIG=/dev/null"
-  "FB_FILEBROWSER_BIN=${tmp_dir}/filebrowser"
-  "FB_DATABASE=${tmp_dir}/filebrowser.db"
-  "FB_ROOT=/"
-  "FB_SERVER_PORT=${package_r_port}"
-  "FB_AUTH_METHOD=proxy"
-  "FB_AUTH_HEADER=X-Username"
-  "FB_ALLOW_CHANGING=true"
-  "FB_DEFAULT_SHARES=${SHARE_NAME}=/${BUCKET}/${SHARED_PREFIX}"
-  "FB_DEFAULT_SHARE_PINS=${SHARE_NAME}=${SHARE_PASSWORD}"
-  "FB_PASSWORD=my-password"
+  "PACKAGE_R_BIN=${tmp_dir}/package-r"
+  "PACKAGE_R_DATABASE=${tmp_dir}/package-r.db"
+  "PACKAGE_R_ROOT=/"
+  "PACKAGE_R_SERVER_PORT=${package_r_port}"
+  "PACKAGE_R_AUTH_METHOD=proxy"
+  "PACKAGE_R_AUTH_HEADER=X-Username"
+  "PACKAGE_R_ALLOW_CHANGING=true"
+  "PACKAGE_R_DEFAULT_SHARES=${SHARE_NAME}=/${BUCKET}/${SHARED_PREFIX}"
+  "PACKAGE_R_DEFAULT_SHARE_PASSWORDS=${SHARE_NAME}=${SHARE_PASSWORD}"
+  "PACKAGE_R_PASSWORD=my-password"
   "AWS_ACCESS_KEY_ID=${ACCESS_KEY_ID}"
   "AWS_SECRET_ACCESS_KEY=${SECRET_ACCESS_KEY}"
   "AWS_ENDPOINT_URL=${rclone_url}"
@@ -235,7 +235,7 @@ env -i "${common_env[@]}" \
 
 log "Starting packageR on ${package_r_url}"
 env -i "${common_env[@]}" \
-  "${tmp_dir}/filebrowser" -a 127.0.0.1 -p "${package_r_port}" \
+  "${tmp_dir}/package-r" -a 127.0.0.1 -p "${package_r_port}" \
   >"${tmp_dir}/package-r.log" 2>&1 &
 package_r_pid=$!
 wait_for_http "${package_r_url}/health" "packageR" "${tmp_dir}/package-r.log" "${package_r_pid}" 200

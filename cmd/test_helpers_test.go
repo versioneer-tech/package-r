@@ -12,7 +12,7 @@ import (
 	"github.com/versioneer-tech/package-r/storage/bolt"
 )
 
-func TestFilebrowserCommandHelper(t *testing.T) {
+func TestPackageRCommandHelper(t *testing.T) {
 	for i, arg := range os.Args {
 		if arg != "--" {
 			continue
@@ -26,19 +26,19 @@ func TestFilebrowserCommandHelper(t *testing.T) {
 	}
 }
 
-func runFilebrowserCommand(t *testing.T, args ...string) {
+func runPackageRCommand(t *testing.T, args ...string) {
 	t.Helper()
 
-	output, err := runFilebrowserCommandResult(t, args...)
+	output, err := runPackageRCommandResult(t, args...)
 	if err != nil {
-		t.Fatalf("filebrowser command failed: %v\n%s", err, output)
+		t.Fatalf("packageR command failed: %v\n%s", err, output)
 	}
 }
 
-func runFilebrowserCommandResult(t *testing.T, args ...string) ([]byte, error) {
+func runPackageRCommandResult(t *testing.T, args ...string) ([]byte, error) {
 	t.Helper()
 
-	cmd := exec.CommandContext(t.Context(), os.Args[0], append([]string{"-test.run=^TestFilebrowserCommandHelper$", "--"}, args...)...)
+	cmd := exec.CommandContext(t.Context(), os.Args[0], append([]string{"-test.run=^TestPackageRCommandHelper$", "--"}, args...)...)
 	return cmd.CombinedOutput()
 }
 
@@ -46,7 +46,7 @@ func newConfigTestDB(t *testing.T) (dbPath string, configPath string, rootPath s
 	t.Helper()
 
 	dir := t.TempDir()
-	return filepath.Join(dir, "filebrowser.db"),
+	return filepath.Join(dir, "package-r.db"),
 		filepath.Join(dir, "missing-config.yaml"),
 		filepath.Join(dir, "root")
 }

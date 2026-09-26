@@ -16,9 +16,9 @@ func init() {
 var configInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a new database",
-	Long: `Initialize a new database to use with File Browser. All of
+	Long: `Initialize a new database to use with packageR. All of
 this options can be changed in the future with the command
-'filebrowser config set'. The user related flags apply
+'package-r config set'. The user related flags apply
 to the defaults when creating new users and you don't
 override the options.`,
 	Args: cobra.NoArgs,
@@ -69,8 +69,8 @@ override the options.`,
 		checkErr(err)
 
 		fmt.Printf(`
-Congratulations! You've set up your database to use with File Browser.
-Now add your first user via 'filebrowser users add' and then you just
+Congratulations! You've set up your database to use with packageR.
+Now add your first user via 'package-r users add' and then you just
 need to call the main command to boot up the server.
 `)
 		printSettings(ser, s, auther)

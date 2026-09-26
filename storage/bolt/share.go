@@ -6,7 +6,7 @@ import (
 	"github.com/asdine/storm/v3"
 	"github.com/asdine/storm/v3/q"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/share"
 )
 
@@ -18,7 +18,7 @@ func (s shareBackend) All() ([]*share.Link, error) {
 	var v []*share.Link
 	err := s.db.All(&v)
 	if errors.Is(err, storm.ErrNotFound) {
-		return v, fbErrors.ErrNotExist
+		return v, appErrors.ErrNotExist
 	}
 
 	return v, err
@@ -28,7 +28,7 @@ func (s shareBackend) FindByUserID(id uint) ([]*share.Link, error) {
 	var v []*share.Link
 	err := s.db.Select(q.Eq("UserID", id)).Find(&v)
 	if errors.Is(err, storm.ErrNotFound) {
-		return v, fbErrors.ErrNotExist
+		return v, appErrors.ErrNotExist
 	}
 
 	return v, err
@@ -38,7 +38,7 @@ func (s shareBackend) GetByHash(hash string) (*share.Link, error) {
 	var v share.Link
 	err := s.db.One("Hash", hash, &v)
 	if errors.Is(err, storm.ErrNotFound) {
-		return nil, fbErrors.ErrNotExist
+		return nil, appErrors.ErrNotExist
 	}
 
 	return &v, err
@@ -48,7 +48,7 @@ func (s shareBackend) GetPermanent(path string, id uint) (*share.Link, error) {
 	var v share.Link
 	err := s.db.Select(q.Eq("Path", path), q.Eq("Expire", 0), q.Eq("UserID", id)).First(&v)
 	if errors.Is(err, storm.ErrNotFound) {
-		return nil, fbErrors.ErrNotExist
+		return nil, appErrors.ErrNotExist
 	}
 
 	return &v, err
@@ -58,7 +58,7 @@ func (s shareBackend) Gets(path string, id uint) ([]*share.Link, error) {
 	var v []*share.Link
 	err := s.db.Select(q.Eq("Path", path), q.Eq("UserID", id)).Find(&v)
 	if errors.Is(err, storm.ErrNotFound) {
-		return v, fbErrors.ErrNotExist
+		return v, appErrors.ErrNotExist
 	}
 
 	return v, err
@@ -67,7 +67,7 @@ func (s shareBackend) Gets(path string, id uint) ([]*share.Link, error) {
 func (s shareBackend) Save(l *share.Link) error {
 	err := s.db.Save(l)
 	if errors.Is(err, storm.ErrAlreadyExists) {
-		return fbErrors.ErrExist
+		return appErrors.ErrExist
 	}
 	return err
 }
@@ -75,7 +75,7 @@ func (s shareBackend) Save(l *share.Link) error {
 func (s shareBackend) Update(l *share.Link) error {
 	err := s.db.Update(l)
 	if errors.Is(err, storm.ErrNotFound) {
-		return fbErrors.ErrNotExist
+		return appErrors.ErrNotExist
 	}
 	return err
 }

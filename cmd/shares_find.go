@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	fbErrors "github.com/versioneer-tech/package-r/errors"
+	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/share"
 )
 
@@ -19,7 +19,7 @@ var sharesLsCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	Run: python(func(_ *cobra.Command, _ []string, d pythonData) {
 		list, err := d.store.Share.All()
-		if errors.Is(err, fbErrors.ErrNotExist) {
+		if errors.Is(err, appErrors.ErrNotExist) {
 			list = []*share.Link{}
 		} else {
 			checkErr(err)

@@ -8,8 +8,8 @@ import (
 func TestUsersAddCreatesGeneratedUserDirRootScope(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath, "--create-user-dir", "--scope", "/")
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "alice", "password")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath, "--create-user-dir", "--scope", "/")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "alice", "password")
 
 	user, err := openTestStorage(t, dbPath).Users.Get(rootPath, "alice")
 	if err != nil {
@@ -24,8 +24,8 @@ func TestUsersAddCreatesGeneratedUserDirRootScope(t *testing.T) {
 func TestUsersAddCreatesGeneratedUserDirHomeScope(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath, "--create-user-dir", "--scope", ".")
-	runFilebrowserCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "alice", "password")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath, "--create-user-dir", "--scope", ".")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "alice", "password")
 
 	user, err := openTestStorage(t, dbPath).Users.Get(rootPath, "alice")
 	if err != nil {
