@@ -47,8 +47,8 @@ jobs:
           fi
 
   release:
-    # GoReleaser builds CGO binaries. Use the older runner ABI for wider
-    # compatibility with supported Linux systems.
+    # Use the older runner ABI for wider CGO compatibility with supported
+    # Linux systems.
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     needs: verify_release_commit

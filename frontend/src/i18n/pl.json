@@ -9,34 +9,23 @@
     "create": "Utwórz",
     "delete": "Usuń",
     "download": "Pobierz",
-    "hideDotfiles": "",
     "info": "Informacja",
     "more": "Więce",
     "move": "Przenieś",
     "moveFile": "Przenieś plik",
-    "new": "Nowy",
     "next": "Następny",
     "ok": "OK",
-    "permalink": "Uzyskaj link bezpośredni (permalink)",
     "previous": "Poprzedni",
-    "publish": "Opublikuj",
     "rename": "Zmień nazwę",
     "replace": "Zamień",
     "reportIssue": "Zgłoś problem",
     "save": "Zapisz",
-    "schedule": "Grafik",
     "select": "Wybierz",
     "selectMultiple": "Zaznacz wiele",
     "share": "Udostępnij",
     "shell": "Pokaż/ukryj powłokę",
     "switchView": "Zmień widok",
-    "update": "Aktualizuj",
     "upload": "Wgraj"
-  },
-  "download": {
-    "downloadFile": "Pobierz plik",
-    "downloadFolder": "Pobierz folder",
-    "downloadSelected": "Pobierz zaznaczone"
   },
   "errors": {
     "forbidden": "Nie posiadasz uprawnień potrzebnych, by uzyskać do tego dostęp.",
@@ -44,15 +33,12 @@
     "notFound": "Ten adres nie jest poprawny."
   },
   "files": {
-    "body": "Body",
-    "closePreview": "Zamknij poprzednie",
     "files": "Pliki",
     "folders": "Foldery",
     "home": "Katalog domowy",
     "lastModified": "Ostatnio modyfikowane",
     "loading": "Ładowanie...",
     "lonely": "Smutno gdy tak pusto...",
-    "metadata": "Metadane",
     "multipleSelectionEnabled": "Zaznaczenie wielu włączone",
     "name": "Nazwa",
     "size": "Rozmiar",
@@ -85,17 +71,13 @@
     "currentlyNavigating": "Obecnie przeglądasz:",
     "deleteMessageMultiple": "Czy jesteś pewien że chcesz usunąć {count} plik(ów)?",
     "deleteMessageSingle": "Czy jesteś pewien, że chcesz usunąć ten plik/folder?",
-    "deleteTitle": "Usuń pliki",
     "displayName": "Wyświetlana Nazwa:",
     "download": "Pobierz pliki",
     "downloadMessage": "Wybierz format, jaki chesz pobrać.",
-    "error": "Pojawił się nieznany błąd",
     "fileInfo": "Informacje o pliku",
     "filesSelected": "{count} plików zostało zaznaczonych.",
     "lastModified": "Osatnio Zmodyfikowane",
     "move": "Przenieś",
-    "moveMessage": "Wybierz nową lokalizację dla swoich plik(ów)/folder(ów):",
-    "newArchetype": "Utwórz nowy wpis na bazie wybranego wzorca. Twój plik będzie utworzony w wybranym folderze.",
     "newDir": "Nowy folder",
     "newDirMessage": "Podaj nazwę tworzonego folderu.",
     "newFile": "Nowy plik",
@@ -106,30 +88,18 @@
     "renameMessage": "Podaj nową nazwę dla",
     "replace": "Zamień",
     "replaceMessage": "Jednen z plików który próbujesz wrzucić próbje nadpisać plik o tej samej nazwie. Czy chcesz nadpisać poprzedni plik?\n",
-    "schedule": "Grafi",
-    "scheduleMessage": "Wybierz datę i czas dla publikacji tego wpisu.",
     "show": "Pokaż",
     "size": "Rozmiar",
     "upload": "Prześlij",
     "uploadMessage": "Proszę wybrać metodę przesyłania"
   },
   "sidebar": {
-    "help": "Pomoc",
     "login": "Login",
     "logout": "Wyloguj",
-    "myFiles": "Moje pliki",
     "newFile": "Nowy plik",
-    "newFolder": "Nowy folder",
-    "preview": "Podgląd"
+    "newFolder": "Nowy folder"
   },
   "success": {
     "linkCopied": "Link Skopiowany!"
-  },
-  "time": {
-    "days": "Dni",
-    "hours": "Godziny",
-    "minutes": "Minuty",
-    "seconds": "Sekundy",
-    "unit": "Jednostka czasu"
   }
 }

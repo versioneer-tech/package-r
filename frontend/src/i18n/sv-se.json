@@ -9,34 +9,23 @@
     "create": "Skapa",
     "delete": "Ta bort",
     "download": "Ladda ner",
-    "hideDotfiles": "",
     "info": "Info",
     "more": "Mer",
     "move": "Flytta",
     "moveFile": "Flytta fil",
-    "new": "Nytt",
     "next": "Nästa",
     "ok": "OK",
-    "permalink": "Skapa en permanent länk",
     "previous": "Föregående",
-    "publish": "Publisera",
     "rename": "Ändra namn",
     "replace": "Ersätt",
     "reportIssue": "Rapportera problem",
     "save": "Spara",
-    "schedule": "Schema",
     "select": "Välj",
     "selectMultiple": "Välj flera",
     "share": "Dela",
     "shell": "Växla skal",
     "switchView": "Byt vy",
-    "update": "Uppdatera",
     "upload": "Ladda upp"
-  },
-  "download": {
-    "downloadFile": "Ladda ner fil",
-    "downloadFolder": "Ladda ner mapp",
-    "downloadSelected": ""
   },
   "errors": {
     "forbidden": "Du saknar rättigheter till detta",
@@ -44,15 +33,12 @@
     "notFound": "Det går inte att nå den här platsen."
   },
   "files": {
-    "body": "Huvud",
-    "closePreview": "Stäng förhands granskningen",
     "files": "Filer",
     "folders": "Mappar",
     "home": "Hem",
     "lastModified": "Senast ändrad",
     "loading": "Laddar.....",
     "lonely": "Väldigt ensamt här....",
-    "metadata": "Metadata",
     "multipleSelectionEnabled": "Flerval är på",
     "name": "Namn",
     "size": "Storlek",
@@ -85,17 +71,13 @@
     "currentlyNavigating": "För närvarande navigerar du på:",
     "deleteMessageMultiple": "Är du säker på att du vill radera {count} filer(na)?",
     "deleteMessageSingle": "Är du säker på att du vill radera denna fil/mapp",
-    "deleteTitle": "Ta bort filer",
     "displayName": "Visningsnamn:",
     "download": "Ladda ner filer",
     "downloadMessage": "Välj format på det du vill lada ner.",
-    "error": "Något gick fel",
     "fileInfo": "Fil information",
     "filesSelected": "{count} filer valda.",
     "lastModified": "Senast ändrad",
     "move": "Flytta",
-    "moveMessage": "Välj ny plats för din fil (er)/mapp (ar):",
-    "newArchetype": "Skapa ett nytt inlägg baserat på en arketyp. Din fil kommer att skapas på innehållsmapp.",
     "newDir": "Ny mapp",
     "newDirMessage": "Ange namn på din nya mapp.",
     "newFile": "Ny fil",
@@ -106,30 +88,18 @@
     "renameMessage": "Infoga ett nytt namn för",
     "replace": "Ersätt",
     "replaceMessage": "En av filerna som du försöker överföra är i konflikt på grund av dess namn. Vill du ersätta den befintliga?\n",
-    "schedule": "Schema",
-    "scheduleMessage": "Pick a date and time to schedule the publication of this post.",
     "show": "Visa",
     "size": "Storlek",
     "upload": "",
     "uploadMessage": ""
   },
   "sidebar": {
-    "help": "Hjälp",
     "login": "Logga in",
     "logout": "Logga ut",
-    "myFiles": "Mina filer",
     "newFile": "Ny fil",
-    "newFolder": "Ny mapp",
-    "preview": "Visa"
+    "newFolder": "Ny mapp"
   },
   "success": {
     "linkCopied": "Länk kopierad"
-  },
-  "time": {
-    "days": "Dagar",
-    "hours": "Timmar",
-    "minutes": "Minuter",
-    "seconds": "Sekunder",
-    "unit": "Tidsenhet"
   }
 }

@@ -9,34 +9,23 @@
     "create": "Crează",
     "delete": "Șterge",
     "download": "Descarcă",
-    "hideDotfiles": "",
     "info": "Info",
     "more": "Mai mult",
     "move": "Mută",
     "moveFile": "Mută fișier",
-    "new": "Nou",
     "next": "Următor",
     "ok": "OK",
-    "permalink": "Obține legătura permanentă",
     "previous": "Precedent",
-    "publish": "Puplică",
     "rename": "Redenumește",
     "replace": "Înlocuiește",
     "reportIssue": "Raportează problemă",
     "save": "Salvează",
-    "schedule": "Programare",
     "select": "Selectează",
     "selectMultiple": "Selecție multiplă",
     "share": "Distribuie",
     "shell": "Comută linia de comandă",
     "switchView": "Schimba vizualizarea",
-    "update": "Actualizează",
     "upload": "Încarcă"
-  },
-  "download": {
-    "downloadFile": "Descarcă fișier",
-    "downloadFolder": "Descarcă director",
-    "downloadSelected": ""
   },
   "errors": {
     "forbidden": "Nu ai permisiuni sa accesezi asta.",
@@ -44,15 +33,12 @@
     "notFound": "Aceasta locație nu poate fi accesată."
   },
   "files": {
-    "body": "Corp",
-    "closePreview": "Închide previzualizarea",
     "files": "Fișiere",
     "folders": "Directoare",
     "home": "Acasă",
     "lastModified": "Ultima modificare",
     "loading": "Se încarcă...",
     "lonely": "Nu este nimic aici...",
-    "metadata": "Meta informații",
     "multipleSelectionEnabled": "Selecție multiplă activată",
     "name": "Nume",
     "size": "Dimensiune",
@@ -85,17 +71,13 @@
     "currentlyNavigating": "Navigare curentă în:",
     "deleteMessageMultiple": "Ești sigur că vrei să ștergi aceste {count} fișier(e)?",
     "deleteMessageSingle": "Ești sigur că vrei să ștergi acest fișier/director?",
-    "deleteTitle": "Șterge fișiere",
     "displayName": "Nume afișat:",
     "download": "Descarcă fișiere",
     "downloadMessage": "Alege formatul în care vrei să descarci.",
-    "error": "Ceva n-a funcționat cum trebuie",
     "fileInfo": "Informații fișier",
     "filesSelected": "{count} fișiere selectate.",
     "lastModified": "Ultima modificare",
     "move": "Mută",
-    "moveMessage": "Alege destinația:",
-    "newArchetype": "Crează o nouă postare pe baza unui șablon. Fișierul va fi creat in directorul conținut.",
     "newDir": "Director nou",
     "newDirMessage": "Scrie numele noului director.",
     "newFile": "Fișier nou",
@@ -106,30 +88,18 @@
     "renameMessage": "Redactează un nou nume pentru",
     "replace": "Înlocuiește",
     "replaceMessage": "Unul din fișierele încărcate intră în conflict din cauza denumrii. Vrei să înlocuiești fișierul existent?\n",
-    "schedule": "Programare",
-    "scheduleMessage": "Alege data si ora pentru a programa publicarea acestei postări.",
     "show": "Arată",
     "size": "Dimensiune",
     "upload": "",
     "uploadMessage": ""
   },
   "sidebar": {
-    "help": "Ajutor",
     "login": "Autentificare",
     "logout": "Logout",
-    "myFiles": "Fișierele mele",
     "newFile": "Fișier nou",
-    "newFolder": "Director nou",
-    "preview": "Previzualizare"
+    "newFolder": "Director nou"
   },
   "success": {
     "linkCopied": "Legătură copiată!"
-  },
-  "time": {
-    "days": "Zile",
-    "hours": "Ore",
-    "minutes": "Minute",
-    "seconds": "Secunde",
-    "unit": "Unitate de timp"
   }
 }

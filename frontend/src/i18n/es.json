@@ -12,36 +12,25 @@
     "download": "Descargar",
     "file": "Archivo",
     "folder": "Carpeta",
-    "hideDotfiles": "Ocultar archivos empezados por punto",
     "info": "Info",
     "more": "Más",
     "move": "Mover",
     "moveFile": "Mover archivo",
-    "new": "Nuevo",
     "next": "Siguiente",
     "ok": "OK",
-    "permalink": "Link permanente",
     "previous": "Anterior",
-    "publish": "Publicar",
     "rename": "Renombrar",
     "replace": "Reemplazar",
     "reportIssue": "Reportar problema",
     "save": "Guardar",
-    "schedule": "Programar",
     "select": "Seleccionar",
     "selectMultiple": "Selección múltiple",
     "share": "Compartir",
     "shell": "Presiona Enter para buscar...",
     "submit": "Enviar",
     "switchView": "Cambiar vista",
-    "update": "Actualizar",
     "upload": "Subir",
     "openFile": "Abrir archivo"
-  },
-  "download": {
-    "downloadFile": "Descargar fichero",
-    "downloadFolder": "Descargar directorio",
-    "downloadSelected": "Descargar seleccionados"
   },
   "errors": {
     "forbidden": "No tienes los permisos necesarios para acceder.",
@@ -50,15 +39,12 @@
     "connection": "No se puede acceder al servidor."
   },
   "files": {
-    "body": "Cuerpo",
-    "closePreview": "Cerrar vista previa",
     "files": "Archivos",
     "folders": "Carpetas",
     "home": "Inicio",
     "lastModified": "Última modificación",
     "loading": "Cargando...",
     "lonely": "Uno se siente muy sólo aquí...",
-    "metadata": "Metadatos",
     "multipleSelectionEnabled": "Selección múltiple activada",
     "name": "Nombre",
     "size": "Tamaño",
@@ -92,17 +78,13 @@
     "currentlyNavigating": "Actualmente estás en:",
     "deleteMessageMultiple": "¿Estás seguro que quieres eliminar {count} archivo(s)?",
     "deleteMessageSingle": "¿Estás seguro que quieres eliminar este archivo/carpeta?",
-    "deleteTitle": "Borrar archivos",
     "displayName": "Nombre:",
     "download": "Descargar archivos",
     "downloadMessage": "Elige el formato de descarga.",
-    "error": "Algo ha fallado",
     "fileInfo": "Información del archivo",
     "filesSelected": "{count} archivos seleccionados.",
     "lastModified": "Última modificación",
     "move": "Mover",
-    "moveMessage": "Elige una nueva casa para tus archivo(s)/carpeta(s):",
-    "newArchetype": "Crea un nuevo post basado en un arquetipo. Tu archivo será creado en la carpeta de contenido.",
     "newDir": "Nueva carpeta",
     "newDirMessage": "Escribe el nombre de la nueva carpeta.",
     "newFile": "Nuevo archivo",
@@ -113,32 +95,19 @@
     "renameMessage": "Escribe el nuevo nombre para",
     "replace": "Reemplazar",
     "replaceMessage": "Uno de los archivos ue intentas subir está creando conflicto por su nombre. ¿Quieres cambiar el nombre del ya existente?\n",
-    "schedule": "Programar",
-    "scheduleMessage": "Elige una hora y fecha para programar la publicación de este post.",
     "show": "Mostrar",
     "size": "Tamaño",
     "upload": "Subir",
     "uploadFiles": "Subiendo {files} archivos...",
-    "uploadMessage": "Seleccione una opción para subir.",
-    "optionalPassword": "Contraseña opcional"
+    "uploadMessage": "Seleccione una opción para subir."
   },
   "sidebar": {
-    "help": "Ayuda",
     "login": "Iniciar sesión",
     "logout": "Cerrar sesión",
-    "myFiles": "Mis archivos",
     "newFile": "Nuevo archivo",
-    "newFolder": "Nueva carpeta",
-    "preview": "Vista previa"
+    "newFolder": "Nueva carpeta"
   },
   "success": {
     "linkCopied": "¡Link copiado!"
-  },
-  "time": {
-    "days": "Días",
-    "hours": "Horas",
-    "minutes": "Minutos",
-    "seconds": "Segundos",
-    "unit": "Unidad"
   }
 }

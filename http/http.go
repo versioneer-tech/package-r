@@ -28,12 +28,10 @@ func NewHandler(
 	})
 	index, static := getStaticHandlers(store, server, assetsFs)
 
-	// NOTE: This fixes the issue where it would redirect if people did not put a
-	// trailing slash in the end. I hate this decision since this allows some awful
-	// URLs https://www.gorillatoolkit.org/pkg/mux#Router.SkipClean
+	// Keep object paths unchanged. Cleaning a URL can change a valid object key.
 	r = r.SkipClean(true)
 
-	monkey := func(fn handleFunc, prefix string) http.Handler {
+	wrap := func(fn handleFunc, prefix string) http.Handler {
 		return handle(fn, prefix, store, server)
 	}
 
@@ -45,31 +43,31 @@ func NewHandler(
 	api.NotFoundHandler = http.NotFoundHandler()
 
 	tokenExpirationTime := server.GetTokenExpirationTime(DefaultTokenExpirationTime)
-	api.Handle("/login", monkey(loginHandler(tokenExpirationTime), ""))
-	api.Handle("/renew", monkey(renewHandler(tokenExpirationTime), ""))
+	api.Handle("/login", wrap(loginHandler(tokenExpirationTime), "")).Methods("POST")
+	api.Handle("/renew", wrap(renewHandler(tokenExpirationTime), "")).Methods("POST")
 
-	api.PathPrefix("/resources").Handler(monkey(resourceGetHandler, "/api/resources")).Methods("GET")
-	api.PathPrefix("/resources").Handler(monkey(resourceDeleteHandler(fileCache), "/api/resources")).Methods("DELETE")
-	api.PathPrefix("/resources").Handler(monkey(resourcePostHandler(fileCache), "/api/resources")).Methods("POST")
-	api.PathPrefix("/resources").Handler(monkey(resourcePutHandler, "/api/resources")).Methods("PUT")
-	api.PathPrefix("/resources").Handler(monkey(resourcePatchHandler(fileCache), "/api/resources")).Methods("PATCH")
+	api.PathPrefix("/resources").Handler(wrap(resourceGetHandler, "/api/resources")).Methods("GET")
+	api.PathPrefix("/resources").Handler(wrap(resourceDeleteHandler(fileCache), "/api/resources")).Methods("DELETE")
+	api.PathPrefix("/resources").Handler(wrap(resourcePostHandler(fileCache), "/api/resources")).Methods("POST")
+	api.PathPrefix("/resources").Handler(wrap(resourcePutHandler, "/api/resources")).Methods("PUT")
+	api.PathPrefix("/resources").Handler(wrap(resourcePatchHandler(fileCache), "/api/resources")).Methods("PATCH")
 
-	api.PathPrefix("/tus").Handler(monkey(tusPostHandler(), "/api/tus")).Methods("POST")
-	api.PathPrefix("/tus").Handler(monkey(tusHeadHandler(), "/api/tus")).Methods("HEAD")
-	api.PathPrefix("/tus").Handler(monkey(tusPatchHandler(), "/api/tus")).Methods("PATCH")
-	api.PathPrefix("/tus").Handler(monkey(resourceDeleteHandler(fileCache), "/api/tus")).Methods("DELETE")
+	api.PathPrefix("/tus").Handler(wrap(tusPostHandler(), "/api/tus")).Methods("POST")
+	api.PathPrefix("/tus").Handler(wrap(tusHeadHandler(), "/api/tus")).Methods("HEAD")
+	api.PathPrefix("/tus").Handler(wrap(tusPatchHandler(), "/api/tus")).Methods("PATCH")
+	api.PathPrefix("/tus").Handler(wrap(resourceDeleteHandler(fileCache), "/api/tus")).Methods("DELETE")
 
-	api.Handle("/shares", monkey(configuredShareGetsHandler, "/api/shares")).Methods("GET")
+	api.Handle("/shares", wrap(configuredShareGetsHandler, "/api/shares")).Methods("GET")
 	api.PathPrefix("/shares").Handler(http.NotFoundHandler())
 
-	api.PathPrefix("/raw").Handler(monkey(rawHandler, "/api/raw")).Methods("GET")
+	api.PathPrefix("/raw").Handler(wrap(rawHandler, "/api/raw")).Methods("GET")
 	api.PathPrefix("/preview/{size}/{path:.*}").
-		Handler(monkey(previewHandler(imgSvc, fileCache, server.EnableThumbnails, server.ResizePreview), "/api/preview")).Methods("GET")
-	api.PathPrefix("/command").Handler(monkey(commandsHandler, "/api/command")).Methods("GET")
+		Handler(wrap(previewHandler(imgSvc, fileCache, server.EnableThumbnails, server.ResizePreview), "/api/preview")).Methods("GET")
+	api.PathPrefix("/command").Handler(wrap(commandsHandler, "/api/command")).Methods("GET")
 
 	public := api.PathPrefix("/public").Subrouter()
-	public.PathPrefix("/share").Handler(monkey(publicShareHandler, "/api/public/share/")).Methods("GET", "HEAD")
-	public.PathPrefix("/catalog").Handler(monkey(catalogHandler, "/api/public/catalog/")).Methods("GET", "HEAD")
+	public.PathPrefix("/share").Handler(wrap(publicShareHandler, "/api/public/share/")).Methods("GET", "HEAD")
+	public.PathPrefix("/catalog").Handler(wrap(catalogHandler, "/api/public/catalog/")).Methods("GET", "HEAD")
 
 	return stripPrefix(server.BaseURL, r), nil
 }

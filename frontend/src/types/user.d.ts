@@ -5,7 +5,6 @@ interface IUser {
   singleClick: boolean;
   dateFormat: boolean;
   viewMode: ViewModeType;
-  presignEnabled: boolean;
 }
 
 type ViewModeType = "list" | "mosaic" | "mosaic gallery";

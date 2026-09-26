@@ -16,11 +16,8 @@ func init() {
 var configInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a new database",
-	Long: `Initialize a new database to use with packageR. All of
-this options can be changed in the future with the command
-'package-r config set'. The user related flags apply
-to the defaults when creating new users and you don't
-override the options.`,
+	Long: `Initialize a new packageR database. Use "package-r config set" to
+change these settings later. User options become defaults for new users.`,
 	Args: cobra.NoArgs,
 	Run: python(func(cmd *cobra.Command, _ []string, d pythonData) {
 		defaults := settings.UserDefaults{}

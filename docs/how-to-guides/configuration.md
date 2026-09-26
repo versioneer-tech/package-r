@@ -159,7 +159,6 @@ New users have these defaults:
 | Scope | `/` |
 | Browse names and directories | Allowed within the scope and path rules |
 | Create, rename, modify, delete | Denied |
-| Download, preview, presigned URL | Denied |
 
 Default permissions apply only to new users. Existing users keep their stored
 permissions.
@@ -183,8 +182,8 @@ packageR applies these access controls in order:
    Matching rules are evaluated in order, and the last matching rule wins.
 5. User-directory mode denies sibling homes and protects their shared parent
    from recursive changes. This boundary cannot be overridden by a user rule.
-6. User permission flags control actions such as download, create, rename,
-   modify, and delete.
+6. User permission flags control actions such as create, rename, modify, and
+   delete.
 
 ## Catalogs
 

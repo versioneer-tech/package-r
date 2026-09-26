@@ -73,10 +73,7 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 		}
 	})
 
-	store, err := bolt.NewStorage(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	store := bolt.NewStorage(db)
 	if err := store.Settings.Save(&settings.Settings{Key: []byte("test-key")}); err != nil {
 		t.Fatal(err)
 	}
@@ -157,16 +154,6 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 		t.Fatalf("expected resolvable STAC self link %q, got %#v", expectedSelfHref, selfLink)
 	}
 
-	link.CatalogURL = "/workspace/public/catalog.parquet"
-	if err := store.Share.Update(link); err != nil {
-		t.Fatal(err)
-	}
-	legacyCollection := callCatalog[struct {
-		Features []map[string]interface{} `json:"features"`
-	}](t, handler, "/api/public/catalog/my-share")
-	if len(legacyCollection.Features) != 3 {
-		t.Fatalf("expected legacy catalog path to use the VFS, got %#v", legacyCollection)
-	}
 	if catalogUsers.publicLinkName != "/public/catalog.parquet" {
 		t.Fatalf("unexpected signed catalog path %q", catalogUsers.publicLinkName)
 	}
@@ -307,7 +294,6 @@ func (info catalogSizeInfo) Size() int64 {
 }
 
 func TestCatalogPathInShare(t *testing.T) {
-	root := t.TempDir()
 	tests := []struct {
 		name       string
 		catalogURL string
@@ -326,12 +312,6 @@ func TestCatalogPathInShare(t *testing.T) {
 			catalogURL: "/public/meta/catalog.parquet",
 			sharePath:  "/public",
 			want:       "meta/catalog.parquet",
-		},
-		{
-			name:       "legacy physical path",
-			catalogURL: "/workspace/public/catalog.parquet",
-			sharePath:  "/public",
-			want:       "catalog.parquet",
 		},
 		{
 			name:       "outside logical path",
@@ -357,17 +337,11 @@ func TestCatalogPathInShare(t *testing.T) {
 			sharePath:  "/public",
 			wantError:  true,
 		},
-		{
-			name:       "legacy root sibling",
-			catalogURL: root + "-other/public/catalog.parquet",
-			sharePath:  "/public",
-			wantError:  true,
-		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := catalogPathInShare(test.catalogURL, root, test.sharePath)
+			got, err := catalogPathInShare(test.catalogURL, test.sharePath)
 			if test.wantError {
 				if err == nil {
 					t.Fatalf("expected an error, got %q", got)

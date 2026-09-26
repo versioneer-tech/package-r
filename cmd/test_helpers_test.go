@@ -64,9 +64,6 @@ func openTestStorage(t *testing.T, dbPath string) *storage.Storage {
 		}
 	})
 
-	store, err := bolt.NewStorage(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	store := bolt.NewStorage(db)
 	return store
 }

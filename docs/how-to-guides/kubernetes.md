@@ -66,14 +66,12 @@ spec:
                 --disable-preview-resize=true \
                 --disable-thumbnails=true \
                 --disable-type-detection-by-header=true \
-                --scope=/ \
                 --perm.create=false \
                 --perm.delete=false \
                 --perm.modify=false \
                 --perm.rename=false
 
               /package-r users add admin "$ADMIN_PASSWORD" \
-                --scope=/ \
                 --perm.create=true \
                 --perm.delete=true \
                 --perm.modify=true \

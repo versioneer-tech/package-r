@@ -13,15 +13,6 @@ export const setTheme = (theme: UserTheme) => {
   }
 };
 
-export const toggleTheme = (): void => {
-  const activeTheme = getTheme();
-  if (activeTheme === "light") {
-    setTheme("dark");
-  } else {
-    setTheme("light");
-  }
-};
-
 export const getMediaPreference = (): UserTheme => {
   const hasDarkPreference = window.matchMedia(
     "(prefers-color-scheme: dark)"

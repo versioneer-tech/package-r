@@ -33,15 +33,9 @@ func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
 		return nil, fmt.Errorf("invalid hash: %s", hash)
 	}
 
-	expire, err := getExpire(body.Expires, body.Unit)
+	expire, err := compactExpiration(body.Expiration, time.Now())
 	if err != nil {
 		return nil, err
-	}
-	if body.Expiration != "" {
-		expire, err = compactExpiration(body.Expiration, time.Now())
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	passwordHash, token, err := getPasswordAuth(body.Password)
@@ -146,31 +140,6 @@ func resolveHash(hash string) (string, error) {
 
 	randomHash := string(random)
 	return randomHash, nil
-}
-
-func getExpire(expires string, unit string) (int64, error) {
-	if expires == "" {
-		return 0, nil
-	}
-
-	num, err := strconv.Atoi(expires)
-	if err != nil {
-		return 0, err
-	}
-
-	var add time.Duration
-	switch unit {
-	case "seconds":
-		add = time.Second * time.Duration(num)
-	case "minutes":
-		add = time.Minute * time.Duration(num)
-	case "days":
-		add = time.Hour * 24 * time.Duration(num)
-	default:
-		add = time.Hour * time.Duration(num)
-	}
-
-	return time.Now().Add(add).Unix(), nil
 }
 
 func compactExpiration(value string, now time.Time) (int64, error) {

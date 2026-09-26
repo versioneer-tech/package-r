@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log"
+	"net/http"
 	"net/http/httptest"
 	"path"
 	"reflect"
@@ -19,6 +21,44 @@ import (
 	"github.com/versioneer-tech/package-r/settings"
 	"github.com/versioneer-tech/package-r/users"
 )
+
+func TestRawGetRequiresPermissionAndLogsDelivery(t *testing.T) {
+	store := afero.NewMemMapFs()
+	if err := afero.WriteFile(store, "/xyz.txt", []byte("xyz"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	d := &data{
+		settings: &settings.Settings{},
+		server:   &settings.Server{},
+		user: &users.User{
+			Username: "xyz-user",
+			Fs:       store,
+		},
+	}
+	req := httptest.NewRequest(http.MethodGet, "/xyz.txt", http.NoBody)
+
+	status, err := rawGetHandler(httptest.NewRecorder(), req, d)
+	if status != http.StatusForbidden || err != nil {
+		t.Fatalf("expected denied raw read, status=%d err=%v", status, err)
+	}
+
+	d.user.Perm.Download = true
+	var output bytes.Buffer
+	previousOutput := log.Writer()
+	log.SetOutput(&output)
+	t.Cleanup(func() { log.SetOutput(previousOutput) })
+	recorder := httptest.NewRecorder()
+	status, err = rawGetHandler(recorder, req, d)
+	if status != 0 || err != nil {
+		t.Fatalf("expected permitted raw read, status=%d err=%v", status, err)
+	}
+	if recorder.Body.String() != "xyz" {
+		t.Fatalf("unexpected body %q", recorder.Body.String())
+	}
+	if !strings.Contains(output.String(), `[DOWNLOAD] user="xyz-user" path="/xyz.txt" delivery=package_r`) {
+		t.Fatalf("missing download audit log: %s", output.String())
+	}
+}
 
 func TestRawDirectoryArchives(t *testing.T) {
 	for _, algorithm := range []string{"zip", "tar", "targz", "tarbz2", "tarxz", "tarlz4", "tarsz"} {

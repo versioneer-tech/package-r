@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-func TestUsersAddCreatesGeneratedUserDirRootScope(t *testing.T) {
+func TestUsersAddDefaultsGeneratedUserDirToRootScope(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
-	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath, "--create-user-dir", "--scope", "/")
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath, "--create-user-dir")
 	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "alice", "my-password")
 
 	user, err := openTestStorage(t, dbPath).Users.Get(rootPath, "alice")
@@ -21,23 +21,7 @@ func TestUsersAddCreatesGeneratedUserDirRootScope(t *testing.T) {
 	assertUserBrowseRoot(t, user.FullPath("/"), rootPath)
 }
 
-func TestUsersAddCreatesGeneratedUserDirHomeScope(t *testing.T) {
-	dbPath, configPath, rootPath := newConfigTestDB(t)
-
-	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath, "--create-user-dir", "--scope", ".")
-	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "alice", "my-password")
-
-	user, err := openTestStorage(t, dbPath).Users.Get(rootPath, "alice")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if user.Scope != "/home/alice" {
-		t.Fatalf("expected generated user to use home scope, got %q", user.Scope)
-	}
-	assertUserBrowseRoot(t, user.FullPath("/"), filepath.Join(rootPath, "home", "alice"))
-}
-
-func TestUsersAddSetsEachPermissionExplicitly(t *testing.T) {
+func TestUsersAddSetsSupportedPermissionsExplicitly(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
 	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
@@ -45,12 +29,10 @@ func TestUsersAddSetsEachPermissionExplicitly(t *testing.T) {
 		"--config", configPath,
 		"--database", dbPath,
 		"users", "add", "initial", "my-password",
-		"--perm.execute=true",
 		"--perm.create=true",
 		"--perm.rename=true",
 		"--perm.modify=true",
 		"--perm.delete=true",
-		"--perm.download=true",
 	)
 
 	user, err := openTestStorage(t, dbPath).Users.Get(rootPath, "initial")
@@ -58,9 +40,12 @@ func TestUsersAddSetsEachPermissionExplicitly(t *testing.T) {
 		t.Fatal(err)
 	}
 	permissions := user.Perm
-	if !permissions.Execute || !permissions.Create || !permissions.Rename ||
-		!permissions.Modify || !permissions.Delete || !permissions.Download {
-		t.Fatalf("expected every explicit permission to be enabled, got %#v", permissions)
+	if !permissions.Create || !permissions.Rename ||
+		!permissions.Modify || !permissions.Delete {
+		t.Fatalf("expected each supported permission to be enabled, got %#v", permissions)
+	}
+	if permissions.Execute || permissions.Download {
+		t.Fatalf("expected internal permissions to stay disabled, got %#v", permissions)
 	}
 }
 

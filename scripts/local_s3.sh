@@ -136,7 +136,6 @@ run_development_environment() {
       --auth.method=json \
       --signup=false \
       --create-user-dir=false \
-      --scope=/ \
       --perm.create=true \
       --perm.delete=true \
       --perm.modify=true \
@@ -150,7 +149,6 @@ run_development_environment() {
       --auth.method=json \
       --signup=false \
       --create-user-dir=false \
-      --scope=/ \
       --perm.create=true \
       --perm.delete=true \
       --perm.modify=true \
@@ -161,7 +159,6 @@ run_development_environment() {
   if PACKAGE_R_DATABASE="$database" "$package_r_bin" users find admin >/dev/null 2>&1; then
     PACKAGE_R_DATABASE="$database" "$package_r_bin" users update admin \
       --password=my-password \
-      --scope=/ \
       --perm.create=true \
       --perm.delete=true \
       --perm.modify=true \
@@ -169,7 +166,6 @@ run_development_environment() {
       >/dev/null
   else
     PACKAGE_R_DATABASE="$database" "$package_r_bin" users add admin my-password \
-      --scope=/ \
       --perm.create=true \
       --perm.delete=true \
       --perm.modify=true \

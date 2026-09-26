@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -31,7 +30,7 @@ var catalogHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d
 	if cf.CatalogURL == "" {
 		return http.StatusNotFound, nil
 	}
-	catalogPath, err := catalogPathInShare(cf.CatalogURL, d.server.Root, cf.SharePath)
+	catalogPath, err := catalogPathInShare(cf.CatalogURL, cf.SharePath)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -77,36 +76,11 @@ var catalogHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d
 	return renderJSONWithContentType(w, result, "application/geo+json; charset=utf-8")
 })
 
-func catalogPathInShare(catalogURL, root, sharePath string) (string, error) {
-	cleanCatalog := filepath.Clean(catalogURL)
-	cleanRoot := filepath.Clean(root)
-	if filepath.IsAbs(cleanCatalog) && cleanRoot != "." {
-		relativeToRoot, err := filepath.Rel(cleanRoot, cleanCatalog)
-		if err == nil && pathStaysWithinBase(relativeToRoot) {
-			logicalPath := "/" + filepath.ToSlash(relativeToRoot)
-			if relative, ok := pathRelativeToShare(logicalPath, sharePath); ok {
-				return relative, nil
-			}
-		}
-	}
-	const legacyMountRoot = "/workspace"
-	legacyLogicalPath := strings.TrimPrefix(filepath.ToSlash(cleanCatalog), legacyMountRoot)
-	if legacyLogicalPath != filepath.ToSlash(cleanCatalog) {
-		if relative, ok := pathRelativeToShare(legacyLogicalPath, sharePath); ok {
-			return relative, nil
-		}
-	}
-
+func catalogPathInShare(catalogURL, sharePath string) (string, error) {
 	if relative, ok := pathRelativeToShare(filepath.ToSlash(catalogURL), sharePath); ok {
 		return relative, nil
 	}
 	return "", errors.New("catalog path is outside the shared tree")
-}
-
-func pathStaysWithinBase(relativePath string) bool {
-	return relativePath != ".." &&
-		!strings.HasPrefix(relativePath, ".."+string(os.PathSeparator)) &&
-		!filepath.IsAbs(relativePath)
 }
 
 func pathRelativeToShare(catalogPath, sharePath string) (string, bool) {

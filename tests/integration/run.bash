@@ -233,14 +233,12 @@ env -i "${common_env[@]}" "${tmp_dir}/package-r" config init \
   --auth.mapper= \
   --signup=true \
   --create-user-dir=false \
-  --scope=/ \
   --perm.create=true \
   --perm.delete=true \
   --perm.modify=true \
   --perm.rename=true \
   >>"${tmp_dir}/init.log" 2>&1
 env -i "${common_env[@]}" "${tmp_dir}/package-r" users add admin my-password \
-  --scope=/ \
   --perm.create=true \
   --perm.delete=true \
   --perm.modify=true \
@@ -259,7 +257,7 @@ env -i "${common_env[@]}" \
 package_r_pid=$!
 wait_for_http "${package_r_url}/health" "packageR" "${tmp_dir}/package-r.log" "${package_r_pid}" 200
 
-token="$(curl_test -fsS -H 'X-Username: admin' "${package_r_url}/api/login")"
+token="$(curl_test -fsS -X POST -H 'X-Username: admin' "${package_r_url}/api/login")"
 auth_header="X-Auth: ${token}"
 share_password_header="X-SHARE-PASSWORD: ${SHARE_PASSWORD}"
 thumbnail="${FIXTURE_DIR}/${SHARED_PREFIX}/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
@@ -291,20 +289,13 @@ if [[ "${signup_status}" != "404" ]]; then
   printf 'Expected /api/signup to return 404, got %s\n' "${signup_status}" >&2
   exit 1
 fi
-log "Checking VFS service-root browse and raw read"
+log "Checking VFS service-root browsing"
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/" |
   python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert "my-bucket" in names'
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/${BUCKET}/" |
   python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert {"catalog-sample", "sample.jpg", "sample.json", "sample.pdf", "sample.txt"} <= names'
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/${BUCKET}/${SHARED_PREFIX}/" |
   python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert {"catalog.parquet", "openaerialmap-assets"} <= names'
-curl_test -fsS -H "${auth_header}" \
-  "${package_r_url}/api/raw${resource_path}" \
-  --output "${tmp_dir}/raw-thumbnail.png"
-cmp "${thumbnail}" "${tmp_dir}/raw-thumbnail.png"
-grep -F "[DOWNLOAD] user=\"admin\" path=\"${resource_path}\" delivery=package_r" \
-  "${tmp_dir}/package-r.log" >/dev/null
-
 log "Checking VFS create, copy, rename, read, and delete"
 printf 'packageR rclone integration\n' >"${tmp_dir}/payload.txt"
 curl_test -fsS -X POST -H "${auth_header}" \
@@ -364,8 +355,9 @@ curl_test -fsS -X PATCH -H "${auth_header}" \
   "${package_r_url}/api/tus${tus_path}" >/dev/null
 cat "${tmp_dir}/chunk-one.txt" "${tmp_dir}/chunk-two.txt" >"${tmp_dir}/chunked-expected.txt"
 curl_test -fsS -H "${auth_header}" \
-  "${package_r_url}/api/raw${tus_path}" \
-  --output "${tmp_dir}/chunked-actual.txt"
+  "${package_r_url}/api/resources${tus_path}" |
+  python3 -c 'import json, sys; sys.stdout.write(json.load(sys.stdin)["content"])' \
+  >"${tmp_dir}/chunked-actual.txt"
 cmp "${tmp_dir}/chunked-expected.txt" "${tmp_dir}/chunked-actual.txt"
 curl_test -fsS -X DELETE -H "${auth_header}" \
   "${package_r_url}/api/resources${tus_path}" >/dev/null
@@ -461,14 +453,12 @@ env -i "${home_env[@]}" "${tmp_dir}/package-r" config init \
   --auth.mapper= \
   --signup=true \
   --create-user-dir=true \
-  --scope=/ \
   --perm.create=true \
   --perm.delete=true \
   --perm.modify=true \
   --perm.rename=true \
   >>"${tmp_dir}/init.log" 2>&1
 env -i "${home_env[@]}" "${tmp_dir}/package-r" users add admin my-password \
-  --scope=/ \
   --perm.create=true \
   --perm.delete=true \
   --perm.modify=true \
@@ -482,8 +472,8 @@ package_r_pid=$!
 wait_for_http "${home_url}/health" "packageR user-directory mode" \
   "${tmp_dir}/home-mode.log" "${package_r_pid}" 200
 
-alice_token="$(curl_test -fsS -H 'X-Username: alice' "${home_url}/api/login")"
-bob_token="$(curl_test -fsS -H 'X-Username: bob' "${home_url}/api/login")"
+alice_token="$(curl_test -fsS -X POST -H 'X-Username: alice' "${home_url}/api/login")"
+bob_token="$(curl_test -fsS -X POST -H 'X-Username: bob' "${home_url}/api/login")"
 alice_auth_header="X-Auth: ${alice_token}"
 bob_auth_header="X-Auth: ${bob_token}"
 
@@ -497,16 +487,16 @@ curl_test -fsS -X POST -H "${bob_auth_header}" \
   --data-binary "@${tmp_dir}/bob-home.txt" \
   "${home_url}/api/resources/home/bob/bob.txt" >/dev/null
 
-fetch_and_compare \
-  "${home_url}/api/raw/home/alice/alice.txt" \
-  "${tmp_dir}/alice-home.txt" \
-  "${tmp_dir}/alice-home-read.txt" \
-  -H "${alice_auth_header}"
-fetch_and_compare \
-  "${home_url}/api/raw/home/bob/bob.txt" \
-  "${tmp_dir}/bob-home.txt" \
-  "${tmp_dir}/bob-home-read.txt" \
-  -H "${bob_auth_header}"
+curl_test -fsS -H "${alice_auth_header}" \
+  "${home_url}/api/resources/home/alice/alice.txt" |
+  python3 -c 'import json, sys; sys.stdout.write(json.load(sys.stdin)["content"])' \
+  >"${tmp_dir}/alice-home-read.txt"
+cmp "${tmp_dir}/alice-home.txt" "${tmp_dir}/alice-home-read.txt"
+curl_test -fsS -H "${bob_auth_header}" \
+  "${home_url}/api/resources/home/bob/bob.txt" |
+  python3 -c 'import json, sys; sys.stdout.write(json.load(sys.stdin)["content"])' \
+  >"${tmp_dir}/bob-home-read.txt"
+cmp "${tmp_dir}/bob-home.txt" "${tmp_dir}/bob-home-read.txt"
 
 alice_to_bob_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
   -H "${alice_auth_header}" --data-binary "@${tmp_dir}/alice-home.txt" \
@@ -518,9 +508,9 @@ bob_to_alice_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
 [[ "${bob_to_alice_status}" == "403" ]]
 
 alice_reads_bob_status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
-  -H "${alice_auth_header}" "${home_url}/api/raw/home/bob/bob.txt")"
+  -H "${alice_auth_header}" "${home_url}/api/resources/home/bob/bob.txt")"
 bob_reads_alice_status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
-  -H "${bob_auth_header}" "${home_url}/api/raw/home/alice/alice.txt")"
+  -H "${bob_auth_header}" "${home_url}/api/resources/home/alice/alice.txt")"
 [[ "${alice_reads_bob_status}" == "403" ]]
 [[ "${bob_reads_alice_status}" == "403" ]]
 

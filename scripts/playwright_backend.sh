@@ -196,14 +196,12 @@ build_backend_if_needed "$package_r_bin" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
   --auth.method=json \
   --signup=false \
   --create-user-dir=false \
-  --scope=/ \
   --perm.create=true \
   --perm.delete=true \
   --perm.modify=true \
   --perm.rename=true \
   >"$backend_log" 2>&1
 "$package_r_bin" users add admin my-password \
-  --scope=/ \
   --perm.create=true \
   --perm.delete=true \
   --perm.modify=true \

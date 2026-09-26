@@ -54,9 +54,6 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 
 	presign, ok := r.URL.Query()["presign"]
 	if ok && !strings.EqualFold(presign[0], "false") {
-		if !d.user.Perm.Download {
-			return http.StatusForbidden, nil
-		}
 		url, err := presignOrLocalURL(
 			r,
 			d.store.Users,

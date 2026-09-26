@@ -10,34 +10,23 @@
     "create": "Criar",
     "delete": "Eliminar",
     "download": "Descarregar",
-    "hideDotfiles": "",
     "info": "Info",
     "more": "Mais",
     "move": "Mover",
     "moveFile": "Mover ficheiro",
-    "new": "Novo",
     "next": "Próximo",
     "ok": "OK",
-    "permalink": "Obter link permanente",
     "previous": "Anterior",
-    "publish": "Publicar",
     "rename": "Alterar nome",
     "replace": "Substituir",
     "reportIssue": "Reportar erro",
     "save": "Guardar",
-    "schedule": "Agendar",
     "select": "Selecionar",
     "selectMultiple": "Selecionar vários",
     "share": "Partilhar",
     "shell": "Alternar shell",
     "switchView": "Alterar vista",
-    "update": "Atualizar",
     "upload": "Enviar"
-  },
-  "download": {
-    "downloadFile": "Descarregar ficheiro",
-    "downloadFolder": "Descarregar pasta",
-    "downloadSelected": ""
   },
   "errors": {
     "forbidden": "Não tem permissões para aceder a isto",
@@ -45,15 +34,12 @@
     "notFound": "Esta localização não é alcançável."
   },
   "files": {
-    "body": "Corpo",
-    "closePreview": "Fechar pré-visualização",
     "files": "Ficheiros",
     "folders": "Pastas",
     "home": "Início",
     "lastModified": "Última alteração",
     "loading": "A carregar...",
     "lonely": "Sinto-me sozinho...",
-    "metadata": "Metadados",
     "multipleSelectionEnabled": "Seleção múltipla ativada",
     "name": "Nome",
     "size": "Tamanho",
@@ -86,17 +72,13 @@
     "currentlyNavigating": "A navegar em:",
     "deleteMessageMultiple": "Quer eliminar {count} ficheiro(s)?",
     "deleteMessageSingle": "Quer eliminar esta pasta/ficheiro?",
-    "deleteTitle": "Eliminar ficheiros",
     "displayName": "Nome:",
     "download": "Descarregar ficheiros",
     "downloadMessage": "Escolha o formato do ficheiro que quer descarregar.",
-    "error": "Algo correu mal",
     "fileInfo": "Informação do ficheiro",
     "filesSelected": "{count} ficheiros selecionados.",
     "lastModified": "Última alteração",
     "move": "Mover",
-    "moveMessage": "Escolha uma nova casa para os seus ficheiros/pastas:",
-    "newArchetype": "Criar um novo post baseado num \"archetype\". O seu ficheiro será criado na pasta \"content\".",
     "newDir": "Nova pasta",
     "newDirMessage": "Escreva o nome da nova pasta.",
     "newFile": "Novo ficheiro",
@@ -107,30 +89,18 @@
     "renameMessage": "Insira um novo nome para",
     "replace": "Substituir",
     "replaceMessage": "Já existe um ficheiro com nome igual a um dos que está a tentar enviar. Quer substituí-lo?\n",
-    "schedule": "Agendar",
-    "scheduleMessage": "Escolha uma data para publicar este post.",
     "show": "Mostrar",
     "size": "Tamanho",
     "upload": "",
     "uploadMessage": ""
   },
   "sidebar": {
-    "help": "Ajuda",
     "login": "Entrar",
     "logout": "Sair",
-    "myFiles": "Meus ficheiros",
     "newFile": "Novo ficheiro",
-    "newFolder": "Nova pasta",
-    "preview": "Pré-visualizar"
+    "newFolder": "Nova pasta"
   },
   "success": {
     "linkCopied": "Link copiado!"
-  },
-  "time": {
-    "days": "Dias",
-    "hours": "Horas",
-    "minutes": "Minutos",
-    "seconds": "Segundos",
-    "unit": "Unidades de tempo"
   }
 }

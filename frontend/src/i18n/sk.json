@@ -11,36 +11,25 @@
     "download": "Stiahnuť",
     "file": "Súbor",
     "folder": "Priečinok",
-    "hideDotfiles": "Skryť súbory začínajúce bodkou",
     "info": "Info",
     "more": "Viac",
     "move": "Presunúť",
     "moveFile": "Presunúť súbory",
-    "new": "Nový",
     "next": "Ďalšie",
     "ok": "OK",
-    "permalink": "Získať trvalý odkaz",
     "previous": "Predošlé",
-    "publish": "Zverejniť",
     "rename": "Premenovať",
     "replace": "Nahradiť",
     "reportIssue": "Nahlásiť problém",
     "save": "Uložiť",
-    "schedule": "Naplánovať",
     "select": "Vybrať",
     "selectMultiple": "Vybrať viaceré",
     "share": "Zdieľať",
     "shell": "Prepnúť shell",
     "submit": "Poslať",
     "switchView": "Prepnúť pohľad",
-    "update": "Aktualizovať",
     "upload": "Nahrať",
     "openFile": "Otvoriť súbor"
-  },
-  "download": {
-    "downloadFile": "Stiahnuť súbor",
-    "downloadFolder": "Stiahnuť priečinok",
-    "downloadSelected": "Stiahnuť vybraté"
   },
   "errors": {
     "forbidden": "You don't have permissions to access this.",
@@ -49,15 +38,12 @@
     "connection": "The server can't be reached."
   },
   "files": {
-    "body": "Telo",
-    "closePreview": "Zavrieť náhľad",
     "files": "Súbory",
     "folders": "Priečinky",
     "home": "Domov",
     "lastModified": "Posledná zmena",
     "loading": "Načítanie...",
     "lonely": "Je tu tak pusto...",
-    "metadata": "Metadata",
     "multipleSelectionEnabled": "Zapnutý viacnásobný výber",
     "name": "Názov",
     "size": "Veľkosť",
@@ -91,17 +77,13 @@
     "currentlyNavigating": "Aktuálna cesta:",
     "deleteMessageMultiple": "Naozaj chcete odstrániť {count} súbor(ov)?",
     "deleteMessageSingle": "Naozaj chcete odstrániť tento súbor/priečinok?",
-    "deleteTitle": "Odstránenie súborov",
     "displayName": "Zobrazený názov:",
     "download": "Stiahnuť súbory",
     "downloadMessage": "Vyberte formát, ktorý chcete stiahnuť.",
-    "error": "Niečo sa pokazilo",
     "fileInfo": "Informácie o súbore",
     "filesSelected": "{count} súborov vybratých.",
     "lastModified": "Dátum zmeny",
     "move": "Presunúť",
-    "moveMessage": "Zvoľte nový domov pre vaše súbory/priečinky:",
-    "newArchetype": "Vytvorí nový príspevok z archetypu. Nový súbor sa vytvorí v priečinku s obsahom.",
     "newDir": "Nový priečinok",
     "newDirMessage": "Napíšte názov nového priečinka.",
     "newFile": "Nový súbor",
@@ -112,31 +94,18 @@
     "renameMessage": "Zadajte nový názov pre",
     "replace": "Nahradiť",
     "replaceMessage": "Niektorý nahrávaný súbor je v konflikte názvov. Chcete nahradiť existujúci súbor?\n",
-    "schedule": "Naplánovať",
-    "scheduleMessage": "Pick a date and time to schedule the publication of this post.",
     "show": "Zobraziť",
     "size": "Veľkosť",
     "upload": "Nahrať",
-    "uploadMessage": "Zvoľte možnosť nahrávania.",
-    "optionalPassword": "Voliteľné heslo"
+    "uploadMessage": "Zvoľte možnosť nahrávania."
   },
   "sidebar": {
-    "help": "Pomoc",
     "login": "Prihlásiť",
     "logout": "Odhlásiť",
-    "myFiles": "Moje súbory",
     "newFile": "Nový súbor",
-    "newFolder": "Nový priečinok",
-    "preview": "Náhľad"
+    "newFolder": "Nový priečinok"
   },
   "success": {
     "linkCopied": "Odkaz skopírovaný!"
-  },
-  "time": {
-    "days": "Dni",
-    "hours": "Hodiny",
-    "minutes": "Minúty",
-    "seconds": "Sekundy",
-    "unit": "Jednotka času"
   }
 }

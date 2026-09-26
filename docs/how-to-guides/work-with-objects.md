@@ -7,8 +7,8 @@ permissions.
 
 The deployment uses one of these sign-in methods:
 
+- a packageR username and password
 - single sign-on through a trusted reverse proxy
-- no sign-in page in a controlled deployment
 
 With proxy sign-in, the proxy supplies your identity. Do not send the identity
 header directly from an untrusted client.
@@ -20,19 +20,18 @@ The first page shows the configured storage root.
 - In service-root mode, the first-level directories are S3 buckets
 - In bucket mode, `/` is the root of one S3 bucket
 
-Use the directory list or breadcrumb path to navigate. Search applies below the
-path that you can access. packageR prevents a user scope from escaping its
-configured root.
+Use the directory list or breadcrumb path to navigate. packageR prevents a
+user scope from escaping its configured root.
 
 ## Inspect and download an object
 
 Open a file to use its viewer. Use **Info** to see its name, size,
 modification time, type, checksums, and presigned URL when available.
 
-Choose **Download** to download through packageR. For a direct S3 URL, open
-**Info** and select **Show** next to **Presigned URL**. The URL is valid for at
-most seven days. Treat it as a temporary credential. Do not put it in logs or
-source code.
+Open **Info** and select **Show** next to **Presigned URL**. The browser then
+reads the object from storage instead of streaming it through packageR. The
+URL is valid for at most seven days. Treat it as a temporary credential. Do
+not put it in logs or source code.
 
 ![File information with a presigned URL](../imgs/screenshots/authenticated-file-info-presign.png)
 

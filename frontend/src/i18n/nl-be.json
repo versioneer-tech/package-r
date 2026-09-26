@@ -9,34 +9,23 @@
     "create": "Aanmaken",
     "delete": "Verwijderen",
     "download": "Downloaden",
-    "hideDotfiles": "",
     "info": "Info",
     "more": "Meer",
     "move": "Verplaatsen",
     "moveFile": "Verplaats bestand",
-    "new": "Nieuw",
     "next": "Volgende",
     "ok": "OK",
-    "permalink": "Maak permanente link",
     "previous": "Vorige",
-    "publish": "Publiceren",
     "rename": "Hernoemen",
     "replace": "Vervangen",
     "reportIssue": "Fout rapporteren",
     "save": "Opslaan",
-    "schedule": "Plannen",
     "select": "Selecteren",
     "selectMultiple": "Meerdere selecteren",
     "share": "Delen",
     "shell": "Open shell",
     "switchView": "Beeld wisselen",
-    "update": "Updaten",
     "upload": "Uploaden"
-  },
-  "download": {
-    "downloadFile": "Bestand downloaden",
-    "downloadFolder": "Map downloaden",
-    "downloadSelected": ""
   },
   "errors": {
     "forbidden": "U hebt geen rechten om hier toegang toe te krijgen.",
@@ -44,15 +33,12 @@
     "notFound": "Deze locatie kan niet worden bereikt."
   },
   "files": {
-    "body": "Body",
-    "closePreview": "Voorvertoon sluiten",
     "files": "Bestanden",
     "folders": "Mappen",
     "home": "Home",
     "lastModified": "Laatst bewerkt",
     "loading": "Laden...",
     "lonely": "Het is hier wat leeg...",
-    "metadata": "Metadata",
     "multipleSelectionEnabled": "Meerdere items selecteren ingeschakeld",
     "name": "Naam",
     "size": "Grootte",
@@ -85,17 +71,13 @@
     "currentlyNavigating": "Momenteel zoeken op: ",
     "deleteMessageMultiple": "Weet u zeker dat u {count} bestand(en) wil verwijderen?",
     "deleteMessageSingle": "Weet u zeker dat u dit bestand/map wil verwijderen?",
-    "deleteTitle": "Bestanden verwijderen",
     "displayName": "Weergavenaam: ",
     "download": "Bestanden downloaden",
     "downloadMessage": "Kies het vermat dat u wilt downloaden. ",
-    "error": "Er ging iets fout",
     "fileInfo": "Bestandinformatie",
     "filesSelected": "{count} geselecteerde bestanden",
     "lastModified": "Laatst Bewerkt",
     "move": "Verplaatsen",
-    "moveMessage": "Kies een nieuwe locatie voor je bestand(en)/map(pen)",
-    "newArchetype": "Maak een nieuw bericht op basis van een archetype. Uw bestand wordt aangemaakt in de inhoudsmap.",
     "newDir": "Nieuwe map",
     "newDirMessage": "Schrijf de naam van de nieuwe map",
     "newFile": "Nieuw bestand",
@@ -106,30 +88,18 @@
     "renameMessage": "Voer een nieuwe naam in voor",
     "replace": "Vervangen",
     "replaceMessage": "Een van de bestanden die u probeert te uploaden, geeft conflicten i.v.m. de naamgeving. Wilt u de bestaande bestanden vervangen?\n",
-    "schedule": "Plannen",
-    "scheduleMessage": "Kies een datum en tijd om de publicatie van dit bericht in te plannen.",
     "show": "Tonen",
     "size": "Grootte",
     "upload": "",
     "uploadMessage": ""
   },
   "sidebar": {
-    "help": "Help",
     "login": "Log in",
     "logout": "Uitloggen",
-    "myFiles": "Mijn bestanden",
     "newFile": "Nieuw bestand",
-    "newFolder": "Nieuwe map",
-    "preview": "Voorbeeld"
+    "newFolder": "Nieuwe map"
   },
   "success": {
     "linkCopied": "Link gekopieerd!"
-  },
-  "time": {
-    "days": "Dagen",
-    "hours": "Uren",
-    "minutes": "Minuten",
-    "seconds": "Seconden",
-    "unit": "Tijdseenheid"
   }
 }

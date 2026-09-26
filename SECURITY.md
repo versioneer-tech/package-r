@@ -1,26 +1,20 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Supported releases
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Security fixes apply to the latest published packageR release.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 2.x     | :white_check_mark: |
-| < 2.0   | :x:                |
+## Report a vulnerability
 
-## Reporting a Vulnerability
+Send security reports to `oss@versioneer.at`. Do not open a public issue for
+a vulnerability.
 
-Vulnerabilities should be reported to oss@versioneer.at. The Versioneer team will attempt to respond to/confirm reports within 2-3 days, but if you believe your report to be "critical" to user safety and security, please note as such in the subject. We have tens of thousands of users using our software, and take security vulnerabilities seriously.
+Include this information when possible:
 
-When reporting an issue, where possible, please provide at least:
+- the affected packageR release or commit
+- the expected and actual behavior
+- steps to reproduce the problem
+- the possible impact
+- a proposed fix, if you have one
 
-* The commit version the issue was identified at
-* A proof of concept (plaintext; no binaries)
-* Steps to reproduce
-* Your recommended remediation(s), if any.
-
-The Versioneer team may reach back out for clarification.
-
-> Note: Please do not open public issues for security issues, as GitHub does not provide facility for private issues, and deleting the issue makes it hard to triage/respond back to the reporter.
+Do not include live credentials, tokens, presigned URLs, or private data.

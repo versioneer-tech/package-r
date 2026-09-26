@@ -3,8 +3,6 @@ package share
 type CreateBody struct {
 	Password      string                `json:"password"`
 	Expiration    string                `json:"expiration"`
-	Expires       string                `json:"expires"`
-	Unit          string                `json:"unit"`
 	Description   string                `json:"description"`
 	Hash          string                `json:"hash"`
 	CatalogName   string                `json:"catalogName"`
@@ -27,8 +25,7 @@ type Link struct {
 	CatalogURL    string                `json:"catalogURL,omitempty"`
 	AssetMappings []CatalogAssetMapping `json:"assetMappings,omitempty"`
 	PasswordHash  string                `json:"password_hash,omitempty"`
-	// Token is a random value that will only be set when PasswordHash is set. It is
-	// URL-Safe and is used to download links in password-protected shares via a
-	// query arg.
+	// Token is a random URL-safe value for later requests to a
+	// password-protected share.
 	Token string `json:"token,omitempty"`
 }

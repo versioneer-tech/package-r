@@ -80,7 +80,9 @@ func setContentDisposition(w http.ResponseWriter, r *http.Request, file *files.F
 	}
 }
 
-var rawHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+var rawHandler = withUser(rawGetHandler)
+
+func rawGetHandler(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	if !d.user.Perm.Download {
 		return http.StatusForbidden, nil
 	}
@@ -109,7 +111,7 @@ var rawHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) 
 	}
 
 	return rawDirHandler(w, r, d, file)
-})
+}
 
 func collectArchiveFiles(ctx context.Context, d *data, path, commonPath string, entries *[]archives.FileInfo) error {
 	if err := ctx.Err(); err != nil {

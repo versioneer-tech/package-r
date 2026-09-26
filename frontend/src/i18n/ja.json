@@ -6,43 +6,31 @@
     "copy": "コピー",
     "copyFile": "ファイルのコピー",
     "copyToClipboard": "共有リンクをコピー",
-    "copyDownloadLinkToClipboard": "ダウンロードリンクをコピー",
     "create": "作成",
     "delete": "削除",
     "download": "ダウンロード",
     "file": "ファイル",
     "folder": "フォルダー",
-    "hideDotfiles": "ドットで始まるファイルを表示しない",
     "info": "情報",
     "more": "さらに",
     "move": "移動",
     "moveFile": "ファイルの移動",
-    "new": "新規",
     "next": "次へ",
     "ok": "OK",
-    "permalink": "パーマリンクを取得",
     "previous": "前へ",
-    "publish": "公開",
     "rename": "名前の変更",
     "replace": "置換する",
     "reportIssue": "問題を報告",
     "save": "保存",
-    "schedule": "スケジュール",
     "select": "選択",
     "selectMultiple": "複数選択",
     "share": "共有",
     "shell": "シェルの切り替え",
     "submit": "送信",
     "switchView": "表示の切り替え",
-    "update": "更新",
     "upload": "アップロード",
     "openFile": "ファイルを開く",
     "continue": "続行"
-  },
-  "download": {
-    "downloadFile": "ファイルのダウンロード",
-    "downloadFolder": "フォルダーのダウンロード",
-    "downloadSelected": "選択した項目のダウンロード"
   },
   "upload": {
     "abortUpload": "アップロードをキャンセルしますか？"
@@ -54,16 +42,13 @@
     "connection": "サーバーに接続できませんでした。"
   },
   "files": {
-    "body": "本文",
     "clear": "消去",
-    "closePreview": "プレビューを閉じる",
     "files": "ファイル",
     "folders": "フォルダー",
     "home": "ホーム",
     "lastModified": "更新日時",
     "loading": "読み込み中…",
     "lonely": "ここには何もないようです…",
-    "metadata": "メタデータ",
     "multipleSelectionEnabled": "複数選択が有効になっています",
     "name": "名前",
     "size": "サイズ",
@@ -97,17 +82,13 @@
     "currentlyNavigating": "現在閲覧しているディレクトリ：",
     "deleteMessageMultiple": "{count} 個のファイルを削除してもよろしいですか？",
     "deleteMessageSingle": "このファイル／フォルダーを削除してもよろしいですか？",
-    "deleteTitle": "ファイルの削除",
     "displayName": "表示名：",
     "download": "ファイルのダウンロード",
     "downloadMessage": "ダウンロードする際の圧縮形式を選んでください：",
-    "error": "エラーが発生しました",
     "fileInfo": "ファイル情報",
     "filesSelected": "{count} 個のファイル／フォルダーが選択されています",
     "lastModified": "更新日時",
     "move": "移動",
-    "moveMessage": "ファイル／フォルダーの新しいハウスを選択してください：",
-    "newArchetype": "archetype に基づいて新しい投稿を作成します。ファイルは content フォルダーに作成されます。",
     "newDir": "新規フォルダー",
     "newDirMessage": "フォルダーの名前を入力してください：",
     "newFile": "新規ファイル",
@@ -118,32 +99,19 @@
     "renameMessage": "変更後のファイルの名前を入力してください",
     "replace": "ファイルの置き換え",
     "replaceMessage": "アップロードしようとしているファイルと既存のファイルの名前が重複しています。既存のものを置き換えずにアップロードを続けるか、既存のものを置き換えますか？\n",
-    "schedule": "スケジュール",
-    "scheduleMessage": "この投稿の公開予定日時を選んでください。",
     "show": "表示",
     "size": "サイズ",
     "upload": "アップロード",
     "uploadFiles": "{files} 個のファイルをアップロードしています…",
-    "uploadMessage": "アップロードするオプションを選択してください。",
-    "optionalPassword": "パスワード（オプション）"
+    "uploadMessage": "アップロードするオプションを選択してください。"
   },
   "sidebar": {
-    "help": "ヘルプ",
     "login": "ログイン",
     "logout": "ログアウト",
-    "myFiles": "マイファイル",
     "newFile": "新規ファイル",
-    "newFolder": "新規フォルダー",
-    "preview": "プレビュー"
+    "newFolder": "新規フォルダー"
   },
   "success": {
     "linkCopied": "リンクをコピーしました！"
-  },
-  "time": {
-    "days": "日",
-    "hours": "時間",
-    "minutes": "分",
-    "seconds": "秒",
-    "unit": "時間の単位"
   }
 }

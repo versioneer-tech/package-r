@@ -18,7 +18,7 @@ func TestResolveUserScopeKeepsGeneratedUserAtRoot(t *testing.T) {
 	}
 }
 
-func TestResolveUserScopeTreatsDotAsLegacyHomeOnlyScope(t *testing.T) {
+func TestResolveUserScopeTreatsDotAsRoot(t *testing.T) {
 	set := Settings{
 		CreateUserDir: true,
 	}
@@ -27,23 +27,8 @@ func TestResolveUserScopeTreatsDotAsLegacyHomeOnlyScope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if userScope != "/home/alice" {
-		t.Fatalf("expected legacy dot scope to use generated home scope, got %q", userScope)
-	}
-}
-
-func TestResolveUserScopeUsesConfiguredHomeBase(t *testing.T) {
-	set := Settings{
-		CreateUserDir:    true,
-		UserHomeBasePath: "users",
-	}
-
-	userScope, err := set.ResolveUserScope("alice", ".")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if userScope != "/users/alice" {
-		t.Fatalf("expected legacy dot scope to use configured home scope, got %q", userScope)
+	if userScope != "/" {
+		t.Fatalf("expected dot scope to resolve to root, got %q", userScope)
 	}
 }
 

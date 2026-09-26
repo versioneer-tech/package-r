@@ -9,34 +9,23 @@
     "create": "생성",
     "delete": "삭제",
     "download": "다운로드",
-    "hideDotfiles": "숨김파일(dotfile)을 표시 안함",
     "info": "정보",
     "more": "더보기",
     "move": "이동",
     "moveFile": "파일 이동",
-    "new": "신규",
     "next": "다음",
     "ok": "확인",
-    "permalink": "링크 얻기",
     "previous": "이전",
-    "publish": "게시",
     "rename": "이름 바꾸기",
     "replace": "대체",
     "reportIssue": "이슈 보내기",
     "save": "저장",
-    "schedule": "일정",
     "select": "선택",
     "selectMultiple": "다중 선택",
     "share": "공유",
     "shell": "쉘 전환",
     "switchView": "보기 전환",
-    "update": "업데이트",
     "upload": "업로드"
-  },
-  "download": {
-    "downloadFile": "파일 다운로드",
-    "downloadFolder": "폴더 다운로드",
-    "downloadSelected": "선택 항목 다운로드"
   },
   "errors": {
     "forbidden": "접근 권한이 없습니다.",
@@ -44,15 +33,12 @@
     "notFound": "해당 경로를 찾을 수 없습니다."
   },
   "files": {
-    "body": "본문",
-    "closePreview": "미리보기 닫기",
     "files": "파일",
     "folders": "폴더",
     "home": "홈",
     "lastModified": "최종 수정",
     "loading": "로딩중...",
     "lonely": "폴더가 비어 있습니다...",
-    "metadata": "메타데이터",
     "multipleSelectionEnabled": "다중 선택 켜짐",
     "name": "이름",
     "size": "크기",
@@ -85,17 +71,13 @@
     "currentlyNavigating": "현재 위치:",
     "deleteMessageMultiple": "{count} 개의 파일을 삭제하시겠습니까?",
     "deleteMessageSingle": "파일 혹은 디렉토리를 삭제하시겠습니까?",
-    "deleteTitle": "파일 삭제",
     "displayName": "게시 이름:",
     "download": "파일 다운로드",
     "downloadMessage": "다운로드 포맷 설정.",
-    "error": "에러 발생!",
     "fileInfo": "파일 정보",
     "filesSelected": "{count} 개의 파일이 선택되었습니다.",
     "lastModified": "최종 수정",
     "move": "이동",
-    "moveMessage": "이동할 화일 또는 디렉토리를 선택하세요:",
-    "newArchetype": "원형을 유지하는 포스트를 생성합니다. 파일은 컨텐트 폴더에 생성됩니다.",
     "newDir": "새 디렉토리",
     "newDirMessage": "새 디렉토리 이름을 입력해주세요.",
     "newFile": "새 파일",
@@ -106,30 +88,18 @@
     "renameMessage": "새로운 이름을 입력하세요.",
     "replace": "대체하기",
     "replaceMessage": "동일한 파일 이름이 존재합니다. 현재 파일을 덮어쓸까요?\n",
-    "schedule": "일정",
-    "scheduleMessage": "이 글을 공개할 시간을 알려주세요.",
     "show": "보기",
     "size": "크기",
     "upload": "업로드",
     "uploadMessage": "업로드 옵션을 선택하세요."
   },
   "sidebar": {
-    "help": "도움말",
     "login": "로그인",
     "logout": "로그아웃",
-    "myFiles": "내 파일",
     "newFile": "새로운 파일",
-    "newFolder": "새로운 폴더",
-    "preview": "미리보기"
+    "newFolder": "새로운 폴더"
   },
   "success": {
     "linkCopied": "링크가 복사되었습니다!"
-  },
-  "time": {
-    "days": "일",
-    "hours": "시",
-    "minutes": "분",
-    "seconds": "초",
-    "unit": "Time Unit"
   }
 }

@@ -50,8 +50,6 @@ export const useUploadStore = defineStore("upload", {
       }
 
       const totalSize = state.sizes.reduce((a, b) => a + b, 0);
-
-      // TODO: this looks ugly but it works with ts now
       const sum = state.progress.reduce((acc, val) => +acc + +val) as number;
       return Math.ceil((sum / totalSize) * 100);
     },
@@ -214,9 +212,6 @@ export const useUploadStore = defineStore("upload", {
     },
     setETA(value: number) {
       this.eta = value;
-    },
-    clearUpload() {
-      this.$reset();
     },
   },
 });

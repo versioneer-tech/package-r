@@ -36,7 +36,7 @@
         </p>
       </template>
 
-      <template v-if="!dir && user?.perm.download">
+      <template v-if="!dir">
         <p>
           <strong>MD5: </strong
           ><code
@@ -83,7 +83,7 @@
         </p>
       </template>
 
-      <template v-if="!dir && user?.presignEnabled">
+      <template v-if="!dir">
         <p>
           <strong>Presigned URL: </strong>
           <code>
@@ -117,7 +117,6 @@
 
 <script>
 import { mapActions, mapState } from "pinia";
-import { useAuthStore } from "@/stores/auth";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { filesize } from "@/utils";
@@ -133,7 +132,6 @@ export default {
     };
   },
   computed: {
-    ...mapState(useAuthStore, ["user"]),
     ...mapState(useFileStore, [
       "req",
       "selected",

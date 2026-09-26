@@ -19,15 +19,14 @@ const (
 )
 
 type userInfo struct {
-	ID             uint              `json:"id"`
-	Locale         string            `json:"locale"`
-	ViewMode       users.ViewMode    `json:"viewMode"`
-	SingleClick    bool              `json:"singleClick"`
-	Perm           users.Permissions `json:"perm"`
-	Commands       []string          `json:"commands"`
-	HideDotfiles   bool              `json:"hideDotfiles"`
-	DateFormat     bool              `json:"dateFormat"`
-	PresignEnabled bool              `json:"presignEnabled"`
+	ID           uint              `json:"id"`
+	Locale       string            `json:"locale"`
+	ViewMode     users.ViewMode    `json:"viewMode"`
+	SingleClick  bool              `json:"singleClick"`
+	Perm         users.Permissions `json:"perm"`
+	Commands     []string          `json:"commands"`
+	HideDotfiles bool              `json:"hideDotfiles"`
+	DateFormat   bool              `json:"dateFormat"`
 }
 
 type authToken struct {
@@ -40,9 +39,7 @@ type extractor []string
 func (e extractor) ExtractToken(r *http.Request) (string, error) {
 	token, _ := request.HeaderExtractor{"X-Auth"}.ExtractToken(r)
 
-	// Checks if the token isn't empty and if it contains two dots.
-	// The former prevents incompatibility with URLs that previously
-	// used basic auth.
+	// Accept only values with the three JWT segments.
 	if token != "" && strings.Count(token, ".") == 2 {
 		return token, nil
 	}
@@ -121,15 +118,14 @@ func renewHandler(tokenExpireTime time.Duration) handleFunc {
 func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.User, tokenExpirationTime time.Duration) (int, error) {
 	claims := &authToken{
 		User: userInfo{
-			ID:             user.ID,
-			Locale:         user.Locale,
-			ViewMode:       user.ViewMode,
-			SingleClick:    user.SingleClick,
-			Perm:           user.Perm,
-			Commands:       user.Commands,
-			HideDotfiles:   user.HideDotfiles,
-			DateFormat:     user.DateFormat,
-			PresignEnabled: true,
+			ID:           user.ID,
+			Locale:       user.Locale,
+			ViewMode:     user.ViewMode,
+			SingleClick:  user.SingleClick,
+			Perm:         user.Perm,
+			Commands:     user.Commands,
+			HideDotfiles: user.HideDotfiles,
+			DateFormat:   user.DateFormat,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

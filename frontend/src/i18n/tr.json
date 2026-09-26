@@ -9,36 +9,25 @@
     "create": "Oluştur",
     "delete": "Sil",
     "download": "İndir",
-    "hideDotfiles": "Nokta dosyalarını gizle",
     "info": "Bilgi",
     "more": "Daha fazla",
     "move": "Taşı",
     "moveFile": "Dosyayı taşı",
-    "new": "Yeni",
     "next": "Sonraki",
     "ok": "Tamam",
-    "permalink": "Kalıcı Bağlantı Alın",
     "previous": "Önceki",
-    "publish": "Yayınla",
     "rename": "Yeniden anlandır",
     "replace": "Değiştir",
     "reportIssue": "Sorun bildir",
     "save": "Kaydet",
-    "schedule": "Planla",
     "select": "Seç",
     "selectMultiple": "Çoklu seçim",
     "share": "Paylaş",
     "shell": "Komut satırı aç/kapat",
     "submit": "Gönder",
     "switchView": "Görünümü değiştir",
-    "update": "Güncelle",
     "upload": "Yükle",
     "openFile": "Dosyayı aç"
-  },
-  "download": {
-    "downloadFile": "Dosyayı indir",
-    "downloadFolder": "Klasörü indir",
-    "downloadSelected": "Seçilileri indir"
   },
   "errors": {
     "forbidden": "Buna erişim izniniz yok.",
@@ -47,15 +36,12 @@
     "connection": "Sunucuya ulaşılamıyor."
   },
   "files": {
-    "body": "Sayfa",
-    "closePreview": "Önizlemeyi kapat",
     "files": "Dosyalar",
     "folders": "Klasörler",
     "home": "Ana dizin",
     "lastModified": "Son güncellenme",
     "loading": "Yükleniyor...",
     "lonely": "Burada yalnızlık hissediyorum...",
-    "metadata": "meta veri",
     "multipleSelectionEnabled": "Çoklu seçim etkin",
     "name": "İsim",
     "size": "Boyut",
@@ -89,17 +75,13 @@
     "currentlyNavigating": "Şu anki lokasyon:",
     "deleteMessageMultiple": "{count} dosyayı/dosyaları silmek istediğinizden emin misiniz?",
     "deleteMessageSingle": "Bu dosyayı/klasörü silmek istediğinizden emin misiniz?",
-    "deleteTitle": "Dosyaları sil",
     "displayName": "Görünen Ad:",
     "download": "Dosyaları indirŞ",
     "downloadMessage": "İndirmek istediğiniz formatı seçin.",
-    "error": "Bir şeyler yanlış gitti",
     "fileInfo": "Dosya bilgisi",
     "filesSelected": "{count} dosya seçildi.",
     "lastModified": "Son güncellenme",
     "move": "Taşı",
-    "moveMessage": "Dosya(lar)ınız/klasör(ler)iniz için yeni ana dizin seçin:",
-    "newArchetype": "Bir prototip temelinde yeni bir gönderi oluşturun. Dosyanız içerik klasöründe oluşturulacaktır.",
     "newDir": "Yeni dizin",
     "newDirMessage": "Yeni dizinin adını yazın.",
     "newFile": "Yeni dosya",
@@ -110,31 +92,18 @@
     "renameMessage": "için yeni bir ad girin",
     "replace": "Değiştir",
     "replaceMessage": "Yüklemeye çalıştığınız dosyalardan biri, adı nedeniyle çakışıyor. Mevcut olanı değiştirmek istiyor musunuz?\n",
-    "schedule": "Planla",
-    "scheduleMessage": "Bu paylaşımın yayınlanmasını planlamak için bir tarih ve saat seçin.",
     "show": "Göster",
     "size": "Boyut",
     "upload": "Gönder",
-    "uploadMessage": "Yüklemek için bir seçenek belirleyin.",
-    "optionalPassword": "İsteğe bağlı şifre"
+    "uploadMessage": "Yüklemek için bir seçenek belirleyin."
   },
   "sidebar": {
-    "help": "Yardım",
     "login": "Giriş",
     "logout": "Çıkış",
-    "myFiles": "Dosyalarım",
     "newFile": "Yeni dosya",
-    "newFolder": "Yeni klasör",
-    "preview": "Önizleme"
+    "newFolder": "Yeni klasör"
   },
   "success": {
     "linkCopied": "Link kopyalandı!"
-  },
-  "time": {
-    "days": "Gün",
-    "hours": "Saat",
-    "minutes": "Dakika",
-    "seconds": "Saniye",
-    "unit": "Zaman birimi"
   }
 }

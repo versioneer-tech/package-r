@@ -122,8 +122,6 @@
     >
       <i class="material-icons">chevron_right</i>
     </button>
-    <link rel="prefetch" :href="previousRaw" />
-    <link rel="prefetch" :href="nextRaw" />
   </div>
 </template>
 
@@ -154,9 +152,6 @@ const showNav = ref<boolean>(true);
 const navTimeout = ref<null | number>(null);
 const hoverNav = ref<boolean>(false);
 const autoPlay = ref<boolean>(false);
-const previousRaw = ref<string>("");
-const nextRaw = ref<string>("");
-
 const player = ref<HTMLVideoElement | HTMLAudioElement | null>(null);
 
 const $showError = inject<IToastError>("$showError")!;
@@ -283,14 +278,12 @@ const updatePreview = async () => {
       for (let j = i - 1; j >= 0; j--) {
         if (mediaTypes.includes(listing.value[j].type)) {
           previousLink.value = listing.value[j].url;
-          previousRaw.value = prefetchUrl(listing.value[j]);
           break;
         }
       }
       for (let j = i + 1; j < listing.value.length; j++) {
         if (mediaTypes.includes(listing.value[j].type)) {
           nextLink.value = listing.value[j].url;
-          nextRaw.value = prefetchUrl(listing.value[j]);
           break;
         }
       }
@@ -298,16 +291,6 @@ const updatePreview = async () => {
       return;
     }
   }
-};
-
-const prefetchUrl = (item: ResourceItem) => {
-  if (item.type !== "image") {
-    return "";
-  }
-
-  return fullSize.value
-    ? api.getDownloadURL(item, true)
-    : api.getPreviewURL(item, "big");
 };
 
 const toggleSize = () => (fullSize.value = !fullSize.value);

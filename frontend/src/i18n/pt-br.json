@@ -12,36 +12,25 @@
     "download": "Baixar",
     "file": "Arquivo",
     "folder": "Pasta",
-    "hideDotfiles": "Ocultar dotfiles",
     "info": "Informações",
     "more": "Mais",
     "move": "Mover",
     "moveFile": "Mover arquivo",
-    "new": "Novo",
     "next": "Próximo",
     "ok": "OK",
-    "permalink": "Obter link permanente",
     "previous": "Anterior",
-    "publish": "Publicar",
     "rename": "Renomear",
     "replace": "Substituir",
     "reportIssue": "Relatar erro",
     "save": "Salvar",
-    "schedule": "Agendar",
     "select": "Selecionar",
     "selectMultiple": "Selecionar múltiplos",
     "share": "Compartilhar",
     "shell": "Alternar console",
     "submit": "Enviar",
     "switchView": "Alterar modo de visão",
-    "update": "Atualizar",
     "upload": "Enviar",
     "openFile": "Abrir"
-  },
-  "download": {
-    "downloadFile": "Baixar arquivo",
-    "downloadFolder": "Baixar pasta",
-    "downloadSelected": "Baixar selecionado"
   },
   "errors": {
     "forbidden": "Você não tem permissões para acessar isto.",
@@ -50,15 +39,12 @@
     "connection": "O servidor não pode ser alcançado."
   },
   "files": {
-    "body": "Corpo",
-    "closePreview": "Fechar pré-visualização",
     "files": "Arquivos",
     "folders": "Pastas",
     "home": "Início",
     "lastModified": "Última modificação",
     "loading": "Carregando. Aguarde, por favor.",
     "lonely": "Não existe nada aqui.",
-    "metadata": "Metadados",
     "multipleSelectionEnabled": "Seleção múltipla ativada",
     "name": "Nome",
     "size": "Tamanho",
@@ -92,17 +78,13 @@
     "currentlyNavigating": "Navegando em:",
     "deleteMessageMultiple": "Deseja apagar {count} arquivo(s)?",
     "deleteMessageSingle": "Deseja apagar esta pasta/arquivo?",
-    "deleteTitle": "Apagar arquivos",
     "displayName": "Nome:",
     "download": "Baixar arquivos",
     "downloadMessage": "Escolha o formato do arquivo.",
-    "error": "Algo de errado ocorreu",
     "fileInfo": "Informação do arquivo",
     "filesSelected": "{count} arquivos selecionados.",
     "lastModified": "Última modificação",
     "move": "Mover",
-    "moveMessage": "Escolha uma nova pasta para os seus arquivos:",
-    "newArchetype": "Criar um novo post baseado num \"archetype\". O seu arquivo será criado na pasta \"content\".",
     "newDir": "Nova pasta",
     "newDirMessage": "Escreva o nome da nova pasta.",
     "newFile": "Novo arquivo",
@@ -113,32 +95,19 @@
     "renameMessage": "Insira um novo nome para",
     "replace": "Substituir",
     "replaceMessage": "Já existe um arquivo com nome igual a um dos que está tentando enviar. Deseja substituir?\n",
-    "schedule": "Agendar",
-    "scheduleMessage": "Escolha uma data para agendar a publicação deste post.",
     "show": "Mostrar",
     "size": "Tamanho",
     "upload": "Enviar",
     "uploadFiles": "Enviando {files} arquivos...",
-    "uploadMessage": "Selecione uma opção para enviar.",
-    "optionalPassword": "Senha opcional"
+    "uploadMessage": "Selecione uma opção para enviar."
   },
   "sidebar": {
-    "help": "Ajuda",
     "login": "Login",
     "logout": "Sair",
-    "myFiles": "Arquivos",
     "newFile": "Novo arquivo",
-    "newFolder": "Nova pasta",
-    "preview": "Pré-visualizar"
+    "newFolder": "Nova pasta"
   },
   "success": {
     "linkCopied": "Link copiado!"
-  },
-  "time": {
-    "days": "Dias",
-    "hours": "Horas",
-    "minutes": "Minutos",
-    "seconds": "Segundos",
-    "unit": "Unidades de Tempo"
   }
 }

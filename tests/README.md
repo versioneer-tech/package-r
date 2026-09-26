@@ -28,9 +28,9 @@ The harness copies `tests/data` to a temporary bucket and does not change the
 source files. It checks:
 
 - user, settings, and sign-up management HTTP APIs are unavailable
-- `GET /api/shares` returns safe links, while share-management writes are unavailable
+- `GET /api/shares` returns safe links, while share-management writes are
+  unavailable
 - S3 service-root and bucket listings work through the VFS
-- raw file reads work and are logged
 - create, copy, rename, presigned read, and delete operations work
 - a two-chunk TUS upload works through the VFS write cache
 - TUS accepts `HEAD` and rejects its old `GET` alias

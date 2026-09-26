@@ -2,7 +2,7 @@
 
 This changelog covers packageR vNext releases.
 
-## [vnext.1.0.0](https://github.com/versioneer-tech/package-r/compare/v2026.6.5...vnext.1.0.0) - 2026-09-26
+## vnext.1.0.0 - 2026-09-26
 
 ### Now based on rclone VFS
 

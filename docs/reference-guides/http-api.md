@@ -54,9 +54,10 @@ control common operations:
 - `action=copy|rename` with a URL-encoded `destination` copies or moves an
   object in a `PATCH` request
 
-Presigned object URLs are valid for at most seven days.
+Presigned object URLs send file content directly from object storage. They are
+valid for at most seven days.
 
-## Settings
+## Shares
 
 Authenticated users can list the configured public shares available in their
 scope:

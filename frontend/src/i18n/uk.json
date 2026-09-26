@@ -11,36 +11,25 @@
     "download": "Завантажити",
     "file": "Файл",
     "folder": "Папка",
-    "hideDotfiles": "Приховати точкові файли",
     "info": "Інфо",
     "more": "Більше",
     "move": "Перемістити",
     "moveFile": "Перемістити файл",
-    "new": "Новий",
     "next": "Далі",
     "ok": "ОК",
-    "permalink": "Отримати постійне посилання",
     "previous": "Назад",
-    "publish": "Опублікувати",
     "rename": "Перейменувати",
     "replace": "Замінити",
     "reportIssue": "Повідомити про помилку",
     "save": "Зберегти",
-    "schedule": "Планування",
     "select": "Вибрати",
     "selectMultiple": "Мультивибір",
     "share": "Поділитися",
     "shell": "Командний рядок",
     "submit": "Відправити",
     "switchView": "Вид",
-    "update": "Оновити",
     "upload": "Вивантажити",
     "openFile": "Відкрити файл"
-  },
-  "download": {
-    "downloadFile": "Завантажити файл",
-    "downloadFolder": "Завантажити папку",
-    "downloadSelected": "Завантажити вибране"
   },
   "errors": {
     "forbidden": "У вас немає прав доступу до цього.",
@@ -49,15 +38,12 @@
     "connection": "Немає підключення до сервера."
   },
   "files": {
-    "body": "Тіло",
-    "closePreview": "Закрити",
     "files": "Файли",
     "folders": "Папки",
     "home": "Домівка",
     "lastModified": "Останній раз змінено",
     "loading": "Завантаження...",
     "lonely": "Тут пусто...",
-    "metadata": "Метадані",
     "multipleSelectionEnabled": "Мультивибір включений",
     "name": "Ім'я",
     "size": "Розмір",
@@ -91,17 +77,13 @@
     "currentlyNavigating": "Поточний каталог:",
     "deleteMessageMultiple": "Видалити ці файли ({count})?",
     "deleteMessageSingle": "Видалити цей файл/каталог?",
-    "deleteTitle": "Видалити файли",
     "displayName": "Відображене ім'я:",
     "download": "Завантажити файли",
     "downloadMessage": "Виберіть формат, в якому хочете завантажити.",
-    "error": "Помилка",
     "fileInfo": "Інформація про файл",
     "filesSelected": "Файлів вибрано: {count}.",
     "lastModified": "Останній раз змінено",
     "move": "Перемістити",
-    "moveMessage": "Перемістити в:",
-    "newArchetype": "Створіть новий запис на основі архетипу. Файл буде створено у каталозі.",
     "newDir": "Новий каталог",
     "newDirMessage": "Ім'я нового каталогу.",
     "newFile": "Новий файл",
@@ -112,31 +94,18 @@
     "renameMessage": "Нове ім'я",
     "replace": "Замінити",
     "replaceMessage": "Ім'я одного з файлів, що завантажуються, збігається з вже існуючим файлом. Ви бажаєте замінити існуючий?\n",
-    "schedule": "Планування",
-    "scheduleMessage": "Запланувати дату та час публікації.",
     "show": "Показати",
     "size": "Розмір",
     "upload": "Вивантажити",
-    "uploadMessage": "Виберіть варіант для вивантаження.",
-    "optionalPassword": "Необов'язковий пароль"
+    "uploadMessage": "Виберіть варіант для вивантаження."
   },
   "sidebar": {
-    "help": "Допомога",
     "login": "Увійти",
     "logout": "Вийти",
-    "myFiles": "Файли",
     "newFile": "Новий файл",
-    "newFolder": "Новий каталог",
-    "preview": "Перегляд"
+    "newFolder": "Новий каталог"
   },
   "success": {
     "linkCopied": "Посилання скопійоване!"
-  },
-  "time": {
-    "days": "Дні",
-    "hours": "Години",
-    "minutes": "Хвилини",
-    "seconds": "Секунди",
-    "unit": "Одиниця часу"
   }
 }

@@ -193,7 +193,7 @@ func TestResourcePresignUsesRclonePublicLinker(t *testing.T) {
 	}
 }
 
-func TestResourcePresignRequiresDownloadPermission(t *testing.T) {
+func TestResourcePresignDoesNotRequireProxyDownloadPermission(t *testing.T) {
 	root, store, user := newPresignTestStorage(t)
 	writePresignTestFile(t, root, "files/data.txt")
 	user.Perm.Download = false
@@ -208,8 +208,20 @@ func TestResourcePresignRequiresDownloadPermission(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(recorder, req)
-	if recorder.Code != http.StatusForbidden {
-		t.Fatalf("expected status 403, got %d", recorder.Code)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+
+	result := recorder.Result()
+	defer result.Body.Close()
+	var file struct {
+		PresignedURL string `json:"presignedURL"`
+	}
+	if err := json.NewDecoder(result.Body).Decode(&file); err != nil {
+		t.Fatal(err)
+	}
+	if file.PresignedURL == "" {
+		t.Fatal("expected presigned URL")
 	}
 }
 
@@ -227,10 +239,7 @@ func newPresignTestStorage(t *testing.T) (string, *storage.Storage, *users.User)
 		}
 	})
 
-	store, err := bolt.NewStorage(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	store := bolt.NewStorage(db)
 	set := &settings.Settings{Key: []byte("test-key")}
 	if err := store.Settings.Save(set); err != nil {
 		t.Fatal(err)

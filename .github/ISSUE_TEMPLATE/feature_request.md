@@ -3,14 +3,20 @@ name: Feature request
 about: Suggest an idea for this project
 ---
 
-**Is your feature request related to a problem? Please describe.**
-<!-- Add a clear and concise description of what the problem is. E.g. *I'm always frustrated when [...]* -->
+# Feature request
 
-**Describe the solution you'd like**
-<!-- Add a clear and concise description of what you want to happen.  -->
+## Problem
 
-**Describe alternatives you've considered**
-<!-- Add a clear and concise description of any alternative solutions or features you've considered.  -->
+Describe the problem or use case.
 
-**Additional context**
-<!-- Add any other context or screenshots about the feature request here. -->
+## Proposed change
+
+Describe the result that you want.
+
+## Alternatives
+
+List other approaches that you considered.
+
+## Context
+
+Add examples, links, or screenshots when they help.

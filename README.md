@@ -51,7 +51,6 @@ example publishes the `catalog-sample` prefix from the `data` bucket:
 ```bash
 ./package-r config init
 ./package-r users add admin my-password \
-  --scope=/ \
   --perm.create=true \
   --perm.rename=true \
   --perm.modify=true \

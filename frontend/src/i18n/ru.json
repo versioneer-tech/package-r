@@ -11,36 +11,25 @@
     "download": "Скачать",
     "file": "Файл",
     "folder": "Папка",
-    "hideDotfiles": "Скрыть точечные файлы",
     "info": "Инфо",
     "more": "Еще",
     "move": "Переместить",
     "moveFile": "Переместить файл",
-    "new": "Новый",
     "next": "Вперед",
     "ok": "OK",
-    "permalink": "Получить постоянную ссылку",
     "previous": "Назад",
-    "publish": "Опубликовать",
     "rename": "Переименовать",
     "replace": "Перезаписать",
     "reportIssue": "Сообщить о проблеме",
     "save": "Сохранить",
-    "schedule": "Планировка",
     "select": "Выбрать",
     "selectMultiple": "Мультивыбор",
     "share": "Поделиться",
     "shell": "Командная строка",
     "submit": "Отправить",
     "switchView": "Вид",
-    "update": "Обновить",
     "upload": "Загрузить",
     "openFile": "Открыть файл"
-  },
-  "download": {
-    "downloadFile": "Скачать файл",
-    "downloadFolder": "Загрузить папку",
-    "downloadSelected": "Скачать выбранное"
   },
   "errors": {
     "forbidden": "У вас нет прав доступа к этому.",
@@ -49,15 +38,12 @@
     "connection": "Нет подключения к серверу."
   },
   "files": {
-    "body": "Тело",
-    "closePreview": "Закрыть",
     "files": "Файлы",
     "folders": "Папки",
     "home": "Главная",
     "lastModified": "Последнее изменение",
     "loading": "Загрузка...",
     "lonely": "Здесь пусто...",
-    "metadata": "Метаданные",
     "multipleSelectionEnabled": "Мультивыбор включен",
     "name": "Имя",
     "size": "Размер",
@@ -91,17 +77,13 @@
     "currentlyNavigating": "Текущий каталог:",
     "deleteMessageMultiple": "Удалить эти файлы ({count})?",
     "deleteMessageSingle": "Удалить этот файл/каталог?",
-    "deleteTitle": "Удалить файлы",
     "displayName": "Отображаемое имя:",
     "download": "Скачать файлы",
     "downloadMessage": "Выберите формат в котором хотите скачать.",
-    "error": "Ошибка",
     "fileInfo": "Информация о файле",
     "filesSelected": "Файлов выбрано: {count}.",
     "lastModified": "Последнее изменение",
     "move": "Переместить",
-    "moveMessage": "Переместить в:",
-    "newArchetype": "Создайте новую запись на основе архетипа. Файл будет создан в каталоге.",
     "newDir": "Новый каталог",
     "newDirMessage": "Имя нового каталога.",
     "newFile": "Новый файл",
@@ -112,31 +94,18 @@
     "renameMessage": "Новое имя",
     "replace": "Заменить",
     "replaceMessage": "Имя одного из загружаемых файлов совпадает с уже существующим файлом. Вы хотите заменить существующий?\n",
-    "schedule": "Планировка",
-    "scheduleMessage": "Запланировать дату и время публикации.",
     "show": "Показать",
     "size": "Размер",
     "upload": "Загрузить",
-    "uploadMessage": "Выберите вариант для загрузки.",
-    "optionalPassword": "Необязательный пароль"
+    "uploadMessage": "Выберите вариант для загрузки."
   },
   "sidebar": {
-    "help": "Помощь",
     "login": "Войти",
     "logout": "Выйти",
-    "myFiles": "Файлы",
     "newFile": "Новый файл",
-    "newFolder": "Новый каталог",
-    "preview": "Предпросмотр"
+    "newFolder": "Новый каталог"
   },
   "success": {
     "linkCopied": "Ссылка скопирована!"
-  },
-  "time": {
-    "days": "Дни",
-    "hours": "Часы",
-    "minutes": "Минуты",
-    "seconds": "Секунды",
-    "unit": "Единица времени"
   }
 }

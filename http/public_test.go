@@ -30,10 +30,7 @@ func TestPublicShareBypassesGeneratedUserDirBaseRules(t *testing.T) {
 		}
 	})
 
-	store, err := bolt.NewStorage(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	store := bolt.NewStorage(db)
 
 	set := &settings.Settings{
 		Key: []byte("test-key"),

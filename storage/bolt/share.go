@@ -24,16 +24,6 @@ func (s shareBackend) All() ([]*share.Link, error) {
 	return v, err
 }
 
-func (s shareBackend) FindByUserID(id uint) ([]*share.Link, error) {
-	var v []*share.Link
-	err := s.db.Select(q.Eq("UserID", id)).Find(&v)
-	if errors.Is(err, storm.ErrNotFound) {
-		return v, appErrors.ErrNotExist
-	}
-
-	return v, err
-}
-
 func (s shareBackend) GetByHash(hash string) (*share.Link, error) {
 	var v share.Link
 	err := s.db.One("Hash", hash, &v)
@@ -52,16 +42,6 @@ func (s shareBackend) GetPermanent(path string, id uint) (*share.Link, error) {
 	}
 
 	return &v, err
-}
-
-func (s shareBackend) Gets(path string, id uint) ([]*share.Link, error) {
-	var v []*share.Link
-	err := s.db.Select(q.Eq("Path", path), q.Eq("UserID", id)).Find(&v)
-	if errors.Is(err, storm.ErrNotFound) {
-		return v, appErrors.ErrNotExist
-	}
-
-	return v, err
 }
 
 func (s shareBackend) Save(l *share.Link) error {

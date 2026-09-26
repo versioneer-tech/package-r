@@ -9,34 +9,23 @@
     "create": "Búa til",
     "delete": "Eyða",
     "download": "Sækja",
-    "hideDotfiles": "",
     "info": "Upplýsingar",
     "more": "Meira",
     "move": "Færa",
     "moveFile": "Færa skjal",
-    "new": "Nýtt",
     "next": "Næsta",
     "ok": "OK",
-    "permalink": "Sækja fastan hlekk",
     "previous": "Fyrri",
-    "publish": "Gefa út",
     "rename": "Endurnefna",
     "replace": "Skipta út",
     "reportIssue": "Tilkynna vandamál",
     "save": "Vista",
-    "schedule": "Áætlun",
     "select": "Velja",
     "selectMultiple": "Velja mörg",
     "share": "Deila",
     "shell": "Sýna skipanaglugga",
     "switchView": "Skipta um útlit",
-    "update": "Vista",
     "upload": "Hlaða upp"
-  },
-  "download": {
-    "downloadFile": "Sækja skjal",
-    "downloadFolder": "Sækja möppu",
-    "downloadSelected": ""
   },
   "errors": {
     "forbidden": "Þú hefur ekki aðgang að þessari síðu.",
@@ -44,15 +33,12 @@
     "notFound": "Ekki er hægt að opna þessa síðu."
   },
   "files": {
-    "body": "Meginmál",
-    "closePreview": "Loka forskoðun",
     "files": "Skjöl",
     "folders": "Möppur",
     "home": "Heim",
     "lastModified": "Seinast breytt",
     "loading": "Hleð...",
     "lonely": "Ekkert hér...",
-    "metadata": "Meta-gögn",
     "multipleSelectionEnabled": "Hægt að velja mörg skjöl/möppur",
     "name": "Nafn",
     "size": "Stærð",
@@ -85,17 +71,13 @@
     "currentlyNavigating": "Núverandi staðsetning:",
     "deleteMessageMultiple": "Ertu viss um að þú viljir eyða {count} skjölum?",
     "deleteMessageSingle": "Ertu viss um að þú viljir eyða þessu skjali/möppu?",
-    "deleteTitle": "Eyða skjölum",
     "displayName": "Nafn: ",
     "download": "Sækja skjöl",
     "downloadMessage": "Veldu skrárgerð sem þú vilt sækja.",
-    "error": "Eitthvað fór úrskeiðis",
     "fileInfo": "Upplýsingar um gögn",
     "filesSelected": "{count} skjöl valin.",
     "lastModified": "Seinast breytt",
     "move": "Færa",
-    "moveMessage": "Velja nýtt hús fyrir skjöl/möppur:",
-    "newArchetype": "Búðu til nýja færslu sem byggir á frumgerð. Skjalið verður búið til í content möppu. ",
     "newDir": "Ný mappa",
     "newDirMessage": "Hvað á mappan að heita?",
     "newFile": "Nýtt skjal",
@@ -106,30 +88,18 @@
     "renameMessage": "Settu inn nýtt nafn fyrir",
     "replace": "Skipta út",
     "replaceMessage": "Eitt af skjölunum sem þú ert að reyna að hlaða upp hefur sama nafn og annað skjal. Viltu skipta nýja skjalinu út fyrir það gamla?\n",
-    "schedule": "Áætlun",
-    "scheduleMessage": "Veldu dagsetningu og tíma fyrir áætlaða útgáfu. ",
     "show": "Sýna",
     "size": "Stærð",
     "upload": "",
     "uploadMessage": ""
   },
   "sidebar": {
-    "help": "Hjálp",
     "login": "Innskráning",
     "logout": "Útskráning",
-    "myFiles": "Gögnin mín",
     "newFile": "Nýtt skjal",
-    "newFolder": "Ný mappa",
-    "preview": "Sýnishorn"
+    "newFolder": "Ný mappa"
   },
   "success": {
     "linkCopied": "Hlekkur afritaður!"
-  },
-  "time": {
-    "days": "Dagar",
-    "hours": "Klukkutímar",
-    "minutes": "Mínútur",
-    "seconds": "Sekúndur",
-    "unit": "Tímastilling"
   }
 }
