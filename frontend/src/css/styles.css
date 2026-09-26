@@ -253,7 +253,7 @@ main .spinner .bounce2 {
 #previewer .preview .info .title i {
   display: block;
   margin-bottom: 0.1em;
-  font-size: 4em;
+  font-size: 6rem;
 }
 #previewer .preview .info .button {
   display: inline-block;
@@ -264,7 +264,7 @@ main .spinner .bounce2 {
 #previewer .preview .info .button i {
   display: block;
   margin-bottom: 4px;
-  font-size: 1.3em;
+  font-size: 1.95rem;
 }
 
 #previewer .pdf {

@@ -1,5 +1,6 @@
 body {
-  font-family: "Roboto", sans-serif;
+  font-family: "Inter", "Roboto", sans-serif;
+  font-size: 0.9375rem;
   padding-top: 4em;
   background: var(--background);
   color: var(--textSecondary);
@@ -9,11 +10,9 @@ body {
   box-sizing: border-box;
 }
 
-*,
-*:hover,
-*:active,
-*:focus {
-  outline: 0;
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 
 a {
@@ -94,6 +93,7 @@ main {
 
 .breadcrumbs {
   height: 3em;
+  min-width: 0;
   background: var(--background);
   border-bottom: 1px solid var(--divider);
 }
@@ -109,6 +109,29 @@ main {
   color: inherit;
   transition: 0.1s ease-in;
   border-radius: 0.125em;
+}
+
+.breadcrumbs > span {
+  min-width: 0;
+  max-width: 30%;
+}
+
+.breadcrumbs > span:last-child {
+  flex: 1 0 25%;
+  max-width: none;
+}
+
+.breadcrumbs > a,
+.breadcrumbs .chevron {
+  flex-shrink: 0;
+}
+
+.breadcrumbs > span > :last-child {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 html[dir="rtl"] .breadcrumbs a {

@@ -55,14 +55,14 @@ html[dir="rtl"] #listing {
 }
 
 #listing .item i {
-  font-size: 4em;
+  font-size: 4rem;
   margin-right: 0.1em;
   vertical-align: bottom;
 }
 
 #listing .item img {
-  width: 4em;
-  height: 4em;
+  width: 4rem;
+  height: 4rem;
   object-fit: cover;
   margin-right: 0.1em;
   vertical-align: bottom;
@@ -79,7 +79,7 @@ html[dir="rtl"] #listing {
 }
 
 .message i {
-  font-size: 2.5em;
+  font-size: 5rem;
   margin-bottom: 0.2em;
   display: block;
 }
@@ -93,7 +93,7 @@ html[dir="rtl"] #listing {
   width: calc(33% - 1em);
   margin: 0.5em;
   padding: 0.5em;
-  border-radius: 0.2em;
+  border-radius: 6px;
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.06),
     0 1px 2px rgba(0, 0, 0, 0.12);
@@ -138,7 +138,7 @@ html[dir="rtl"] #listing {
 #listing.mosaic.gallery .item i {
   width: 100%;
   margin-right: 0;
-  font-size: 8em;
+  font-size: 8rem;
   text-align: center;
 }
 
@@ -178,15 +178,16 @@ html[dir="rtl"] #listing {
 
 #listing.list .item div:first-of-type {
   width: 3em;
+  flex-shrink: 0;
 }
 
 #listing.list .item div:first-of-type i {
-  font-size: 2em;
+  font-size: 2rem;
 }
 
 #listing.list .item div:first-of-type img {
-  width: 2em;
-  height: 2em;
+  width: 2rem;
+  height: 2rem;
 }
 
 #listing.list .item div:last-of-type {
@@ -195,8 +196,15 @@ html[dir="rtl"] #listing {
   align-items: center;
 }
 
-#listing.list .item p.name:not(#listing.list .item.header .name) {
-  margin-right: -3em;
+#listing.list .item div:last-of-type > p {
+  min-width: 0;
+  padding-inline-end: 1rem;
+  line-height: 1.4;
+}
+
+#listing .item .size,
+#listing .item .modified {
+  font-variant-numeric: tabular-nums;
 }
 
 #listing.list .item .name {
@@ -213,7 +221,7 @@ html[dir="rtl"] #listing {
 }
 
 #listing.list .header i {
-  font-size: 1.5em;
+  font-size: 1.5rem;
   vertical-align: middle;
   margin-left: 0.2em;
 }
@@ -223,20 +231,17 @@ html[dir="rtl"] #listing {
   background: var(--background);
   z-index: 999;
   padding: 0.85em;
+  padding-inline: 1em;
   border: 0;
   border-bottom: 1px solid var(--borderPrimary);
 }
 
 #listing.list .item.header > div:first-child {
-  width: 0;
+  width: 3em;
 }
 
 #listing.list .header a {
   color: inherit;
-}
-
-#listing.list .item.header > div:first-child {
-  width: 0;
 }
 
 #listing.list .name {

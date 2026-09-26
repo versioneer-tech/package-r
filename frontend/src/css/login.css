@@ -4,20 +4,19 @@
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;  
-  padding: 2rem;
+  bottom: 0;
+  padding: 2rem 1rem 1rem;
   box-sizing: border-box;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding-bottom: 4rem;
+  gap: 2rem;
 }
 
 #login img {
-  width: 4em;
-  height: 4em;
+  width: 4rem;
+  height: 4rem;
   margin: 0 auto;
   display: block;
   cursor: pointer;
@@ -35,12 +34,10 @@
 }
 
 #login form {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  flex: 0 0 auto;
+  margin-block: auto;
   max-width: 16em;
-  width: 90%;
+  width: 100%;
 }
 
 #login.recaptcha form {
@@ -79,24 +76,16 @@
 }
 
 #about {
-  position: fixed;
-  bottom: 0.5rem;
-  left: 0;
-  right: 0;
-  overflow-x: auto;
-  white-space: nowrap;
+  flex: 0 0 auto;
+  width: 100%;
   text-align: center;
   font-size: 0.85rem;
-  color: #666;
-  z-index: 10;
-  padding: 0 1rem;
+  line-height: 1.6;
+  color: var(--textPrimary);
 }
 
 #about p {
   margin: 0;
-  display: inline-block;
-  white-space: nowrap;
-  min-width: 640px;
 }
 
 #about .logo {
@@ -112,7 +101,7 @@
   max-height: 1.4em;
 }
 
-#about.versioneer-logo {
+#about .versioneer-logo {
   max-height: 1.4em;
 }
 
