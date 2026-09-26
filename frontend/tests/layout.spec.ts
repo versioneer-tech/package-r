@@ -89,7 +89,7 @@ for (const width of [320, 390]) {
     await auth.loginAs();
     await expect(page.getByLabel("sample.txt", { exact: true })).toBeVisible();
     const folder = "67793f0b9478720001790586";
-    await page.goto(`/files/public/openaerialmap-assets/${folder}/`);
+    await page.goto(`/files/catalog-sample/openaerialmap-assets/${folder}/`);
     await expect(
       page.getByLabel("thumbnail.png", { exact: true })
     ).toBeVisible();

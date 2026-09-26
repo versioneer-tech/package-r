@@ -202,7 +202,7 @@ mkdir -p "$XDG_CACHE_HOME"
 
 build_backend_if_needed "$FB_FILEBROWSER_BIN" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
 
-./init.sh --add-shares my-share=/public
+./init.sh --add-shares my-share=/catalog-sample
 start_backend "$FB_FILEBROWSER_BIN" "$FB_ADDRESS" "$FB_SERVER_PORT" "$backend_log"
 wait_for_backend
 wait "$server_pid"

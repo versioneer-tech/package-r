@@ -10,8 +10,9 @@ RCLONE_BIN="${RCLONE_BIN:-rclone}"
 readonly ACCESS_KEY_ID=my-access-key
 readonly SECRET_ACCESS_KEY=my-secret-key
 readonly BUCKET=my-bucket
-readonly PUBLIC_SHARE_HASH=my-share
-readonly PUBLIC_SHARE_PIN=1234
+readonly SHARE_NAME=my-share
+readonly SHARE_PASSWORD=1234
+readonly SHARED_PREFIX=catalog-sample
 readonly ITEM_ID=67793f0b9478720001790586
 readonly CURL_CONNECT_TIMEOUT_SECONDS=2
 readonly CURL_MAX_TIME_SECONDS=30
@@ -218,8 +219,8 @@ common_env=(
   "FB_AUTH_METHOD=proxy"
   "FB_AUTH_HEADER=X-Username"
   "FB_ALLOW_CHANGING=true"
-  "FB_DEFAULT_SHARES=${PUBLIC_SHARE_HASH}=/${BUCKET}/public"
-  "FB_DEFAULT_SHARE_PINS=${PUBLIC_SHARE_HASH}=${PUBLIC_SHARE_PIN}"
+  "FB_DEFAULT_SHARES=${SHARE_NAME}=/${BUCKET}/${SHARED_PREFIX}"
+  "FB_DEFAULT_SHARE_PINS=${SHARE_NAME}=${SHARE_PASSWORD}"
   "FB_PASSWORD=my-password"
   "AWS_ACCESS_KEY_ID=${ACCESS_KEY_ID}"
   "AWS_SECRET_ACCESS_KEY=${SECRET_ACCESS_KEY}"
@@ -241,17 +242,17 @@ wait_for_http "${package_r_url}/health" "packageR" "${tmp_dir}/package-r.log" "$
 
 token="$(curl_test -fsS -H 'X-Username: admin' "${package_r_url}/api/login")"
 auth_header="X-Auth: ${token}"
-share_pin_header="X-SHARE-PASSWORD: ${PUBLIC_SHARE_PIN}"
-thumbnail="${FIXTURE_DIR}/public/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
-resource_path="/${BUCKET}/public/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
+share_password_header="X-SHARE-PASSWORD: ${SHARE_PASSWORD}"
+thumbnail="${FIXTURE_DIR}/${SHARED_PREFIX}/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
+resource_path="/${BUCKET}/${SHARED_PREFIX}/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
 public_path="openaerialmap-assets/${ITEM_ID}/thumbnail.png"
 
 log "Checking VFS service-root browse and raw read"
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/" |
   python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert "my-bucket" in names'
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/${BUCKET}/" |
-  python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert {"public", "sample.jpg", "sample.json", "sample.pdf", "sample.txt"} <= names'
-curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/${BUCKET}/public/" |
+  python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert {"catalog-sample", "sample.jpg", "sample.json", "sample.pdf", "sample.txt"} <= names'
+curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/${BUCKET}/${SHARED_PREFIX}/" |
   python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert {"catalog.parquet", "openaerialmap-assets"} <= names'
 curl_test -fsS -H "${auth_header}" \
   "${package_r_url}/api/raw${resource_path}" \
@@ -321,7 +322,7 @@ curl_test -fsS -X DELETE -H "${auth_header}" \
 
 log "Checking authenticated and public rclone presigned URLs"
 share_create_status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
-  -X POST -H "${auth_header}" "${package_r_url}/api/share/${BUCKET}/public")"
+  -X POST -H "${auth_header}" "${package_r_url}/api/share/${BUCKET}/${SHARED_PREFIX}")"
 [[ "${share_create_status}" == "404" ]]
 authenticated_url="$(
 	curl_test -fsS -H "${auth_header}" \
@@ -331,28 +332,28 @@ authenticated_url="$(
 fetch_and_compare "${authenticated_url}" "${thumbnail}" "${tmp_dir}/authenticated-thumbnail.png"
 
 pin_required_status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
-  "${package_r_url}/api/public/share/${PUBLIC_SHARE_HASH}/${public_path}")"
+  "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}")"
 [[ "${pin_required_status}" == "401" ]]
 public_url="$(
-	curl_test -fsS -H "${share_pin_header}" \
-    "${package_r_url}/api/public/share/${PUBLIC_SHARE_HASH}/${public_path}?presign=true" |
+	curl_test -fsS -H "${share_password_header}" \
+    "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}?presign=true" |
     json_field presignedURL
 )"
-fetch_and_compare "${public_url}" "${thumbnail}" "${tmp_dir}/public-thumbnail.png"
+fetch_and_compare "${public_url}" "${thumbnail}" "${tmp_dir}/share-thumbnail.png"
 
 redirect_status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
-  -H "${share_pin_header}" \
-  "${package_r_url}/api/public/share/${PUBLIC_SHARE_HASH}/${public_path}?presign=true&followRedirect=true")"
+  -H "${share_password_header}" \
+  "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}?presign=true&followRedirect=true")"
 [[ "${redirect_status}" == "307" ]]
 fetch_and_compare \
-  "${package_r_url}/api/public/share/${PUBLIC_SHARE_HASH}/${public_path}?presign=true&followRedirect=true" \
+  "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}?presign=true&followRedirect=true" \
   "${thumbnail}" \
-  "${tmp_dir}/public-redirect-thumbnail.png" \
-  -H "${share_pin_header}"
+  "${tmp_dir}/share-redirect-thumbnail.png" \
+  -H "${share_password_header}"
 
 log "Checking public catalog access"
-catalog_url="${package_r_url}/api/public/catalog/${PUBLIC_SHARE_HASH}"
-catalog_content_type="$(curl_test -fsS -H "${share_pin_header}" \
+catalog_url="${package_r_url}/api/public/catalog/${SHARE_NAME}"
+catalog_content_type="$(curl_test -fsS -H "${share_password_header}" \
   --write-out '%{content_type}' \
   "${catalog_url}" \
   --output "${tmp_dir}/catalog.json")"
@@ -361,7 +362,7 @@ stac-check "${catalog_url}" \
   --item-collection \
   --links \
   --no-assets-urls \
-  --header X-SHARE-PASSWORD "${PUBLIC_SHARE_PIN}"
+  --header X-SHARE-PASSWORD "${SHARE_PASSWORD}"
 catalog_asset_url="$(python3 -c '
 import json, sys
 value = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -375,6 +376,6 @@ else:
     raise AssertionError("catalog has no thumbnail asset")
 ' "${tmp_dir}/catalog.json")"
 fetch_and_compare "${catalog_asset_url}" "${thumbnail}" "${tmp_dir}/catalog-thumbnail.png" \
-  -H "${share_pin_header}"
+  -H "${share_password_header}"
 
 log "Integration tests passed"

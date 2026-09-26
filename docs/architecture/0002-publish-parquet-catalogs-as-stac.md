@@ -51,8 +51,8 @@ An explicit mapping is a deployment setting, not share state. The
 ```json
 [
   {
-    "from": "https://cdn.example/releases/",
-    "to": "packages"
+    "from": "https://imagery.example.org/openaerialmap/",
+    "to": "openaerialmap-assets"
   }
 ]
 ```

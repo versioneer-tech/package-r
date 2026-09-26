@@ -15,7 +15,7 @@ func TestConfigStoresCatalogAssetMappings(t *testing.T) {
 		"--config", configPath,
 		"--database", dbPath,
 		"config", "set",
-		"--catalog.assetMappings", `[{"from":"https://cdn.example/releases/","to":"packages"}]`,
+		"--catalog.assetMappings", `[{"from":"https://imagery.example.org/openaerialmap/","to":"openaerialmap-assets"}]`,
 	)
 
 	configured, err := openTestStorage(t, dbPath).Settings.Get()
@@ -26,7 +26,7 @@ func TestConfigStoresCatalogAssetMappings(t *testing.T) {
 		t.Fatalf("expected one catalog asset mapping, got %#v", configured.Catalog.AssetMappings)
 	}
 	mapping := configured.Catalog.AssetMappings[0]
-	if mapping.From != "https://cdn.example/releases/" || mapping.To != "packages" {
+	if mapping.From != "https://imagery.example.org/openaerialmap/" || mapping.To != "openaerialmap-assets" {
 		t.Fatalf("unexpected catalog asset mapping: %#v", mapping)
 	}
 }

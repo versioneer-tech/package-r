@@ -89,13 +89,16 @@ Each entry replaces an exact URL prefix with a path relative to the share:
 
 ```yaml
 FB_CATALOG_ASSET_MAPPINGS: >-
-  [{"from":"https://cdn.example/releases/","to":"packages"}]
+  [{"from":"https://imagery.example.org/openaerialmap/","to":"openaerialmap-assets"}]
 ```
 
-For this example, `https://cdn.example/releases/item/data.tif` maps to
-`packages/item/data.tif` inside each configured share. The `to` value must be
-relative and cannot leave the share. Explicit mappings take priority over
-automatic matching.
+For this example,
+`https://imagery.example.org/openaerialmap/67793f0b9478720001790586/thumbnail.png`
+maps to
+`openaerialmap-assets/67793f0b9478720001790586/thumbnail.png` inside each
+configured share. This layout matches the included OpenAerialMap test data.
+The `to` value must be relative and cannot leave the share. Explicit mappings
+take priority over automatic matching.
 
 Set `FB_CATALOG_DEFAULT_NAME` to the catalog's relative path before bootstrap.
 The value applies to each configured share. The default is `catalog.parquet`.

@@ -3,6 +3,7 @@ import { AuthPage } from "./fixtures/auth";
 
 const itemId = "67793f0b9478720001790586";
 const publicShare = "my-share";
+const sharedPrefix = "catalog-sample";
 const backendBaseURL = `http://127.0.0.1:${process.env.FB_SERVER_PORT || "8888"}`;
 const screenshotBackendBaseURL = "http://127.0.0.1:8888";
 const thumbnailPath = `openaerialmap-assets/${itemId}/thumbnail.png`;
@@ -123,7 +124,7 @@ test.describe("packageR use-case UI", () => {
     await page.goto("/files/");
 
     for (const name of [
-      "public",
+      sharedPrefix,
       "sample.jpg",
       "sample.json",
       "sample.pdf",
@@ -133,17 +134,17 @@ test.describe("packageR use-case UI", () => {
     }
   });
 
-  test("renders authenticated public data listing", async ({ page }) => {
+  test("renders authenticated shared data listing", async ({ page }) => {
     await prepareStableScreenshot(page);
     await loginAsAdmin(page);
 
-    await page.goto("/files/public/");
+    await page.goto(`/files/${sharedPrefix}/`);
 
     await expect(page.getByLabel("openaerialmap-assets")).toBeVisible();
     await expect(page.getByLabel("catalog.parquet")).toBeVisible();
     await normalizeRelativeTimes(page);
     await expect(page.locator("#listing").first()).toHaveScreenshot(
-      "authenticated-public-listing.png",
+      "authenticated-catalog-sample-listing.png",
       screenshotOptions
     );
   });
@@ -152,7 +153,7 @@ test.describe("packageR use-case UI", () => {
     await loginAsAdmin(page);
     await page.goto("/files/");
 
-    await page.getByLabel("public", { exact: true }).click();
+    await page.getByLabel(sharedPrefix, { exact: true }).click();
     const shareButton = page.getByRole("button", {
       name: "Share",
       exact: true,
@@ -164,11 +165,9 @@ test.describe("packageR use-case UI", () => {
     const link = dialog.getByRole("link", { name: /my-share/ });
     await expect(link).toHaveAttribute("href", /\/share\/my-share\/$/);
     await expect(dialog.getByRole("button", { name: "New" })).toHaveCount(0);
-    await expect(dialog.getByRole("button", { name: "Delete" })).toHaveCount(
-      0
-    );
+    await expect(dialog.getByRole("button", { name: "Delete" })).toHaveCount(0);
 
-    const response = await page.request.post("/api/share/public/");
+    const response = await page.request.post(`/api/share/${sharedPrefix}/`);
     expect(response.status()).toBe(404);
   });
 
@@ -176,7 +175,7 @@ test.describe("packageR use-case UI", () => {
     await prepareStableScreenshot(page);
     await loginAsAdmin(page);
 
-    await page.goto(`/files/public/${thumbnailPath}`);
+    await page.goto(`/files/${sharedPrefix}/${thumbnailPath}`);
 
     const preview = page.locator("#previewer .preview");
     await expectImageLoaded(preview.locator("img.image-ex-img"));
@@ -211,7 +210,7 @@ test.describe("packageR use-case UI", () => {
     await presignedLink.click();
     await expectAndNormalizePresignedURL(
       presignedLink,
-      `public/${thumbnailPath}`,
+      `${sharedPrefix}/${thumbnailPath}`,
       `${screenshotBackendBaseURL}/api/public/dl/${publicShare}/${thumbnailPath}`
     );
     await normalizeRelativeTimes(page);
@@ -233,8 +232,9 @@ test.describe("packageR use-case UI", () => {
     await expect(infoBox).toContainText(
       `/api/public/catalog/${publicShare}/${thumbnailPath}`
     );
-    await infoBox.locator("p", { hasText: "Preview URL:" }).evaluate(
-      (element) => {
+    await infoBox
+      .locator("p", { hasText: "Preview URL:" })
+      .evaluate((element) => {
         for (const link of element.querySelectorAll("a")) {
           link.textContent =
             link.textContent?.replace(
@@ -249,8 +249,7 @@ test.describe("packageR use-case UI", () => {
             )
           );
         }
-      }
-    );
+      });
     await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
       "my-share-preview-url.png",
@@ -264,7 +263,7 @@ test.describe("packageR use-case UI", () => {
     await prepareStableScreenshot(page);
     await loginAsAdmin(page);
 
-    await page.goto(`/files/public/openaerialmap-assets/${itemId}/`);
+    await page.goto(`/files/${sharedPrefix}/openaerialmap-assets/${itemId}/`);
     await expect(page.getByLabel("thumbnail.png")).toBeVisible();
     await page.getByLabel("thumbnail.png").click();
     await expect(page.getByLabel("thumbnail.png")).toHaveAttribute(
@@ -284,8 +283,8 @@ test.describe("packageR use-case UI", () => {
     await presignedLink.click();
     await expectAndNormalizePresignedURL(
       presignedLink,
-      `public/${thumbnailPath}`,
-      `${screenshotBackendBaseURL}/api/raw/public/${thumbnailPath}`
+      `${sharedPrefix}/${thumbnailPath}`,
+      `${screenshotBackendBaseURL}/api/raw/${sharedPrefix}/${thumbnailPath}`
     );
     await normalizeRelativeTimes(page);
     await expect(modal).toHaveScreenshot(

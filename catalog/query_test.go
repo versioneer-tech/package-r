@@ -100,11 +100,11 @@ func TestRewriteAssetHrefs(t *testing.T) {
 			want:      "../private/data.tif",
 		},
 		{
-			name:      "explicit mapping for nonstandard CDN URL",
-			href:      "https://cdn.example/releases/item/data.tif",
+			name:      "explicit mapping for OpenAerialMap URL",
+			href:      "https://imagery.example.org/openaerialmap/67793f0b9478720001790586/thumbnail.png",
 			sharePath: "/deliverables/26-06",
-			mappings:  []AssetMapping{{From: "https://cdn.example/releases/", To: "packages"}},
-			want:      "https://package.example/api/public/share/my-share/packages/item/data.tif?presign&followRedirect",
+			mappings:  []AssetMapping{{From: "https://imagery.example.org/openaerialmap/", To: "openaerialmap-assets"}},
+			want:      "https://package.example/api/public/share/my-share/openaerialmap-assets/67793f0b9478720001790586/thumbnail.png?presign&followRedirect",
 		},
 	}
 

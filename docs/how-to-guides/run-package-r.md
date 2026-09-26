@@ -27,7 +27,7 @@ export FB_DATABASE=/tmp/package-r.db
 export FB_AUTH_METHOD=proxy
 export FB_AUTH_HEADER=X-Username
 export FB_ALLOW_CHANGING=true
-export FB_DEFAULT_SHARES='my-share=/public'
+export FB_DEFAULT_SHARES='my-share=/catalog-sample'
 export FB_DEFAULT_SHARE_PINS='my-share=1234'
 ```
 
@@ -39,7 +39,8 @@ identity settings. AWS IRSA is one example. All packageR sessions use this one
 process credential source.
 
 The bucket becomes `/` in packageR. For example,
-`s3://my-bucket/public/report.tif` appears as `/public/report.tif`.
+`s3://my-bucket/catalog-sample/report.tif` appears as
+`/catalog-sample/report.tif`.
 
 Set `FB_ROOT=/` to show permitted buckets as top-level directories. This mode
 needs permission to list buckets. Keep `FB_CREATE_USER_DIR=false` in this
@@ -81,8 +82,9 @@ origins. It must also support byte-range requests. See
 [Object storage](configuration.md#object-storage) for the required headers.
 
 For a public STAC view, place the configured STAC-compatible Parquet catalog
-inside the shared path. A share for `/public` with the default catalog name reads
-`/public/catalog.parquet` through rclone VFS. The public endpoint is:
+inside the shared path. A share for `/catalog-sample` with the default catalog
+name reads `/catalog-sample/catalog.parquet` through rclone VFS. The public
+endpoint is:
 
 ```text
 /api/public/catalog/my-share

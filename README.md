@@ -2,6 +2,11 @@
 
 # packageR
 
+> [!NOTE]
+> This is the third packageR iteration: v1 used the AWS S3 SDK directly, v2
+> required an external S3 mount, and the current implementation uses an
+> embedded rclone VFS.
+
 packageR makes it easy to package and distribute a prefix of S3-compatible
 bucket objects. An operator maps the prefix to a public package name, and
 recipients open the package in a browser without an account or login. The name
@@ -45,6 +50,35 @@ the
 and the
 [STAC catalog architecture decision](https://package-r.versioneer.at/latest/architecture/0002-publish-parquet-catalogs-as-stac/).
 
+## Download and run
+
+Download and unpack the latest prebuilt Linux AMD64 release:
+
+```bash
+curl -fL -o package-r.tar.gz \
+  https://github.com/versioneer-tech/package-r/releases/latest/download/linux-amd64-package-r.tar.gz
+tar -xzf package-r.tar.gz
+./filebrowser version
+```
+
+We also provide a container image at
+`ghcr.io/versioneer-tech/package-r:latest`. Run it with your S3 settings:
+
+```bash
+docker run --rm -p 127.0.0.1:8888:8888 \
+  -e AWS_ACCESS_KEY_ID=my-access-key \
+  -e AWS_SECRET_ACCESS_KEY=my-secret-key \
+  -e AWS_REGION=us-east-1 \
+  -e FB_ROOT=my-bucket \
+  -e FB_AUTH_METHOD=none \
+  -e FB_DEFAULT_SHARES='my-share=/catalog-sample' \
+  ghcr.io/versioneer-tech/package-r:latest
+```
+
+Replace the example values, and add `AWS_ENDPOINT_URL` for another
+S3-compatible service. See [Run packageR](https://package-r.versioneer.at/latest/how-to-guides/run-package-r/)
+for the full configuration.
+
 ## Development
 
 Local development uses `rclone serve s3` as a disposable S3-compatible API.
@@ -56,7 +90,8 @@ Open **Run and Debug** and start **run packageR**. The launch configuration:
 
 1. Starts local S3 on `127.0.0.1:19100`.
 2. Builds the development backend.
-3. Bootstraps `.vscode/package-r.db` and shares `/public` as `my-share`.
+3. Bootstraps `.vscode/package-r.db` and shares `/catalog-sample` as
+   `my-share`.
    This directory contains the test catalog and its assets. The bucket root
    contains image, JSON, PDF, and text fixtures for manual checks.
 4. Starts packageR on `127.0.0.1:8888` under the Go debugger.
