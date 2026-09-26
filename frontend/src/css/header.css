@@ -2,7 +2,7 @@ header {
   z-index: 1000;
   background: var(--surfacePrimary);
   border-bottom: 1px solid var(--divider);
-  box-shadow: 0 0 5px var(--borderPrimary);
+  box-shadow: 0 1px 2px var(--borderPrimary);
   position: fixed;
   top: 0;
   left: 0;
@@ -43,7 +43,7 @@ header img {
 }
 
 header img {
-  height: 2.5em;
+  height: 2.5rem;
 }
 
 header .action span {
@@ -275,5 +275,5 @@ html[dir="rtl"] #search .boxes h3 {
 
 #search .boxes i {
   color: #fff !important;
-  font-size: 3.5em;
+  font-size: 3.5rem;
 }
