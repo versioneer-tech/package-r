@@ -55,7 +55,7 @@ async function normalizeRelativeTimes(page: Page) {
   }, stableRelativeTime);
 }
 
-async function loginAsAdmin(page: Page) {
+async function loginAsInitialUser(page: Page) {
   const authPage = new AuthPage(page);
   await authPage.goto();
   await authPage.loginAs("admin", "admin");
@@ -119,7 +119,7 @@ test.describe("packageR use-case UI", () => {
   );
 
   test("lists root development fixtures", async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsInitialUser(page);
 
     await page.goto("/files/");
 
@@ -136,7 +136,7 @@ test.describe("packageR use-case UI", () => {
 
   test("renders authenticated shared data listing", async ({ page }) => {
     await prepareStableScreenshot(page);
-    await loginAsAdmin(page);
+    await loginAsInitialUser(page);
 
     await page.goto(`/files/${sharedPrefix}/`);
 
@@ -150,7 +150,7 @@ test.describe("packageR use-case UI", () => {
   });
 
   test("shows configured shares as read-only", async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsInitialUser(page);
     await page.goto("/files/");
 
     await page.getByLabel(sharedPrefix, { exact: true }).click();
@@ -171,33 +171,9 @@ test.describe("packageR use-case UI", () => {
     expect(response.status()).toBe(404);
   });
 
-  test("lists configured shares in settings", async ({ page }) => {
-    await loginAsAdmin(page);
-    await page.goto("/settings");
-
-    const sharesLink = page.getByRole("link", { name: "Share Management" });
-    await expect(sharesLink).toBeVisible();
-    await sharesLink.click();
-    await expect(page).toHaveURL(/\/settings\/shares$/);
-
-    await expect(
-      page.getByRole("heading", { name: "Share Management" })
-    ).toBeVisible();
-    const row = page.getByRole("row", { name: /my-share/ });
-    await expect(row).toContainText("/catalog-sample");
-    await expect(row).toContainText("default share");
-    await expect(row).toContainText("Permanent");
-    await expect(row.getByRole("link", { name: "my-share" })).toHaveAttribute(
-      "href",
-      /\/share\/my-share$/
-    );
-    await expect(page.getByRole("button", { name: "New" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Delete" })).toHaveCount(0);
-  });
-
   test("renders authenticated image preview", async ({ page }) => {
     await prepareStableScreenshot(page);
-    await loginAsAdmin(page);
+    await loginAsInitialUser(page);
 
     await page.goto(`/files/${sharedPrefix}/${thumbnailPath}`);
 
@@ -227,6 +203,10 @@ test.describe("packageR use-case UI", () => {
     await prepareStableScreenshot(page);
 
     const infoBox = await openPublicShareThumbnail(page);
+    await expect(infoBox.getByText("MD5:")).toBeVisible();
+    await expect(
+      infoBox.locator("a.button", { hasText: "Download" })
+    ).toBeVisible();
     const presignedLink = infoBox
       .locator("p", { hasText: "Presigned URL:" })
       .getByRole("link");
@@ -242,6 +222,24 @@ test.describe("packageR use-case UI", () => {
       "my-share-presign.png",
       screenshotOptions
     );
+  });
+
+  test("initializes authentication after opening a public share", async ({
+    page,
+  }) => {
+    await page.goto(`/share/${publicShare}/`);
+    await expect(page.getByText("catalog.parquet")).toBeVisible();
+
+    const response = await page.request.post("/api/login", {
+      data: { username: "admin", password: "admin", recaptcha: "" },
+    });
+    expect(response.ok()).toBe(true);
+    const token = await response.text();
+    await page.evaluate((jwt) => localStorage.setItem("jwt", jwt), token);
+
+    await page.getByRole("img", { name: "Home" }).click();
+    await expect(page).toHaveURL(/\/files\/$/);
+    await expect(page).toHaveTitle(/.*Files - packageR$/);
   });
 
   test("shows public share catalog preview URL", async ({ page }) => {
@@ -285,7 +283,7 @@ test.describe("packageR use-case UI", () => {
     page,
   }) => {
     await prepareStableScreenshot(page);
-    await loginAsAdmin(page);
+    await loginAsInitialUser(page);
 
     await page.goto(`/files/${sharedPrefix}/openaerialmap-assets/${itemId}/`);
     await expect(page.getByLabel("thumbnail.png")).toBeVisible();

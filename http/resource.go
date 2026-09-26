@@ -61,7 +61,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 			d.store.Users,
 			d.user,
 			file.Path,
-			localRawURL(r, file.Path),
+			localRawURL(r, d.server.BaseURL, file.Path),
 			presignLifetime,
 		)
 		if errors.Is(err, appErrors.ErrInvalidOption) {
@@ -361,7 +361,3 @@ func patchAction(ctx context.Context, action, src, dst string, d *data, fileCach
 		return fmt.Errorf("unsupported action %s: %w", action, appErrors.ErrInvalidRequestParams)
 	}
 }
-
-var diskUsage = withUser(func(_ http.ResponseWriter, _ *http.Request, _ *data) (int, error) {
-	return http.StatusNotImplemented, nil
-})

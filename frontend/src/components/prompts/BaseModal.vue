@@ -3,7 +3,9 @@
     class="vfm-modal"
     overlay-transition="vfm-fade"
     content-transition="vfm-fade"
-    @closed="layoutStore.closeHovers"
+    :click-to-close="false"
+    :esc-to-close="false"
+    @click-outside="layoutStore.closeHovers"
     :focus-trap="{
       initialFocus: '#focus-prompt',
       fallbackFocus: 'div.vfm__content',

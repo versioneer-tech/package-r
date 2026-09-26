@@ -10,11 +10,6 @@ import (
 	"github.com/versioneer-tech/package-r/storage"
 )
 
-type modifyRequest struct {
-	What  string   `json:"what"`  // Answer to: what data type?
-	Which []string `json:"which"` // Answer to: which fields?
-}
-
 func NewHandler(
 	imgSvc ImgService,
 	fileCache FileCache,
@@ -47,18 +42,11 @@ func NewHandler(
 	r.NotFoundHandler = index
 
 	api := r.PathPrefix("/api").Subrouter()
+	api.NotFoundHandler = http.NotFoundHandler()
 
 	tokenExpirationTime := server.GetTokenExpirationTime(DefaultTokenExpirationTime)
 	api.Handle("/login", monkey(loginHandler(tokenExpirationTime), ""))
-	api.Handle("/signup", monkey(signupHandler, ""))
 	api.Handle("/renew", monkey(renewHandler(tokenExpirationTime), ""))
-
-	users := api.PathPrefix("/users").Subrouter()
-	users.Handle("", monkey(usersGetHandler, "")).Methods("GET")
-	users.Handle("", monkey(userPostHandler, "")).Methods("POST")
-	users.Handle("/{id:[0-9]+}", monkey(userPutHandler, "")).Methods("PUT")
-	users.Handle("/{id:[0-9]+}", monkey(userGetHandler, "")).Methods("GET")
-	users.Handle("/{id:[0-9]+}", monkey(userDeleteHandler, "")).Methods("DELETE")
 
 	api.PathPrefix("/resources").Handler(monkey(resourceGetHandler, "/api/resources")).Methods("GET")
 	api.PathPrefix("/resources").Handler(monkey(resourceDeleteHandler(fileCache), "/api/resources")).Methods("DELETE")
@@ -67,24 +55,18 @@ func NewHandler(
 	api.PathPrefix("/resources").Handler(monkey(resourcePatchHandler(fileCache), "/api/resources")).Methods("PATCH")
 
 	api.PathPrefix("/tus").Handler(monkey(tusPostHandler(), "/api/tus")).Methods("POST")
-	api.PathPrefix("/tus").Handler(monkey(tusHeadHandler(), "/api/tus")).Methods("HEAD", "GET")
+	api.PathPrefix("/tus").Handler(monkey(tusHeadHandler(), "/api/tus")).Methods("HEAD")
 	api.PathPrefix("/tus").Handler(monkey(tusPatchHandler(), "/api/tus")).Methods("PATCH")
 	api.PathPrefix("/tus").Handler(monkey(resourceDeleteHandler(fileCache), "/api/tus")).Methods("DELETE")
 
-	api.PathPrefix("/usage").Handler(monkey(diskUsage, "/api/usage")).Methods("GET")
-	api.Handle("/shares", monkey(configuredShareListHandler, "")).Methods("GET")
 	api.PathPrefix("/shares").Handler(http.NotFoundHandler())
 	api.PathPrefix("/share").Handler(monkey(configuredShareGetsHandler, "/api/share")).Methods("GET")
 	api.PathPrefix("/share").Handler(http.NotFoundHandler())
-
-	api.Handle("/settings", monkey(settingsGetHandler, "")).Methods("GET")
-	api.Handle("/settings", monkey(settingsPutHandler, "")).Methods("PUT")
 
 	api.PathPrefix("/raw").Handler(monkey(rawHandler, "/api/raw")).Methods("GET")
 	api.PathPrefix("/preview/{size}/{path:.*}").
 		Handler(monkey(previewHandler(imgSvc, fileCache, server.EnableThumbnails, server.ResizePreview), "/api/preview")).Methods("GET")
 	api.PathPrefix("/command").Handler(monkey(commandsHandler, "/api/command")).Methods("GET")
-	api.PathPrefix("/search").Handler(monkey(searchHandler, "/api/search")).Methods("GET")
 	api.PathPrefix("/subtitle").Handler(monkey(subtitleHandler, "/api/subtitle")).Methods("GET")
 
 	public := api.PathPrefix("/public").Subrouter()

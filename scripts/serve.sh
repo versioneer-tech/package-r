@@ -166,15 +166,11 @@ set -- config set \
   --auth.mapper="$(auth_mapper)" \
   --branding.name "${PACKAGE_R_BRANDING_NAME:-packageR}" \
   --scope "/" \
-  --perm.admin=false \
   --perm.create=$ALLOW_CHANGING \
   --perm.delete=$ALLOW_CHANGING \
   --perm.download=false \
-  --perm.execute=false \
   --perm.modify=$ALLOW_CHANGING \
   --perm.rename=$ALLOW_CHANGING \
-  --perm.share=false \
-  --lockPassword=true \
   --commands ""
 
 if package_r_config_set_supports "--auth.jwt.jwks-url"; then
@@ -207,15 +203,11 @@ fi
 
 ensure_user admin \
   --scope=/ \
-  --perm.admin=true \
-  --perm.execute=true \
   --perm.create=true \
   --perm.rename=true \
   --perm.modify=true \
   --perm.delete=true \
-  --perm.share=false \
-  --perm.download=true \
-  --lockPassword || exit 1
+  --perm.download=true || exit 1
 
 default_share_owner=admin
 

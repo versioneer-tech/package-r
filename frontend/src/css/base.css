@@ -50,41 +50,6 @@ i.spin {
   padding-bottom: 4em;
 }
 
-nav {
-  width: 16em;
-  position: fixed;
-  top: 4em;
-  left: 0;
-}
-
-html[dir="rtl"] nav {
-  left: initial;
-  right: 0;
-}
-
-nav .action {
-  width: 100%;
-  display: block;
-  border-radius: 0;
-  font-size: 1.1em;
-  padding: 0.5em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-html[dir="rtl"] nav .action {
-  text-align: right;
-}
-
-nav > div {
-  border-top: 1px solid var(--divider);
-}
-
-nav .action > * {
-  vertical-align: middle;
-}
-
 main {
   min-height: 1em;
   margin: 0 1em 1em auto;
@@ -170,36 +135,6 @@ html[dir="rtl"] .breadcrumbs a {
 
 .break-word {
   word-break: break-all;
-}
-
-.vue-number-input > input {
-  background: var(--surfacePrimary) !important;
-  border-color: var(--surfaceSecondary) !important;
-  color: var(--textSecondary) !important;
-}
-
-.vue-number-input--small > input {
-  height: 1rem !important;
-  font-size: 1rem !important;
-}
-
-.vue-number-input :hover,
-.vue-number-input :focus {
-  border-color: var(--borderSecondary) !important;
-}
-
-.vue-number-input__button {
-  background: var(--surfacePrimary) !important;
-}
-
-.vue-number-input__button--minus,
-.vue-number-input__button--plus {
-  border-color: var(--surfaceSecondary) !important;
-}
-
-.vue-number-input__button::before,
-.vue-number-input__button::after {
-  background: var(--textSecondary) !important;
 }
 
 .vfm-modal {

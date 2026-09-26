@@ -36,9 +36,6 @@ export function scanFiles(dt: DataTransfer): Promise<UploadList | FileList> {
     const contents: UploadList = [];
 
     if (dt.items) {
-      // ts didn't like the for of loop even tho
-      // it is the official example on MDN
-      // for (const item of dt.items) {
       for (let i = 0; i < dt.items.length; i++) {
         const item = dt.items[i];
         if (

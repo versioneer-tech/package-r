@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 
 export const useFileStore = defineStore("file", {
-  // convert to a function
   state: (): {
     req: Resource | null;
     oldReq: Resource | null;
@@ -19,20 +18,11 @@ export const useFileStore = defineStore("file", {
   }),
   getters: {
     selectedCount: (state) => state.selected.length,
-    // route: () => {
-    //   const routerStore = useRouterStore();
-    //   return routerStore.router.currentRoute;
-    // },
-    // isFiles: (state) => {
-    //   const layoutStore = useLayoutStore();
-    //   return !layoutStore.loading && state.route._value.name === "Files";
-    // },
     isListing: (state) => {
       return state.isFiles && state?.req?.isDir;
     },
   },
   actions: {
-    // no context as first argument, use `this` instead
     toggleMultiple() {
       this.multiple = !this.multiple;
     },
@@ -55,7 +45,6 @@ export const useFileStore = defineStore("file", {
       if (i === -1) return;
       this.selected.splice(i, 1);
     },
-    // easily reset state using `$reset`
     clearFile() {
       this.$reset();
     },

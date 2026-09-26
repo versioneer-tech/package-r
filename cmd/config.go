@@ -53,7 +53,6 @@ func addConfigFlags(flags *pflag.FlagSet) {
 	flags.String("branding.color", "", "set the theme color")
 	flags.String("branding.files", "", "path to directory with images and custom styles")
 	flags.Bool("branding.disableExternal", false, "disable external links such as GitHub links")
-	flags.Bool("branding.disableUsedPercentage", false, "disable used disk percentage graph")
 
 	flags.String("catalog.defaultName", settings.DefaultCatalogName, "default catalog name")
 	flags.String("catalog.previewURL", "", "(optional) preview URL")
@@ -113,10 +112,6 @@ func getAuthentication(flags *pflag.FlagSet, defaults ...interface{}) (settings.
 			JWTAlgorithms: jwtAlgorithms,
 			JWTClockSkew:  jwtClockSkew,
 		}
-	}
-
-	if method == auth.MethodNoAuth {
-		auther = &auth.NoAuth{}
 	}
 
 	if method == auth.MethodJSONAuth {
@@ -193,7 +188,6 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 	fmt.Fprintf(w, "\tName:\t%s\n", set.Branding.Name)
 	fmt.Fprintf(w, "\tFiles override:\t%s\n", set.Branding.Files)
 	fmt.Fprintf(w, "\tDisable external links:\t%t\n", set.Branding.DisableExternal)
-	fmt.Fprintf(w, "\tDisable used disk percentage graph:\t%t\n", set.Branding.DisableUsedPercentage)
 	fmt.Fprintf(w, "\tColor:\t%s\n", set.Branding.Color)
 	fmt.Fprintf(w, "\tTheme:\t%s\n", set.Branding.Theme)
 	fmt.Fprintln(w, "\nServer:")
@@ -216,13 +210,11 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 	fmt.Fprintf(w, "\t\tBy:\t%s\n", set.Defaults.Sorting.By)
 	fmt.Fprintf(w, "\t\tAsc:\t%t\n", set.Defaults.Sorting.Asc)
 	fmt.Fprintf(w, "\tPermissions:\n")
-	fmt.Fprintf(w, "\t\tAdmin:\t%t\n", set.Defaults.Perm.Admin)
 	fmt.Fprintf(w, "\t\tExecute:\t%t\n", set.Defaults.Perm.Execute)
 	fmt.Fprintf(w, "\t\tCreate:\t%t\n", set.Defaults.Perm.Create)
 	fmt.Fprintf(w, "\t\tRename:\t%t\n", set.Defaults.Perm.Rename)
 	fmt.Fprintf(w, "\t\tModify:\t%t\n", set.Defaults.Perm.Modify)
 	fmt.Fprintf(w, "\t\tDelete:\t%t\n", set.Defaults.Perm.Delete)
-	fmt.Fprintf(w, "\t\tShare:\t%t\n", set.Defaults.Perm.Share)
 	fmt.Fprintf(w, "\t\tDownload:\t%t\n", set.Defaults.Perm.Download)
 	w.Flush()
 

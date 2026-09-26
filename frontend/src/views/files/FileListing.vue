@@ -1,15 +1,7 @@
 <template>
   <div>
     <header-bar showMenu showLogo>
-      <!--<search />-->
       <title />
-      <action
-        class="search-button"
-        icon="search"
-        :label="t('buttons.search')"
-        @action="openSearch()"
-      />
-
       <template #actions>
         <template v-if="!isMobile">
           <action
@@ -293,7 +285,7 @@ import { useClipboardStore } from "@/stores/clipboard";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 
-import { users as users_api, files as api } from "@/api";
+import { files as api } from "@/api";
 import { enableExec } from "@/utils/constants";
 import * as upload from "@/utils/upload";
 import css from "@/utils/css";
@@ -302,7 +294,6 @@ import { Base64 } from "js-base64";
 
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import Action from "@/components/header/Action.vue";
-//import Search from "@/components/Search.vue";
 import Item from "@/components/files/ListingItem.vue";
 import {
   computed,
@@ -522,10 +513,6 @@ const keyEvent = (event: KeyboardEvent) => {
   }
 
   switch (event.key) {
-    case "f":
-      event.preventDefault();
-      layoutStore.showHover("search");
-      break;
     case "c":
     case "x":
       copyCut(event);
@@ -546,10 +533,6 @@ const keyEvent = (event: KeyboardEvent) => {
         }
       }
       break;
-    case "s":
-      event.preventDefault();
-      document.getElementById("download-button")?.click();
-      break;
   }
 };
 
@@ -560,6 +543,10 @@ const preventDefault = (event: Event) => {
 
 const copyCut = (event: Event | KeyboardEvent): void => {
   if ((event.target as HTMLElement).tagName?.toLowerCase() === "input") return;
+
+  const key = (event as KeyboardEvent).key;
+  if (key === "c" && !authStore.user?.perm.create) return;
+  if (key === "x" && !authStore.user?.perm.rename) return;
 
   if (fileStore.req === null) return;
 
@@ -585,6 +572,12 @@ const copyCut = (event: Event | KeyboardEvent): void => {
 
 const paste = (event: Event) => {
   if ((event.target as HTMLElement).tagName?.toLowerCase() === "input") return;
+
+  const allowed =
+    clipboardStore.key === "x"
+      ? authStore.user?.perm.rename
+      : authStore.user?.perm.create;
+  if (!allowed) return;
 
   // TODO router location should it be
   const items: any[] = [];
@@ -813,7 +806,7 @@ const resetOpacity = () => {
   });
 };
 
-const sort = async (by: string) => {
+const sort = (by: string) => {
   let asc = false;
 
   if (by === "name") {
@@ -830,21 +823,19 @@ const sort = async (by: string) => {
     }
   }
 
-  try {
-    if (authStore.user?.id) {
-      await users_api.update({ id: authStore.user?.id, sorting: { by, asc } }, [
-        "sorting",
-      ]);
+  if (!fileStore.req) return;
+
+  fileStore.req.sorting = { by, asc };
+  const direction = asc ? 1 : -1;
+  fileStore.req.items.sort((left, right) => {
+    if (left.isDir !== right.isDir) return left.isDir ? -1 : 1;
+
+    if (by === "size") return (left.size - right.size) * direction;
+    if (by === "modified") {
+      return left.modified.localeCompare(right.modified) * direction;
     }
-  } catch (e: any) {
-    $showError(e);
-  }
-
-  fileStore.reload = true;
-};
-
-const openSearch = () => {
-  layoutStore.showHover("search");
+    return left.name.localeCompare(right.name) * direction;
+  });
 };
 
 const toggleMultipleSelection = () => {
@@ -911,8 +902,6 @@ const switchView = async () => {
     viewMode: (modes[authStore.user?.viewMode ?? "list"] ||
       "list") as ViewModeType,
   };
-
-  users_api.update(data, ["viewMode"]).catch($showError);
 
   authStore.updateUser(data);
 

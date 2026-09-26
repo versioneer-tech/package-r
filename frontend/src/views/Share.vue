@@ -4,23 +4,13 @@
       <title>{{ name }}</title>
 
       <action
-        v-if="fileStore.selectedCount && canDownload"
+        v-if="fileStore.selectedCount"
         icon="file_download"
         :label="t('buttons.download')"
         @action="download"
         :counter="fileStore.selectedCount"
       />
-      <!-- <button
-        v-if="isSingleFile() && canDownload"
-        class="action copy-clipboard"
-        :aria-label="t('buttons.copyDownloadLinkToClipboard')"
-        :data-title="t('buttons.copyDownloadLinkToClipboard')"
-        @click="copyToClipboard(linkSelected())"
-      >
-        <i class="material-icons">content_paste</i>
-      </button> -->
       <action
-        v-if="canDownload"
         icon="check_circle"
         :label="t('buttons.selectMultiple')"
         @action="toggleMultipleSelection"
@@ -88,12 +78,6 @@
           <div class="share__box__header" style="height: 3em">
             {{ req.isDir ? t("buttons.folder") : t("buttons.file") }}
           </div>
-          <!-- <div
-            v-if="!req.isDir"
-            class="share__box__element share__box__center share__box__icon"
-          >
-            <i class="material-icons">{{ icon }}</i>
-          </div> -->
           <div class="share__box__element">
             <p>
               <strong>{{ $t("prompts.displayName") }}:</strong> {{ req.name }}
@@ -104,7 +88,7 @@
             <p v-if="!req.isDir" :title="modTime">
               <strong>{{ $t("prompts.lastModified") }}:</strong> {{ humanTime }}
             </p>
-            <p v-if="!req.isDir && canDownload">
+            <p v-if="!req.isDir">
               <strong>MD5: </strong>
               <code>
                 <a
@@ -115,7 +99,7 @@
                 >
               </code>
             </p>
-            <p v-if="!req.isDir && canDownload">
+            <p v-if="!req.isDir">
               <strong>SHA1: </strong>
               <code>
                 <a
@@ -126,7 +110,7 @@
                 >
               </code>
             </p>
-            <p v-if="!req.isDir && canDownload">
+            <p v-if="!req.isDir">
               <strong>SHA256: </strong>
               <code>
                 <a
@@ -137,7 +121,7 @@
                 >
               </code>
             </p>
-            <p v-if="!req.isDir && canDownload">
+            <p v-if="!req.isDir">
               <strong>SHA512: </strong>
               <code>
                 <a
@@ -175,10 +159,7 @@
               </code>
             </p>
           </div>
-          <div
-            class="share__box__element share__box__center"
-            v-if="canDownload"
-          >
+          <div class="share__box__element share__box__center">
             <a
               target="_blank"
               :href="link"
@@ -201,108 +182,7 @@
                 >{{ t("buttons.openFile") }}
               </div>
             </a>
-            <!-- <qrcode-vue
-              v-if="req.isDir"
-              :value="link"
-              :size="100"
-              level="M"
-            ></qrcode-vue> -->
           </div>
-          <!-- <div v-if="!req.isDir" class="share__box__element share__box__center">
-            <qrcode-vue :value="link" :size="200" level="M"></qrcode-vue>
-          </div> -->
-          <!-- <div
-            v-if="req.isDir"
-            class="share__box__element share__box__header"
-            style="height: 3em"
-          >
-            {{ $t("sidebar.preview") }}
-          </div>
-          <div
-            v-if="req.isDir"
-            class="share__box__element share__box__center share__box__icon"
-            style="padding: 0em !important; height: 12em !important"
-          >
-            <a
-              target="_blank"
-              :href="raw"
-              class="button button--flat"
-              v-if="
-                !fileStore.multiple &&
-                fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].type === 'image'
-              "
-              style="height: 12em; padding: 0; margin: 0"
-            >
-              <img style="height: 12em" :src="raw" />
-            </a>
-            <div
-              v-else-if="
-                fileStore.multiple &&
-                fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].type === 'audio'
-              "
-              style="height: 12em; padding-top: 1em; margin: 0"
-            >
-              <button
-                @click="play"
-                v-if="!tag"
-                style="
-                  font-size: 6em !important;
-                  border: 0px;
-                  outline: none;
-                  background: white;
-                "
-                class="material-icons"
-              >
-                play_circle_filled
-              </button>
-              <button
-                @click="play"
-                v-if="tag"
-                style="
-                  font-size: 6em !important;
-                  border: 0px;
-                  outline: none;
-                  background: white;
-                "
-                class="material-icons"
-              >
-                pause_circle_filled
-              </button>
-              <audio
-                id="myaudio"
-                ref="audio"
-                :src="raw"
-                controls
-                :autoplay="tag"
-              ></audio>
-            </div>
-            <video
-              v-else-if="
-                !fileStore.multiple &&
-                fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].type === 'video'
-              "
-              style="height: 12em; padding: 0; margin: 0"
-              :src="raw"
-              controls
-            >
-              Sorry, your browser doesn't support embedded videos, but don't
-              worry, you can <a :href="raw">download it</a>
-              and watch it with your favorite video player!
-            </video>
-            <i
-              v-else-if="
-                !fileStore.multiple &&
-                fileStore.selectedCount === 1 &&
-                req.items[fileStore.selected[0]].isDir
-              "
-              class="material-icons"
-              >folder
-            </i>
-            <i v-else class="material-icons">call_to_action</i>
-          </div> -->
         </div>
         <div
           id="shareList"
@@ -378,7 +258,6 @@ import HeaderBar from "@/components/header/HeaderBar.vue";
 import Action from "@/components/header/Action.vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Errors from "@/views/Errors.vue";
-// import QrcodeVue from "qrcode.vue";
 import Item from "@/components/files/ListingItem.vue";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
@@ -386,7 +265,6 @@ import { computed, inject, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { StatusError } from "@/api/utils";
-//import { copy } from "@/utils/clipboard";
 import { name, catalogPreviewURL } from "@/utils/constants";
 
 const error = ref<StatusError | null>(null);
@@ -395,11 +273,8 @@ const password = ref<string>("");
 const attemptedPasswordLogin = ref<boolean>(false);
 const hash = ref<string>("");
 const token = ref<string>("");
-//const audio = ref<HTMLAudioElement>();
-//const tag = ref<boolean>(false);
 
 const $showError = inject<IToastError>("$showError")!;
-//const $showSuccess = inject<IToastSuccess>("$showSuccess")!;
 
 const { t } = useI18n({});
 
@@ -414,30 +289,9 @@ watch(route, () => {
 
 const req = computed(() => fileStore.req);
 
-// Define computes
-
-// const icon = computed(() => {
-//   if (req.value === null) return "insert_drive_file";
-//   if (req.value.isDir) return "folder";
-//   if (req.value.type === "image") return "insert_photo";
-//   if (req.value.type === "audio") return "volume_up";
-//   if (req.value.type === "video") return "movie";
-//   return "insert_drive_file";
-// });
-
 const link = computed(() =>
   req.value ? pub_api.getDownloadURL(req.value) : ""
 );
-// const raw = computed(() => {
-//   return req.value
-//     ? req.value.items[fileStore.selected[0]].url.replace(
-//         /share/,
-//         "api/public/dl"
-//       ) +
-//         "?token=" +
-//         token.value
-//     : "";
-// });
 const inlineLink = computed(() =>
   req.value ? pub_api.getDownloadURL(req.value, true) : ""
 );
@@ -461,17 +315,7 @@ const modTime = computed(() =>
     : new Date().toLocaleString()
 );
 
-// Functions
 const base64 = (name: any) => Base64.encodeURI(name);
-// const play = () => {
-//   if (tag.value) {
-//     audio.value?.pause();
-//     tag.value = false;
-//   } else {
-//     audio.value?.play();
-//     tag.value = true;
-//   }
-// };
 const fetchData = async () => {
   fileStore.reload = false;
   fileStore.selected = [];
@@ -561,68 +405,21 @@ const download = () => {
   return true;
 };
 
-/*
-const linkSelected = () => {
-  return isSingleFile() && req.value
-    ? pub_api.getDownloadURL({
-        ...req.value,
-        hash: hash.value,
-        path: req.value.items[fileStore.selected[0]].path,
-      })
-    : "";
-};
-
-const copyToClipboard = (text: string) => {
-  copy({ text }).then(
-    () => {
-      // clipboard successfully set
-      $showSuccess(t("success.linkCopied"));
-    },
-    () => {
-      // clipboard write failed
-      copy({ text }, { permission: true }).then(
-        () => {
-          // clipboard successfully set
-          $showSuccess(t("success.linkCopied"));
-        },
-        (e) => {
-          // clipboard write failed
-          $showError(e);
-        }
-      );
-    }
-  );
-};
-*/
-
 onMounted(async () => {
-  // Created
   hash.value = route.params.path[0];
   window.addEventListener("keydown", keyEvent);
   await fetchData();
-
-  canDownload.value = false;
-
-  const lastDotIndex = hash.value.lastIndexOf(".");
-  if (lastDotIndex !== -1) {
-    const afterDot = hash.value.slice(lastDotIndex + 1);
-    if (afterDot.includes("d")) {
-      canDownload.value = true;
-    }
-  }
 
   canPresign.value = true; // TBD
   canPreview.value = catalogPreviewURL !== "";
 });
 
 onBeforeUnmount(() => {
-  // Destroyed
   window.removeEventListener("keydown", keyEvent);
 });
 
 const presignedURL = ref<string | null>(null);
 const previewURL = ref<string | null>(null);
-const canDownload = ref<boolean>(false);
 const canPresign = ref<boolean>(false);
 const canPreview = ref<boolean>(false);
 

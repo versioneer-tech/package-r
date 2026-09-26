@@ -242,6 +242,24 @@ thumbnail="${FIXTURE_DIR}/${SHARED_PREFIX}/openaerialmap-assets/${ITEM_ID}/thumb
 resource_path="/${BUCKET}/${SHARED_PREFIX}/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
 public_path="openaerialmap-assets/${ITEM_ID}/thumbnail.png"
 
+log "Checking that user management APIs are unavailable"
+for api_path in users settings shares; do
+  status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
+    -H "${auth_header}" "${package_r_url}/api/${api_path}")"
+  if [[ "${status}" != "404" ]]; then
+    printf 'Expected /api/%s to return 404, got %s\n' "${api_path}" "${status}" >&2
+    exit 1
+  fi
+done
+signup_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H 'Content-Type: application/json' \
+  --data '{"username":"xyz","password":"xyz"}' \
+  "${package_r_url}/api/signup")"
+if [[ "${signup_status}" != "404" ]]; then
+  printf 'Expected /api/signup to return 404, got %s\n' "${signup_status}" >&2
+  exit 1
+fi
+
 log "Checking VFS service-root browse and raw read"
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/" |
   python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert "my-bucket" in names'
@@ -292,6 +310,12 @@ log "Checking two-chunk TUS upload through the VFS write cache"
 tus_path="/${BUCKET}/xyz/chunked.txt"
 curl_test -fsS -X POST -H "${auth_header}" \
   "${package_r_url}/api/tus${tus_path}" >/dev/null
+head_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -I -H "${auth_header}" \
+  "${package_r_url}/api/tus${tus_path}")"
+[[ "${head_status}" == "200" ]]
+get_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -H "${auth_header}" \
+  "${package_r_url}/api/tus${tus_path}")"
+[[ "${get_status}" == "404" || "${get_status}" == "405" ]]
 printf 'first chunk\n' >"${tmp_dir}/chunk-one.txt"
 printf 'second chunk\n' >"${tmp_dir}/chunk-two.txt"
 curl_test -fsS -X PATCH -H "${auth_header}" \

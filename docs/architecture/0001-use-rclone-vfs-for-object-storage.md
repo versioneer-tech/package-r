@@ -28,8 +28,8 @@ packageR embeds rclone in the Go process.
 - Integration tests use `rclone serve s3` with temporary data
 - DuckDB reads checked catalog files from short-lived signed URLs
 
-Bootstrap configuration rebuilds the packageR database. The database is
-temporary runtime state. `PACKAGE_R_ROOT=/` exposes permitted buckets. A
+Bootstrap configuration rebuilds the packageR database. The database is a
+disposable runtime cache. `PACKAGE_R_ROOT=/` exposes permitted buckets. A
 bucket name exposes that bucket as `/`. User records do not set the storage
 root, endpoint, or credentials. Public shares are set before startup.
 
@@ -49,6 +49,5 @@ semantics. For example, a rename can copy an object and then delete the source.
 POSIX ownership and mode changes do not change bucket permissions.
 
 Public links support GET only. DuckDB catalog queries need the `httpfs`
-extension and HTTP range requests. Bucket capacity is not local disk capacity,
-so the local disk-usage API is unavailable. Chunked uploads need a local
-rclone VFS write cache.
+extension and HTTP range requests. Chunked uploads need a local rclone VFS
+write cache.

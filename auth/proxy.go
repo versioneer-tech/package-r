@@ -332,9 +332,8 @@ func (a ProxyAuth) createUser(usr users.Store, setting *settings.Settings, usern
 	}
 
 	user := &users.User{
-		Username:     username,
-		Password:     hashedRandomPassword,
-		LockPassword: true,
+		Username: username,
+		Password: hashedRandomPassword,
 	}
 	setting.ApplyUserDefaults(user)
 

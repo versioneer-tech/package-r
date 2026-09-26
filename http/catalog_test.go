@@ -99,7 +99,10 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := handle(catalogHandler, "/api/public/catalog/", store, &settings.Server{Root: root})
+	handler := handle(catalogHandler, "/api/public/catalog/", store, &settings.Server{
+		Root:    root,
+		BaseURL: "/package-r",
+	})
 
 	collection := callCatalog[struct {
 		Type        string                   `json:"type"`
@@ -135,7 +138,7 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 		t.Fatalf("expected STAC item links, got %#v", feature["links"])
 	}
 
-	expectedThumbnail := "http://localhost:8888/api/public/share/my-share/openaerialmap-assets/" +
+	expectedThumbnail := "http://localhost:8888/package-r/api/public/share/my-share/openaerialmap-assets/" +
 		openAerialMapID + "/thumbnail.png?presign&followRedirect"
 	if href := stacAssetHref(t, feature, "thumbnail"); href != expectedThumbnail {
 		t.Fatalf("unexpected rewritten asset href: %q", href)
@@ -148,7 +151,7 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	}
 	links := feature["links"].([]interface{})
 	selfLink := links[0].(map[string]interface{})
-	expectedSelfHref := "http://localhost:8888/api/public/catalog/my-share/openaerialmap-assets/" +
+	expectedSelfHref := "http://localhost:8888/package-r/api/public/catalog/my-share/openaerialmap-assets/" +
 		openAerialMapID + "/metadata.json"
 	if selfLink["href"] != expectedSelfHref {
 		t.Fatalf("expected resolvable STAC self link %q, got %#v", expectedSelfHref, selfLink)

@@ -8,6 +8,8 @@
   "go.toolsEnvVars": {
     "CGO_ENABLED": "1"
   },
+  "typescript.tsdk": "frontend/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
   "remote.autoForwardPorts": true,
   "remote.portsAttributes": {
     "8888": {

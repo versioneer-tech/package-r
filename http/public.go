@@ -132,15 +132,12 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 	presign, ok := r.URL.Query()["presign"]
 	if ok && !strings.EqualFold(presign[0], "false") {
-		if !d.user.Perm.Download {
-			return http.StatusForbidden, nil
-		}
 		url, err := presignOrLocalURL(
 			r,
 			d.store.Users,
 			d.user,
 			publicSharePresignPath(cf),
-			localPublicDownloadURL(r),
+			localPublicDownloadURL(r, d.server.BaseURL),
 			publicSharePresignLifetime(cf.ShareExpire),
 		)
 		if errors.Is(err, appErrors.ErrInvalidOption) {
@@ -168,11 +165,12 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 				return http.StatusInternalServerError, err
 			}
 
-			scheme := "https"
-			if strings.HasPrefix(r.Host, "localhost") {
-				scheme = "http"
-			}
-			file.PreviewURL = d.settings.Catalog.PreviewURL + scheme + "://" + r.Host + "/api/public/catalog/" + r.URL.Path // TBD consider configurable base path
+			catalogURL := localRequestURL(
+				r,
+				d.server.BaseURL,
+				"/api/public/catalog/"+strings.TrimPrefix(r.URL.Path, "/"),
+			)
+			file.PreviewURL = d.settings.Catalog.PreviewURL + catalogURL
 		}
 	}
 
@@ -195,10 +193,6 @@ func publicSharePresignLifetime(expireUnix int64) time.Duration {
 }
 
 var publicDlHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-	if !d.user.Perm.Download {
-		return http.StatusForbidden, nil
-	}
-
 	cf := d.raw.(*catalogedFile)
 	file := cf.File
 

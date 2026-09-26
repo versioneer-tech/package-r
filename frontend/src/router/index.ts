@@ -4,12 +4,6 @@ import Login from "@/views/Login.vue";
 import Layout from "@/views/Layout.vue";
 import Files from "@/views/Files.vue";
 import Share from "@/views/Share.vue";
-import Users from "@/views/settings/Users.vue";
-import User from "@/views/settings/User.vue";
-import Settings from "@/views/Settings.vue";
-import GlobalSettings from "@/views/settings/Global.vue";
-import ProfileSettings from "@/views/settings/Profile.vue";
-import Shares from "@/views/settings/Shares.vue";
 import Errors from "@/views/Errors.vue";
 import { useAuthStore } from "@/stores/auth";
 import { baseURL, name } from "@/utils/constants";
@@ -21,12 +15,6 @@ const titles = {
   Login: "sidebar.login",
   Share: "buttons.share",
   Files: "files.files",
-  Settings: "sidebar.settings",
-  ProfileSettings: "settings.profileSettings",
-  Shares: "settings.shareManagement",
-  GlobalSettings: "settings.globalSettings",
-  Users: "settings.users",
-  User: "settings.user",
   Forbidden: "errors.forbidden",
   NotFound: "errors.notFound",
   InternalServerError: "errors.internal",
@@ -60,62 +48,6 @@ const routes = [
         path: ":path*",
         name: "Files",
         component: Files,
-      },
-    ],
-  },
-  {
-    path: "/settings",
-    component: Layout,
-    meta: {
-      requiresAuth: true,
-    },
-    children: [
-      {
-        path: "",
-        name: "Settings",
-        component: Settings,
-        redirect: {
-          path: "/settings/profile",
-        },
-        children: [
-          {
-            path: "profile",
-            name: "ProfileSettings",
-            component: ProfileSettings,
-          },
-          {
-            path: "shares",
-            name: "Shares",
-            component: Shares,
-            meta: {
-              requiresAdmin: true,
-            },
-          },
-          {
-            path: "global",
-            name: "GlobalSettings",
-            component: GlobalSettings,
-            meta: {
-              requiresAdmin: true,
-            },
-          },
-          {
-            path: "users",
-            name: "Users",
-            component: Users,
-            meta: {
-              requiresAdmin: true,
-            },
-          },
-          {
-            path: "users/:id",
-            name: "User",
-            component: User,
-            meta: {
-              requiresAdmin: true,
-            },
-          },
-        ],
       },
     ],
   },
@@ -179,47 +111,27 @@ const router = createRouter({
   routes,
 });
 
-router.beforeResolve(async (to, from, next) => {
+router.beforeResolve(async (to) => {
   const title = i18n.global.t(titles[to.name as keyof typeof titles]);
   document.title = title + " - " + name;
 
   const authStore = useAuthStore();
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
 
-  // this will only be null on first route
-  if (from.name == null) {
+  if (requiresAuth && !authStore.isLoggedIn) {
     try {
-      if (to.matched.some((record) => record.meta.requiresAuth)) {
-        await initAuth();
-      }
+      await initAuth();
     } catch (error) {
       console.error(error);
     }
   }
 
-  // if (to.path.endsWith("/login"  ) && authStore.isLoggedIn) {
-  //   next({ path: "/files/" });
-  //   return;
-  // }
-
-  if (to.matched.some((record) => record.meta.requiresAuth)) {
-    if (!authStore.isLoggedIn) {
-      next({
-        path: "/login",
-        query: { redirect: to.fullPath },
-      });
-
-      return;
-    }
-
-    if (to.matched.some((record) => record.meta.requiresAdmin)) {
-      if (authStore.user === null || !authStore.user.perm.admin) {
-        next({ path: "/403" });
-        return;
-      }
-    }
+  if (requiresAuth && !authStore.isLoggedIn) {
+    return {
+      path: "/login",
+      query: { redirect: to.fullPath },
+    };
   }
-
-  next();
 });
 
 export { router, router as default };

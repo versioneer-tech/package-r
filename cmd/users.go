@@ -27,25 +27,22 @@ var usersCmd = &cobra.Command{
 
 func printUsers(usrs []*users.User) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "ID\tUsername\tScope\tLocale\tV. Mode\tS.Click\tAdmin\tExecute\tCreate\tRename\tModify\tDelete\tShare\tDownload\tPwd Lock")
+	fmt.Fprintln(w, "ID\tUsername\tScope\tLocale\tV. Mode\tS.Click\tExecute\tCreate\tRename\tModify\tDelete\tDownload")
 
 	for _, u := range usrs {
-		fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t\n",
+		fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\t%t\t%t\t%t\t%t\t%t\t%t\t%t\t\n",
 			u.ID,
 			u.Username,
 			u.Scope,
 			u.Locale,
 			u.ViewMode,
 			u.SingleClick,
-			u.Perm.Admin,
 			u.Perm.Execute,
 			u.Perm.Create,
 			u.Perm.Rename,
 			u.Perm.Modify,
 			u.Perm.Delete,
-			u.Perm.Share,
 			u.Perm.Download,
-			u.LockPassword,
 		)
 	}
 
@@ -61,17 +58,14 @@ func parseUsernameOrID(arg string) (username string, id uint) {
 }
 
 func addUserFlags(flags *pflag.FlagSet) {
-	flags.Bool("perm.admin", false, "admin perm for users")
 	flags.Bool("perm.execute", false, "execute perm for users")
 	flags.Bool("perm.create", false, "create perm for users")
 	flags.Bool("perm.rename", false, "rename perm for users")
 	flags.Bool("perm.modify", false, "modify perm for users")
 	flags.Bool("perm.delete", false, "delete perm for users")
-	flags.Bool("perm.share", false, "share perm for users")
 	flags.Bool("perm.download", false, "download perm for users")
 	flags.String("sorting.by", "name", "sorting mode (name, size or modified)")
 	flags.Bool("sorting.asc", false, "sorting by ascending order")
-	flags.Bool("lockPassword", false, "lock password")
 	flags.StringSlice("commands", nil, "a list of the commands a user can execute")
 	flags.String("scope", ".", "scope for users")
 	flags.String("locale", "en", "locale for users")
@@ -98,8 +92,6 @@ func getUserDefaults(flags *pflag.FlagSet, defaults *settings.UserDefaults, all 
 			defaults.ViewMode = getViewMode(flags)
 		case "singleClick":
 			defaults.SingleClick = mustGetBool(flags, flag.Name)
-		case "perm.admin":
-			defaults.Perm.Admin = mustGetBool(flags, flag.Name)
 		case "perm.execute":
 			defaults.Perm.Execute = mustGetBool(flags, flag.Name)
 		case "perm.create":
@@ -110,8 +102,6 @@ func getUserDefaults(flags *pflag.FlagSet, defaults *settings.UserDefaults, all 
 			defaults.Perm.Modify = mustGetBool(flags, flag.Name)
 		case "perm.delete":
 			defaults.Perm.Delete = mustGetBool(flags, flag.Name)
-		case "perm.share":
-			defaults.Perm.Share = mustGetBool(flags, flag.Name)
 		case "perm.download":
 			defaults.Perm.Download = mustGetBool(flags, flag.Name)
 		case "commands":

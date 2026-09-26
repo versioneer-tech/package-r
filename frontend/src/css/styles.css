@@ -4,7 +4,6 @@
 @import "./_variables.css";
 @import "./_buttons.css";
 @import "./_inputs.css";
-@import "./_shell.css";
 @import "./_share.css";
 @import "./fonts.css";
 @import "./base.css";
@@ -16,12 +15,6 @@
 @import "./login.css";
 @import "./mobile.css";
 @import "./mdPreview.css";
-
-/* For testing only
- :focus {
-  outline: 2px solid crimson !important;
-  border-radius: 3px !important;
-} */
 
 .link {
   color: var(--blue);
@@ -363,27 +356,6 @@ html[dir="rtl"] .breadcrumbs .chevron {
 
 #editor-container .breadcrumbs i {
   font-size: 1rem;
-}
-
-/* * * * * * * * * * * * * * * *
- *            FOOTER           *
- * * * * * * * * * * * * * * * */
-
-.credits {
-  font-size: 0.6em;
-  margin: 3em 2.5em;
-  color: #a5a5a5;
-}
-
-.credits > span {
-  display: block;
-  margin: 0.3em 0;
-}
-
-.credits a,
-.credits a:hover {
-  color: inherit;
-  cursor: pointer;
 }
 
 /* * * * * * * * * * * * * * * *

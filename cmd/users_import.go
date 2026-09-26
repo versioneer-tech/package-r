@@ -40,13 +40,13 @@ list or set it to 0.`,
 		}
 
 		if mustGetBool(cmd.Flags(), "replace") {
-			oldUsers, err := d.store.Users.Gets("")
+			existingUsers, err := d.store.Users.Gets("")
 			checkErr(err)
 
 			err = marshal("users.backup.json", list)
 			checkErr(err)
 
-			for _, user := range oldUsers {
+			for _, user := range existingUsers {
 				err = d.store.Users.Delete(user.ID)
 				checkErr(err)
 			}

@@ -5,14 +5,12 @@
 <script setup lang="ts">
 import { watch } from "vue";
 import { ModalsContainer, useModal } from "vue-final-modal";
-import { storeToRefs } from "pinia";
 import { useLayoutStore } from "@/stores/layout";
 
 import BaseModal from "./BaseModal.vue";
 import Help from "./Help.vue";
 import Info from "./Info.vue";
 import Delete from "./Delete.vue";
-import DeleteUser from "./DeleteUser.vue";
 import Download from "./Download.vue";
 import Rename from "./Rename.vue";
 import Move from "./Move.vue";
@@ -26,8 +24,6 @@ import Upload from "./Upload.vue";
 import DiscardEditorChanges from "./DiscardEditorChanges.vue";
 
 const layoutStore = useLayoutStore();
-
-const { currentPromptName } = storeToRefs(layoutStore);
 
 const components = new Map<string, any>([
   ["info", Info],
@@ -43,24 +39,29 @@ const components = new Map<string, any>([
   ["replace-rename", ReplaceRename],
   ["share", Share],
   ["upload", Upload],
-  ["deleteUser", DeleteUser],
   ["discardEditorChanges", DiscardEditorChanges],
 ]);
 
-watch(currentPromptName, (newValue) => {
-  const modal = components.get(newValue!);
-  if (!modal) return;
+watch(
+  () => layoutStore.prompts.length,
+  (length, previousLength) => {
+    if (length <= previousLength) return;
 
-  const { open, close } = useModal({
-    component: BaseModal,
-    slots: {
-      default: modal,
-    },
-  });
+    const prompt = layoutStore.prompts[length - 1];
+    const modal = components.get(prompt.prompt);
+    if (!modal) return;
 
-  layoutStore.setCloseOnPrompt(close, newValue!);
-  open();
-});
+    const { open, close } = useModal({
+      component: BaseModal,
+      slots: {
+        default: modal,
+      },
+    });
+
+    layoutStore.setCloseOnCurrentPrompt(close);
+    open();
+  }
+);
 
 window.addEventListener("keydown", (event) => {
   if (!layoutStore.currentPrompt) return;

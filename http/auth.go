@@ -1,9 +1,7 @@
 package http
 
 import (
-	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -27,11 +25,9 @@ type userInfo struct {
 	SingleClick    bool              `json:"singleClick"`
 	Perm           users.Permissions `json:"perm"`
 	Commands       []string          `json:"commands"`
-	LockPassword   bool              `json:"lockPassword"`
 	HideDotfiles   bool              `json:"hideDotfiles"`
 	DateFormat     bool              `json:"dateFormat"`
 	PresignEnabled bool              `json:"presignEnabled"`
-	PreviewEnabled bool              `json:"previewEnabled"`
 }
 
 type authToken struct {
@@ -94,16 +90,6 @@ func withUser(fn handleFunc) handleFunc {
 	}
 }
 
-func withAdmin(fn handleFunc) handleFunc {
-	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-		if !d.user.Perm.Admin {
-			return http.StatusForbidden, nil
-		}
-
-		return fn(w, r, d)
-	})
-}
-
 func loginHandler(tokenExpireTime time.Duration) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		auther, err := d.store.Auth.Get(d.settings.AuthMethod)
@@ -125,61 +111,6 @@ func loginHandler(tokenExpireTime time.Duration) handleFunc {
 	}
 }
 
-type signupBody struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-var signupHandler = func(_ http.ResponseWriter, r *http.Request, d *data) (int, error) {
-	if !d.settings.Signup {
-		return http.StatusMethodNotAllowed, nil
-	}
-
-	if r.Body == nil {
-		return http.StatusBadRequest, nil
-	}
-
-	info := &signupBody{}
-	err := json.NewDecoder(r.Body).Decode(info)
-	if err != nil {
-		return http.StatusBadRequest, err
-	}
-
-	if info.Password == "" || info.Username == "" {
-		return http.StatusBadRequest, nil
-	}
-
-	user := &users.User{
-		Username: info.Username,
-	}
-
-	d.settings.ApplyUserDefaults(user)
-
-	pwd, err := users.HashPwd(info.Password)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-
-	user.Password = pwd
-
-	userScope, err := d.settings.ResolveUserScope(user.Username, user.Scope)
-	if err != nil {
-		log.Printf("create user: failed to resolve user scope: %v", err)
-		return http.StatusInternalServerError, err
-	}
-	user.Scope = userScope
-	log.Printf("new user: %s, scope: [%s].", user.Username, userScope)
-
-	err = d.store.Users.Save(user)
-	if errors.Is(err, appErrors.ErrExist) {
-		return http.StatusConflict, err
-	} else if err != nil {
-		return http.StatusInternalServerError, err
-	}
-
-	return http.StatusOK, nil
-}
-
 func renewHandler(tokenExpireTime time.Duration) handleFunc {
 	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		w.Header().Set("X-Renew-Token", "false")
@@ -195,12 +126,10 @@ func printToken(w http.ResponseWriter, _ *http.Request, d *data, user *users.Use
 			ViewMode:       user.ViewMode,
 			SingleClick:    user.SingleClick,
 			Perm:           user.Perm,
-			LockPassword:   user.LockPassword,
 			Commands:       user.Commands,
 			HideDotfiles:   user.HideDotfiles,
 			DateFormat:     user.DateFormat,
 			PresignEnabled: true,
-			PreviewEnabled: false, // TBD
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

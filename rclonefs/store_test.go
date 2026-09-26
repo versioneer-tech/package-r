@@ -142,29 +142,6 @@ func TestWrappedStoreCreatesUserHomeWhenEnabled(t *testing.T) {
 	}
 }
 
-func TestWrappedStoreDoesNotCreateAdminHome(t *testing.T) {
-	t.Setenv("PACKAGE_R_ROOT", "reports")
-	base := afero.NewMemMapFs()
-	original := &fakeUserStore{
-		user: &users.User{
-			ID:       1,
-			Username: "admin",
-			Scope:    "/",
-			Perm:     users.Permissions{Admin: true},
-		},
-	}
-	wrapped := WrapUsers(original, &staticProvider{fileSystem: base}, &settings.Settings{
-		CreateUserDir: true,
-	})
-
-	if _, err := wrapped.Get("", uint(1)); err != nil {
-		t.Fatal(err)
-	}
-	if exists, err := afero.DirExists(base, "/home/admin"); err != nil || exists {
-		t.Fatalf("expected no generated admin home: exists=%v err=%v", exists, err)
-	}
-}
-
 type staticProvider struct {
 	fileSystem   afero.Fs
 	err          error

@@ -9,8 +9,6 @@ const UPLOADS_LIMIT = 5;
 
 const beforeUnload = (event: Event) => {
   event.preventDefault();
-  // To remove >> is deprecated
-  // event.returnValue = "";
 };
 
 // Utility function to format bytes into a readable string
@@ -26,7 +24,6 @@ function formatSize(bytes: number): string {
 }
 
 export const useUploadStore = defineStore("upload", {
-  // convert to a function
   state: (): {
     id: number;
     sizes: number[];
@@ -47,7 +44,6 @@ export const useUploadStore = defineStore("upload", {
     error: null,
   }),
   getters: {
-    // user and jwt getter removed, no longer needed
     getProgress: (state) => {
       if (state.progress.length === 0) {
         return 0;
@@ -118,7 +114,6 @@ export const useUploadStore = defineStore("upload", {
     getETA: (state) => state.eta,
   },
   actions: {
-    // no context as first argument, use `this` instead
     setProgress({ id, loaded }: { id: number; loaded: Progress }) {
       this.progress[id] = loaded;
     },
@@ -180,7 +175,11 @@ export const useUploadStore = defineStore("upload", {
       if (isFinished) {
         const fileStore = useFileStore();
         window.removeEventListener("beforeunload", beforeUnload);
-        buttons.success("upload");
+        if (this.error) {
+          buttons.done("upload");
+        } else {
+          buttons.success("upload");
+        }
         this.reset();
         fileStore.reload = true;
       }
@@ -216,7 +215,6 @@ export const useUploadStore = defineStore("upload", {
     setETA(value: number) {
       this.eta = value;
     },
-    // easily reset state using `$reset`
     clearUpload() {
       this.$reset();
     },

@@ -98,22 +98,6 @@
           </code>
         </p>
       </template>
-
-      <template v-if="!dir && user?.previewEnabled">
-        <p>
-          <strong>Preview URL: </strong>
-          <code>
-            <a
-              :href="previewURL || 'javascript:void(0)'"
-              @click="preview"
-              @keypress.enter="preview"
-              tabindex="7"
-            >
-              {{ previewURL || $t("prompts.show") }}
-            </a>
-          </code>
-        </p>
-      </template>
     </div>
 
     <div class="card-action">
@@ -146,11 +130,7 @@ export default {
   data() {
     return {
       presignedURL: null,
-      previewURL: null,
     };
-  },
-  mounted() {
-    console.log(this.user);
   },
   computed: {
     ...mapState(useAuthStore, ["user"]),
@@ -254,24 +234,6 @@ export default {
       try {
         const value = await api.presign(link);
         this.presignedURL = value;
-      } catch (e) {
-        this.$showError(e);
-      }
-    },
-    async preview(event) {
-      if (typeof this.previewURL === "string") {
-        return;
-      }
-
-      event.preventDefault();
-
-      const link = this.selectedCount
-        ? this.req.items[this.selected[0]].url
-        : this.$route.path;
-
-      try {
-        const value = await api.preview(link);
-        this.previewURL = value;
       } catch (e) {
         this.$showError(e);
       }

@@ -1,10 +1,20 @@
 # Configuration
 
 packageR reads server options from command-line flags, `PACKAGE_R_`
-environment variables, or its configuration file. Application settings are
-stored in the packageR database and managed with `package-r config`.
+environment variables, or its configuration file. Runtime settings are
+cached in the packageR database and managed with `package-r config`.
 Object-storage credentials belong to the process and are not stored in the
 database or user records.
+
+## Runtime state
+
+packageR is stateless. Object data stays in object storage. The local Bolt
+database is a runtime cache for settings, user records, and public shares. It
+is not the source of the stored data.
+
+For hosted deployments, keep the required configuration and secrets outside
+packageR. `scripts/serve.sh` rebuilds the database from this configuration at
+startup. The database does not need a backup or a persistent volume.
 
 ## Defaults
 
@@ -14,17 +24,17 @@ username/password authentication is the default.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `PACKAGE_R_DATABASE` | `/tmp/package-r.db` | Bolt database path. |
+| `PACKAGE_R_DATABASE` | `/tmp/package-r.db` | Bolt runtime-cache path. |
 | `PACKAGE_R_ADDRESS` | `127.0.0.1` | Listen address. |
 | `PACKAGE_R_PORT` | `8888` | HTTP port. |
 | `PACKAGE_R_LOG` | `stdout` | Log output. |
 | `PACKAGE_R_BASEURL` | Empty | URL path prefix. |
 | `PACKAGE_R_TOKEN_EXPIRATION_TIME` | `2h` | User session lifetime. |
 
-The container image starts with `scripts/serve.sh`. This wrapper
-prepares the database, applies hosted deployment defaults, and then starts packageR. It
-uses JSON username/password authentication unless `PACKAGE_R_AUTH_METHOD`
-selects another method. Public settings use the `PACKAGE_R_` prefix. Internal
+The container image starts with `scripts/serve.sh`. This wrapper prepares the
+database, applies hosted deployment defaults, and then starts packageR. It uses
+JSON username/password authentication unless `PACKAGE_R_AUTH_METHOD` selects
+another method. Public settings use the `PACKAGE_R_` prefix. Internal
 serve-script settings use `SERVE_PACKAGE_R_`.
 
 With empty AWS values, packageR uses the ambient AWS credential chain and AWS
@@ -109,12 +119,13 @@ before it starts packageR:
 | `PACKAGE_R_AUTH_JWT_AUDIENCE` | Empty | Optional expected JWT audience. |
 | `PACKAGE_R_AUTH_JWT_ALGORITHMS` | Effective value `RS256` | Comma-separated allowed JWT algorithms. |
 | `PACKAGE_R_AUTH_JWT_CLOCK_SKEW` | Effective value `1m` | Allowed JWT clock difference. |
-| `PACKAGE_R_SIGNUP` | `true` in the container | Create a user when a valid new identity first connects. |
+| `PACKAGE_R_SIGNUP` | `true` in the container | Create an internal user record when a valid new identity first connects. |
 | `PACKAGE_R_CREATE_USER_DIR` | `false` | Create and protect `/home/<username>`. Requires one bucket in `PACKAGE_R_ROOT`. |
 
 ### Username and password
 
 This is the packageR default. Create users with `package-r users add`.
+The web interface and HTTP API do not manage user records.
 
 ### Trusted identity header
 
@@ -157,9 +168,9 @@ Enable on-demand user creation for proxy authentication:
 PACKAGE_R_SIGNUP=true
 ```
 
-The first request from a valid new identity then creates a non-admin user.
-Set `PACKAGE_R_CREATE_USER_DIR=true` to create `/home/<username>` and hide
-sibling home directories.
+The first request from a valid new identity then creates a user. Set
+`PACKAGE_R_CREATE_USER_DIR=true` to create `/home/<username>` and hide sibling
+home directories.
 
 New users have these defaults:
 
@@ -169,7 +180,6 @@ New users have these defaults:
 | Browse names and directories | Allowed within the scope and path rules |
 | Create, rename, modify, delete | Denied |
 | Download, preview, presigned URL | Denied |
-| Administrator | No |
 
 Default permissions apply only to new users. Existing users keep their stored
 permissions.
@@ -195,9 +205,6 @@ packageR applies these access controls in order:
    from recursive changes. This boundary cannot be overridden by a user rule.
 6. User permission flags control actions such as download, create, rename,
    modify, and delete.
-
-An admin bypasses hidden-file and application-rule checks. An admin does not
-bypass the storage policy, `PACKAGE_R_ROOT`, or their stored scope.
 
 ## Catalogs
 

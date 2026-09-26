@@ -37,13 +37,13 @@ import {
   onBeforeUnmount,
   onMounted,
   onUnmounted,
+  inject,
   ref,
   watch,
 } from "vue";
 import { files as api } from "@/api";
 import { storeToRefs } from "pinia";
 import { useFileStore } from "@/stores/file";
-//import { useAuthStore } from "@/stores/auth";
 import { useLayoutStore } from "@/stores/layout";
 import { useUploadStore } from "@/stores/upload";
 
@@ -60,7 +60,6 @@ import { name } from "../utils/constants";
 const Editor = defineAsyncComponent(() => import("@/views/files/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("@/views/files/Preview.vue"));
 
-//const authStore = useAuthStore();
 const layoutStore = useLayoutStore();
 const fileStore = useFileStore();
 const uploadStore = useUploadStore();
@@ -70,6 +69,7 @@ const { error: uploadError } = storeToRefs(uploadStore);
 
 const route = useRoute();
 const { t } = useI18n({});
+const $showError = inject<IToastError>("$showError")!;
 
 const clean = (path: string) => {
   return path.endsWith("/") ? path.slice(0, -1) : path;
@@ -79,7 +79,6 @@ const error = ref<StatusError | null>(null);
 
 const currentView = computed(() => {
   const req = fileStore.req;
-  //const user = authStore.user;
 
   if (!req || req.type === undefined) {
     return null;
@@ -106,10 +105,6 @@ const currentView = computed(() => {
     return TiffRenderer;
   }
 
-  // if (req.type === "parquet") {
-  //   return ParquetRenderer;
-  // }
-
   return null;
 });
 
@@ -121,7 +116,6 @@ watch(currentView, (view) => {
   }
 });
 
-// Define hooks
 onMounted(() => {
   fetchData();
   fileStore.isFiles = true;
@@ -154,11 +148,13 @@ watch(route, (to, from) => {
 watch(reload, (newValue) => {
   newValue && fetchData();
 });
-watch(uploadError, (newValue) => {
-  newValue && layoutStore.showError();
-});
-
-// Define functions
+watch(
+  uploadError,
+  (newValue) => {
+    if (newValue) $showError(newValue);
+  },
+  { flush: "sync" }
+);
 
 const fetchData = async () => {
   // Reset view information.
@@ -184,7 +180,6 @@ const fetchData = async () => {
       url += url.includes("?") ? "&presign" : "?presign";
     }
     const res = await api.fetch(url);
-    console.log(res);
 
     const requestedPath = route.params.path;
     const expectedPath = Array.isArray(requestedPath)

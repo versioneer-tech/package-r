@@ -51,7 +51,7 @@ func (s *Settings) ApplyUserDirBaseRules(u *users.User) {
 	}
 
 	existingRules := withoutRules(u.Rules, generatedRules)
-	if !s.CreateUserDir || u.Perm.Admin {
+	if !s.CreateUserDir {
 		u.Rules = existingRules
 		return
 	}

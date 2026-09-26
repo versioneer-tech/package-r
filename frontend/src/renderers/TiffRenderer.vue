@@ -51,10 +51,6 @@ async function renderTiff() {
     const fileSize = image?.source?.fileSize ?? 0;
     const fileSizeMB = (fileSize / 1024 / 1024).toFixed(2);
 
-    console.log(
-      `[GeoTIFF] Full resolution: ${fullWidth}×${fullHeight}, ${samples} bands, ${fileSizeMB} MB`
-    );
-
     const targetWidth = 768;
     const scaleFactor = targetWidth / fullWidth;
     const targetHeight = Math.round(fullHeight * scaleFactor);
@@ -88,9 +84,6 @@ async function renderTiff() {
       height: targetHeight,
       interleave: false,
     });
-
-    console.log(`[GeoTIFF] Loaded preview at ${targetWidth}×${targetHeight}`);
-    console.log(`[GeoTIFF] Band 0 sample:`, rasters[0].slice(0, 10));
 
     const bandScales = rasters.map((band) => {
       const min = band.reduce((a, b) => Math.min(a, b));

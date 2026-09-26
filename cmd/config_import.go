@@ -66,8 +66,6 @@ The path must be for a json or yaml file.`,
 		switch file.Settings.AuthMethod {
 		case auth.MethodJSONAuth:
 			auther = getAuther(auth.JSONAuth{}, rawAuther).(*auth.JSONAuth)
-		case auth.MethodNoAuth:
-			auther = getAuther(auth.NoAuth{}, rawAuther).(*auth.NoAuth)
 		case auth.MethodProxyAuth:
 			auther = getAuther(auth.ProxyAuth{}, rawAuther).(*auth.ProxyAuth)
 		case auth.MethodHookAuth:

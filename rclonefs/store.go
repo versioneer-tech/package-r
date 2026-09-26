@@ -70,7 +70,7 @@ func (s *userStore) setFileSystem(user *users.User) error {
 	if err != nil {
 		return err
 	}
-	if s.settings != nil && s.settings.CreateUserDir && !user.Perm.Admin {
+	if s.settings != nil && s.settings.CreateUserDir {
 		username := settings.CleanUsername(user.Username)
 		userHomeBase := strings.TrimSpace(s.settings.UserHomeBasePath)
 		if userHomeBase == "" {

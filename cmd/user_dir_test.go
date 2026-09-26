@@ -37,6 +37,33 @@ func TestUsersAddCreatesGeneratedUserDirHomeScope(t *testing.T) {
 	assertUserBrowseRoot(t, user.FullPath("/"), filepath.Join(rootPath, "home", "alice"))
 }
 
+func TestUsersAddSetsEachPermissionExplicitly(t *testing.T) {
+	dbPath, configPath, rootPath := newConfigTestDB(t)
+
+	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
+	runPackageRCommand(t,
+		"--config", configPath,
+		"--database", dbPath,
+		"users", "add", "initial", "password",
+		"--perm.execute=true",
+		"--perm.create=true",
+		"--perm.rename=true",
+		"--perm.modify=true",
+		"--perm.delete=true",
+		"--perm.download=true",
+	)
+
+	user, err := openTestStorage(t, dbPath).Users.Get(rootPath, "initial")
+	if err != nil {
+		t.Fatal(err)
+	}
+	permissions := user.Perm
+	if !permissions.Execute || !permissions.Create || !permissions.Rename ||
+		!permissions.Modify || !permissions.Delete || !permissions.Download {
+		t.Fatalf("expected every explicit permission to be enabled, got %#v", permissions)
+	}
+}
+
 func assertUserBrowseRoot(t *testing.T, got, want string) {
 	t.Helper()
 

@@ -198,17 +198,13 @@ func (a *HookAuth) SaveUser() (*users.User, error) {
 
 // GetUser returns a User filled with hook values or provided defaults
 func (a *HookAuth) GetUser(d *users.User) *users.User {
-	// adds all permissions when user is admin
-	isAdmin := a.Fields.GetBoolean("user.perm.admin", d.Perm.Admin)
 	perms := users.Permissions{
-		Admin:    isAdmin,
-		Execute:  isAdmin || a.Fields.GetBoolean("user.perm.execute", d.Perm.Execute),
-		Create:   isAdmin || a.Fields.GetBoolean("user.perm.create", d.Perm.Create),
-		Rename:   isAdmin || a.Fields.GetBoolean("user.perm.rename", d.Perm.Rename),
-		Modify:   isAdmin || a.Fields.GetBoolean("user.perm.modify", d.Perm.Modify),
-		Delete:   isAdmin || a.Fields.GetBoolean("user.perm.delete", d.Perm.Delete),
-		Share:    isAdmin || a.Fields.GetBoolean("user.perm.share", d.Perm.Share),
-		Download: isAdmin || a.Fields.GetBoolean("user.perm.download", d.Perm.Download),
+		Execute:  a.Fields.GetBoolean("user.perm.execute", d.Perm.Execute),
+		Create:   a.Fields.GetBoolean("user.perm.create", d.Perm.Create),
+		Rename:   a.Fields.GetBoolean("user.perm.rename", d.Perm.Rename),
+		Modify:   a.Fields.GetBoolean("user.perm.modify", d.Perm.Modify),
+		Delete:   a.Fields.GetBoolean("user.perm.delete", d.Perm.Delete),
+		Download: a.Fields.GetBoolean("user.perm.download", d.Perm.Download),
 	}
 	user := users.User{
 		ID:          d.ID,
@@ -227,7 +223,6 @@ func (a *HookAuth) GetUser(d *users.User) *users.User {
 		DateFormat:   d.DateFormat,
 		Rules:        d.Rules,
 		Perm:         perms,
-		LockPassword: true,
 	}
 
 	return &user
@@ -249,13 +244,11 @@ var validHookFields = []string{
 	"user.sorting.asc",
 	"user.commands",
 	"user.hideDotfiles",
-	"user.perm.admin",
 	"user.perm.execute",
 	"user.perm.create",
 	"user.perm.rename",
 	"user.perm.modify",
 	"user.perm.delete",
-	"user.perm.share",
 	"user.perm.download",
 }
 

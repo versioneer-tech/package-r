@@ -3,7 +3,6 @@ import { detectLocale, setLocale } from "@/i18n";
 import { cloneDeep } from "lodash-es";
 
 export const useAuthStore = defineStore("auth", {
-  // convert to a function
   state: (): {
     user: IUser | null;
     jwt: string;
@@ -12,11 +11,9 @@ export const useAuthStore = defineStore("auth", {
     jwt: "",
   }),
   getters: {
-    // user and jwt getter removed, no longer needed
     isLoggedIn: (state) => state.user !== null,
   },
   actions: {
-    // no context as first argument, use `this` instead
     setUser(user: IUser) {
       if (user === null) {
         this.user = null;
@@ -33,7 +30,6 @@ export const useAuthStore = defineStore("auth", {
 
       this.user = { ...this.user, ...cloneDeep(user) } as IUser;
     },
-    // easily reset state using `$reset`
     clearUser() {
       this.$reset();
     },

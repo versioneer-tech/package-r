@@ -31,10 +31,6 @@ type data struct {
 
 // Check implements rules.Checker.
 func (d *data) Check(path string) bool {
-	if d.user.Perm.Admin {
-		return true
-	}
-
 	path = cleanAccessPath(path)
 	if d.user.HideDotfiles && rules.MatchHidden(path) {
 		return false
@@ -71,7 +67,7 @@ func (d *data) CheckWrite(requestPath string) bool {
 	if requestPath == "/" || !d.Check(requestPath) {
 		return false
 	}
-	if d.user.Perm.Admin || !d.settings.CreateUserDir {
+	if !d.settings.CreateUserDir {
 		return true
 	}
 

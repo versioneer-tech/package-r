@@ -1,9 +1,6 @@
 import { defineStore } from "pinia";
-// import { useAuthPreferencesStore } from "./auth-preferences";
-// import { useAuthEmailStore } from "./auth-email";
 
 export const useLayoutStore = defineStore("layout", {
-  // convert to a function
   state: (): {
     loading: boolean;
     prompts: PopupProps[];
@@ -22,15 +19,13 @@ export const useLayoutStore = defineStore("layout", {
     currentPromptName(): string | null | undefined {
       return this.currentPrompt?.prompt;
     },
-    // user and jwt getter removed, no longer needed
   },
   actions: {
-    // no context as first argument, use `this` instead
     toggleShell() {
       this.showShell = !this.showShell;
     },
-    setCloseOnPrompt(closeFunction: () => Promise<string>, onPrompt: string) {
-      const prompt = this.prompts.find((prompt) => prompt.prompt === onPrompt);
+    setCloseOnCurrentPrompt(closeFunction: () => Promise<string>) {
+      const prompt = this.prompts[this.prompts.length - 1];
       if (prompt) {
         prompt.close = closeFunction;
       }
@@ -55,28 +50,9 @@ export const useLayoutStore = defineStore("layout", {
         close: value?.close,
       });
     },
-    showError() {
-      this.prompts.push({
-        prompt: "error",
-        confirm: null,
-        action: undefined,
-        props: null,
-        close: null,
-      });
-    },
-    showSuccess() {
-      this.prompts.push({
-        prompt: "success",
-        confirm: null,
-        action: undefined,
-        props: null,
-        close: null,
-      });
-    },
     closeHovers() {
-      this.prompts.shift()?.close?.();
+      this.prompts.pop()?.close?.();
     },
-    // easily reset state using `$reset`
     clearLayout() {
       this.$reset();
     },

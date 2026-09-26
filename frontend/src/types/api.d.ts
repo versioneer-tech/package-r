@@ -23,14 +23,6 @@ interface Share {
   description?: string;
 }
 
-interface ConfiguredShare {
-  hash: string;
-  path: string;
-  url: string;
-  expire: number;
-  description?: string;
-}
-
 interface SearchParams {
   [key: string]: string;
 }

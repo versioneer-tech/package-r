@@ -7,19 +7,6 @@
       class="logo-img"
       title="Home"
     />
-    <!-- <Action
-      v-if="showMenu"
-      class="menu-button"
-      icon="menu"
-      :label="t('buttons.toggleSidebar')"
-      @action="layoutStore.showHover('sidebar')"
-    /> -->
-    <Action
-      v-if="showMenu && authStore.user"
-      icon="settings"
-      :label="t('sidebar.settings')"
-      @action="$router.push({ path: '/settings' })"
-    />
     <Action
       v-if="showMenu && authStore.user"
       icon="exit_to_app"

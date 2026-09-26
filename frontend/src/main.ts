@@ -1,6 +1,5 @@
 import { disableExternal } from "@/utils/constants";
 import { createApp } from "vue";
-import VueNumberInput from "@chenfengyuan/vue-number-input";
 import VueLazyload from "vue-lazyload";
 import { createVfm } from "vue-final-modal";
 import Toast, { POSITION, useToast } from "vue-toastification";
@@ -31,7 +30,6 @@ const vfm = createVfm();
 
 const app = createApp(App);
 
-app.component(VueNumberInput.name || "vue-number-input", VueNumberInput);
 app.use(VueLazyload);
 app.use(Toast, {
   transition: "Vue-Toastification__bounce",

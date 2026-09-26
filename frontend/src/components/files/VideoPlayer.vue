@@ -65,13 +65,10 @@ const initVideoPlayer = async () => {
     videojs.addLanguage("videoPlayerLocal", languagePack.default);
     sourceType.value = "";
 
-    //
     sourceType.value = getSourceType(source.value);
 
     const srcOpt = { sources: { src: props.source, type: sourceType.value } };
-    //Supporting localized language display.
     const langOpt = { language: "videoPlayerLocal" };
-    // support for playback at different speeds.
     const playbackRatesOpt = { playbackRates: [0.5, 1, 1.5, 2, 2.5, 3] };
     const options = getOptions(
       props.options,
@@ -112,7 +109,6 @@ const getOptions = (...srcOpt: any[]) => {
   return videojs.obj.merge(options, ...srcOpt);
 };
 
-//  Attempting to fix the issue of being unable to play .MKV format video files
 const getSourceType = (source: string) => {
   const fileExtension = source ? source.split("?")[0].split(".").pop() : "";
   if (fileExtension?.toLowerCase() === "mkv") {

@@ -2,7 +2,7 @@ import { useAuthStore } from "@/stores/auth";
 import router from "@/router";
 import type { JwtPayload } from "jwt-decode";
 import { jwtDecode } from "jwt-decode";
-import { baseURL, noAuth } from "./constants";
+import { baseURL } from "./constants";
 import { StatusError } from "@/api/utils";
 
 export function parseToken(token: string) {
@@ -76,22 +76,6 @@ export async function renew(jwt: string) {
   }
 }
 
-export async function signup(username: string, password: string) {
-  const data = { username, password };
-
-  const res = await fetch(`${baseURL}/api/signup`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (res.status !== 200) {
-    throw new StatusError(`${res.status} ${res.statusText}`, res.status);
-  }
-}
-
 export function logout() {
   document.cookie = "auth=; Max-Age=0; Path=/; SameSite=Strict;";
 
@@ -99,9 +83,5 @@ export function logout() {
   authStore.clearUser();
 
   localStorage.setItem("jwt", "");
-  if (noAuth) {
-    window.location.reload();
-  } else {
-    router.push({ path: "/login" });
-  }
+  router.push({ path: "/login" });
 }

@@ -152,27 +152,6 @@ func TestGeneratedUserDirRulesAllowRootObjectContentAndHideSiblingHomes(t *testi
 	}
 }
 
-func TestAdminBypassesUserDirBaseRules(t *testing.T) {
-	set := &settings.Settings{CreateUserDir: true}
-	user := &users.User{Username: "admin"}
-	set.ApplyUserDefaults(user)
-	user.Perm.Admin = true
-
-	data := &data{
-		settings: &settings.Settings{},
-		user:     user,
-	}
-
-	for _, path := range []string{
-		"/home/bob/file.txt",
-		"/home/alice-other",
-	} {
-		if !data.Check(path) {
-			t.Fatalf("expected admin Check(%q) to be true", path)
-		}
-	}
-}
-
 func assertListingNames(t *testing.T, listing *files.Listing, want []string) {
 	t.Helper()
 

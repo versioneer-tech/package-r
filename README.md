@@ -45,12 +45,18 @@ tar -xzf package-r.tar.gz
 ./package-r version
 ```
 
-Create an administrator and a public share, then start packageR. This example
-publishes the `catalog-sample` prefix from the `data` bucket:
+Create the initial user with explicit permissions and add a public share. This
+example publishes the `catalog-sample` prefix from the `data` bucket:
 
 ```bash
 ./package-r config init
-./package-r users add admin change-this-password --scope=/ --perm.admin=true
+./package-r users add admin change-this-password \
+  --scope=/ \
+  --perm.create=true \
+  --perm.rename=true \
+  --perm.modify=true \
+  --perm.delete=true \
+  --perm.download=true
 ./package-r shares add admin my-share /data/catalog-sample
 
 AWS_ACCESS_KEY_ID=my-access-key \
@@ -63,8 +69,8 @@ If the AWS variables are already exported, run `./package-r` without repeating
 them. Replace the example values, and add `AWS_ENDPOINT_URL` for another
 S3-compatible service.
 
-Open `http://127.0.0.1:8888` and sign in with the administrator account created
-above. The public package is available without an account at
+Open `http://127.0.0.1:8888` and sign in with the initial account created above.
+The public package is available without an account at
 `http://127.0.0.1:8888/share/my-share/`.
 
 We also provide a container image at
@@ -80,8 +86,8 @@ docker run --rm -p 127.0.0.1:8888:8888 \
   ghcr.io/versioneer-tech/package-r:latest
 ```
 
-`SERVE_PACKAGE_R_PASSWORD` sets the initial administrator password. It does
-not protect the public package. To require a share password, add
+`SERVE_PACKAGE_R_PASSWORD` sets the initial user password. It does not protect
+the public package. To require a share password, add
 `-e SERVE_PACKAGE_R_DEFAULT_SHARE_PASSWORDS='my-share=share-password'` to the
 Docker command.
 

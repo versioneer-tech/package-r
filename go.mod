@@ -17,7 +17,6 @@ require (
 	github.com/maruel/natural v1.3.0
 	github.com/marusama/semaphore/v2 v2.5.0
 	github.com/mholt/archives v0.1.5
-	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/rclone/rclone v1.75.1
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.2
@@ -25,10 +24,8 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce
-	go.etcd.io/bbolt v1.5.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/image v0.46.0
-	golang.org/x/text v0.42.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -122,6 +119,7 @@ require (
 	github.com/ncw/swift/v2 v2.0.5 // indirect
 	github.com/nwaples/rardecode/v2 v2.2.5 // indirect
 	github.com/oklog/ulid/v2 v2.1.2 // indirect
+	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/peterh/liner v1.2.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.30 // indirect
 	github.com/pkg/xattr v0.4.12 // indirect
@@ -145,6 +143,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/blake3 v0.2.4 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
+	go.etcd.io/bbolt v1.5.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	go4.org v0.0.0-20260112195520-a5071408f32f // indirect
@@ -153,6 +152,7 @@ require (
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

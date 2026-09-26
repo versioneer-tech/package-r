@@ -30,15 +30,20 @@ func presignOrLocalURL(
 	return linker.PublicLink(r.Context(), user, filePath, lifetime)
 }
 
-func localRawURL(r *http.Request, filePath string) string {
-	return localRequestURL(r, "/api/raw"+slashClean(filePath))
+func localRawURL(r *http.Request, baseURL, filePath string) string {
+	return localRequestURL(r, baseURL, "/api/raw"+slashClean(filePath))
 }
 
-func localPublicDownloadURL(r *http.Request) string {
-	return localRequestURL(r, "/api/public/dl/"+strings.TrimPrefix(r.URL.Path, "/"))
+func localPublicDownloadURL(r *http.Request, baseURL string) string {
+	return localRequestURL(r, baseURL, "/api/public/dl/"+strings.TrimPrefix(r.URL.Path, "/"))
 }
 
-func localRequestURL(r *http.Request, urlPath string) string {
+func localRequestURL(r *http.Request, baseURL, urlPath string) string {
+	urlPath = "/" + strings.TrimPrefix(urlPath, "/")
+	if baseURL = strings.Trim(baseURL, "/"); baseURL != "" {
+		urlPath = "/" + baseURL + urlPath
+	}
+
 	return (&url.URL{
 		Scheme: requestScheme(r),
 		Host:   r.Host,

@@ -76,41 +76,6 @@ func TestApplyUserDefaultsUsesConfiguredUserHomeBasePath(t *testing.T) {
 	assertRegexRule(t, user.Rules[1], true, `^/users/alice(/|$)`)
 }
 
-func TestApplyUserDefaultsSkipsUserDirBaseRulesForAdmins(t *testing.T) {
-	set := Settings{
-		CreateUserDir: true,
-		Defaults: UserDefaults{
-			Perm: users.Permissions{Admin: true},
-		},
-	}
-	user := &users.User{Username: "alice"}
-
-	set.ApplyUserDefaults(user)
-
-	if len(user.Rules) != 0 {
-		t.Fatalf("expected admin to have no generated user dir rules, got %#v", user.Rules)
-	}
-}
-
-func TestApplyUserDirBaseRulesRemovesGeneratedRulesForAdmins(t *testing.T) {
-	set := Settings{CreateUserDir: true}
-	user := &users.User{
-		Username: "alice",
-		Perm:     users.Permissions{Admin: true},
-		Rules: []rules.Rule{
-			denyUserDirBaseRule("/home"),
-			allowUserDirBaseRule("/home/alice"),
-			{Allow: true, Path: "/custom"},
-		},
-	}
-
-	set.ApplyUserDirBaseRules(user)
-
-	if len(user.Rules) != 1 || user.Rules[0].Path != "/custom" {
-		t.Fatalf("expected admin to keep only custom rules, got %#v", user.Rules)
-	}
-}
-
 func TestApplyUserDefaultsSkipsUserDirBaseRulesWhenDisabled(t *testing.T) {
 	set := Settings{}
 	user := &users.User{Username: "alice"}

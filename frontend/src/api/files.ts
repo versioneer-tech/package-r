@@ -190,11 +190,6 @@ export async function presign(url: string) {
   return (await data.json()).presignedURL;
 }
 
-export async function preview(url: string) {
-  const data = await resourceAction(`${url}?preview=true`, "GET");
-  return (await data.json()).previewURL;
-}
-
 export function getDownloadURL(file: ResourceItem, inline: any) {
   if (file.presignedURL) {
     return file.presignedURL;
@@ -226,12 +221,4 @@ export function getSubtitlesURL(file: ResourceItem) {
   };
 
   return file.subtitles?.map((d) => createURL("api/subtitle" + d, params));
-}
-
-export async function usage(url: string) {
-  url = removePrefix(url);
-
-  const res = await fetchURL(`/api/usage${url}`, {});
-
-  return await res.json();
 }
