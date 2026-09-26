@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://package-r.versioneer.at/vnext.1.0.0-rc.1/</loc>
+         <lastmod>2026-09-26</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/vnext.1.0.0-rc.1/architecture/0001-use-rclone-vfs-for-object-storage/</loc>
+         <lastmod>2026-09-26</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/vnext.1.0.0-rc.1/architecture/0002-publish-parquet-catalogs-as-stac/</loc>
+         <lastmod>2026-09-26</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/vnext.1.0.0-rc.1/how-to-guides/configuration/</loc>
+         <lastmod>2026-09-26</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/vnext.1.0.0-rc.1/how-to-guides/kubernetes/</loc>
+         <lastmod>2026-09-26</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/vnext.1.0.0-rc.1/how-to-guides/share-and-preview-data/</loc>
+         <lastmod>2026-09-26</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/vnext.1.0.0-rc.1/how-to-guides/work-with-objects/</loc>
+         <lastmod>2026-09-26</lastmod>
+    </url>
+    <url>
+         <loc>https://package-r.versioneer.at/vnext.1.0.0-rc.1/reference-guides/http-api/</loc>
+         <lastmod>2026-09-26</lastmod>
+    </url>
+</urlset>
