@@ -1,24 +1,51 @@
 # Configuration
 
-packageR reads bootstrap settings from environment variables. Object-storage
-credentials and the endpoint belong to the process. `init.sh` does not store
-them in the packageR database or user records.
+packageR reads server options from command-line flags, `PACKAGE_R_`
+environment variables, or its configuration file. Application settings are
+stored in the packageR database and managed with `package-r config`.
+Object-storage credentials belong to the process and are not stored in the
+database or user records.
+
+## Defaults
+
+packageR listens on `127.0.0.1:8888` and uses `/tmp/package-r.db` by default.
+Create the database and its first user before you start the server. JSON
+username/password authentication is the default.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `PACKAGE_R_DATABASE` | `/tmp/package-r.db` | Bolt database path. |
+| `PACKAGE_R_ADDRESS` | `127.0.0.1` | Listen address. |
+| `PACKAGE_R_PORT` | `8888` | HTTP port. |
+| `PACKAGE_R_LOG` | `stdout` | Log output. |
+| `PACKAGE_R_BASEURL` | Empty | URL path prefix. |
+| `PACKAGE_R_TOKEN_EXPIRATION_TIME` | `2h` | User session lifetime. |
+
+The container image starts with `scripts/serve.sh`. This wrapper
+prepares the database, applies hosted deployment defaults, and then starts packageR. It
+uses JSON username/password authentication unless `PACKAGE_R_AUTH_METHOD`
+selects another method. Public settings use the `PACKAGE_R_` prefix. Internal
+serve-script settings use `SERVE_PACKAGE_R_`.
+
+With empty AWS values, packageR uses the ambient AWS credential chain and AWS
+S3. Storage requests fail if that chain does not provide usable credentials.
 
 ## Object storage
 
 These values configure rclone VFS and presigned links.
 
-| Variable | Required | Description |
-| --- | --- | --- |
-| `AWS_ACCESS_KEY_ID` | With static credentials | S3 access key. Set it with `AWS_SECRET_ACCESS_KEY`. |
-| `AWS_SECRET_ACCESS_KEY` | With static credentials | S3 secret key. Set it with `AWS_ACCESS_KEY_ID`. |
-| `AWS_SESSION_TOKEN` | For temporary static keys | Optional session token. |
-| `AWS_ROLE_ARN` | Injected for web identity | Role used by workload identity, including AWS IRSA. |
-| `AWS_WEB_IDENTITY_TOKEN_FILE` | Injected for web identity | Path to the projected workload token. |
-| `AWS_ROLE_SESSION_NAME` | No | Optional web-identity role session name. |
-| `PACKAGE_R_ROOT` | No | `/` for the S3 service root, or one bucket name. The default is `/`. |
-| `AWS_ENDPOINT_URL` | For custom endpoints | S3-compatible API endpoint. If empty, rclone uses AWS S3. |
-| `AWS_REGION` | Service dependent | S3 region. |
+| Variable | Default | Required | Description |
+| --- | --- | --- | --- |
+| `AWS_ACCESS_KEY_ID` | Empty | With static credentials | S3 access key. Set it with `AWS_SECRET_ACCESS_KEY`. |
+| `AWS_SECRET_ACCESS_KEY` | Empty | With static credentials | S3 secret key. Set it with `AWS_ACCESS_KEY_ID`. |
+| `AWS_SESSION_TOKEN` | Empty | For temporary static keys | Optional session token. |
+| `AWS_ROLE_ARN` | Empty | Injected for web identity | Role used by workload identity, including AWS IRSA. |
+| `AWS_WEB_IDENTITY_TOKEN_FILE` | Empty | Injected for web identity | Path to the projected workload token. |
+| `AWS_ROLE_SESSION_NAME` | Empty | No | Optional web-identity role session name. |
+| `PACKAGE_R_ROOT` | `/` | No | S3 service root, or one bucket name. |
+| `AWS_ENDPOINT_URL` | Empty | For custom endpoints | S3-compatible API endpoint. An empty value selects AWS S3. |
+| `AWS_REGION` | Empty | Service dependent | S3 region. The credential provider can supply it. |
+| `XDG_CACHE_HOME` | Platform user cache directory | No | Parent directory for the rclone VFS and DuckDB caches. |
 
 Choose one credential mode:
 
@@ -37,15 +64,19 @@ The service keeps one rclone VFS instance. User settings cannot change its
 endpoint, credentials, or root. The credential provider refreshes temporary
 credentials when the selected identity method supports refresh.
 
-Chunked and seek-based uploads use the rclone VFS write cache. The cache must
-be writable and have enough free space. On Linux, it is normally at
-`$HOME/.cache/rclone` or below `$XDG_CACHE_HOME`. Storage initialization fails
-if the cache is not available.
+Chunked and seek-based uploads use the rclone VFS write cache. Set
+`XDG_CACHE_HOME` to choose its parent directory. For example,
+`XDG_CACHE_HOME=/var/cache/package-r` places the VFS cache below
+`/var/cache/package-r/rclone`. If the variable is unset on Linux, the default
+is `$HOME/.cache/rclone`. The directory must be writable and have enough free
+space. Storage initialization fails if it is not available.
 
-DuckDB uses `httpfs` to read catalog URLs. The first query installs the
-extension if it is not cached. Its cache is under
-`package-r/duckdb-extensions` in the user cache directory. Catalog storage
-must support ranged `GET` requests and may receive `HEAD` requests.
+DuckDB uses the same cache root. With the example above, its `httpfs` extension
+is stored under `/var/cache/package-r/package-r/duckdb-extensions`. The first
+catalog query downloads the extension if it is not cached. A writable
+temporary volume is sufficient. A persistent volume avoids downloading it
+again after each restart. Catalog storage must support ranged `GET` requests
+and may receive `HEAD` requests.
 
 With `PACKAGE_R_ROOT=/`, the top-level entries are buckets. The credentials
 need permission to list buckets. On AWS, this is
@@ -62,54 +93,94 @@ packageR and viewer origins. Allow `GET`, `HEAD`, and the `Range` request
 header. Expose `Accept-Ranges`, `Content-Range`, `Content-Length`, and `ETag`.
 Storage proxies must preserve range requests and `206` responses.
 
-## Application state
+## Authentication and authorization
 
-| Variable | Description |
+packageR uses JSON username/password authentication by default. It does not
+create a default account. The container applies these environment variables
+before it starts packageR:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `PACKAGE_R_AUTH_METHOD` | `json` | Use `proxy` for a trusted header or JWT. |
+| `PACKAGE_R_AUTH_HEADER` | `Authorization` | Header that contains the trusted identity or bearer JWT. |
+| `PACKAGE_R_AUTH_MAPPER` | `.sub` with `Authorization`, otherwise empty | Use the full header value, or set `.<claim>` to select a token claim. |
+| `PACKAGE_R_AUTH_JWT_JWKS_URL` | Empty | JWKS URL for strict JWT validation. |
+| `PACKAGE_R_AUTH_JWT_ISSUER` | Empty | Required issuer when JWKS validation is enabled. |
+| `PACKAGE_R_AUTH_JWT_AUDIENCE` | Empty | Optional expected JWT audience. |
+| `PACKAGE_R_AUTH_JWT_ALGORITHMS` | Effective value `RS256` | Comma-separated allowed JWT algorithms. |
+| `PACKAGE_R_AUTH_JWT_CLOCK_SKEW` | Effective value `1m` | Allowed JWT clock difference. |
+| `PACKAGE_R_SIGNUP` | `true` in the container | Create a user when a valid new identity first connects. |
+| `PACKAGE_R_CREATE_USER_DIR` | `false` | Create and protect `/home/<username>`. Requires one bucket in `PACKAGE_R_ROOT`. |
+
+### Username and password
+
+This is the packageR default. Create users with `package-r users add`.
+
+### Trusted identity header
+
+Use a header that contains the username:
+
+```ini
+PACKAGE_R_AUTH_METHOD=proxy
+PACKAGE_R_AUTH_HEADER=X-Username
+PACKAGE_R_AUTH_MAPPER=
+```
+
+packageR trusts the complete header value. The upstream proxy must authenticate
+the request and replace any client-supplied `X-Username` header.
+
+### Validated JWT
+
+Use `Authorization: Bearer <token>`, a JWKS URL, and the claim that identifies
+the user:
+
+```ini
+PACKAGE_R_AUTH_METHOD=proxy
+PACKAGE_R_AUTH_HEADER=Authorization
+PACKAGE_R_AUTH_MAPPER=.sub
+PACKAGE_R_AUTH_JWT_JWKS_URL=https://identity.example/.well-known/jwks.json
+PACKAGE_R_AUTH_JWT_ISSUER=https://identity.example/
+PACKAGE_R_AUTH_JWT_AUDIENCE=package-r
+```
+
+The mapper selects the packageR username. It does not limit token validation.
+Use `.sub` unless the identity provider defines another stable, unique claim.
+
+If claim mapping is set without a JWKS URL, packageR logs a warning and only
+decodes the token. This is allowed for a trusted upstream proxy.
+
+### On-demand users
+
+Enable on-demand user creation for proxy authentication:
+
+```ini
+PACKAGE_R_SIGNUP=true
+```
+
+The first request from a valid new identity then creates a non-admin user.
+Set `PACKAGE_R_CREATE_USER_DIR=true` to create `/home/<username>` and hide
+sibling home directories.
+
+New users have these defaults:
+
+| Setting | Default |
 | --- | --- |
-| `PACKAGE_R_DATABASE` | Temporary Bolt database path. The default is `/tmp/package-r.db`. |
-| `PACKAGE_R_SERVER_PORT` | HTTP port. The default is `8888`. |
-| `PACKAGE_R_DEFAULT_SHARES` | Semicolon-separated `hash=path` shares to create during bootstrap. |
-| `PACKAGE_R_DEFAULT_SHARE_PASSWORDS` | Optional semicolon-separated `hash=password` values for configured shares. |
+| Scope | `/` |
+| Browse names and directories | Allowed within the scope and path rules |
+| Create, rename, modify, delete | Denied |
+| Download, preview, presigned URL | Denied |
+| Administrator | No |
 
-`init.sh --add-shares hash=path` adds shares for one bootstrap run.
-`--add-share-passwords hash=password` adds their passwords. Do not put
-password values in logs. Read them from a secret when possible. Use
-`init.sh --serve` to start the service after bootstrap.
+Default permissions apply only to new users. Existing users keep their stored
+permissions.
 
-Keep `PACKAGE_R_DATABASE` on temporary storage. `init.sh` rebuilds this runtime
-state. Define public shares and their passwords in bootstrap configuration.
+User-directory mode does not limit the user to their home directory. The
+default scope remains `/`. It hides other home directories and protects
+`/home` from recursive changes. Set an explicit user scope or additional rules
+to restrict access outside the user's home.
 
-## Authentication and user scope
-
-| Variable | Description |
-| --- | --- |
-| `PACKAGE_R_AUTH_METHOD` | `proxy` for a trusted identity header, or `none` for a controlled deployment. The default is `proxy`. |
-| `PACKAGE_R_AUTH_HEADER` | Proxy header that contains the user identity. The default is `X-Username`. |
-| `PACKAGE_R_AUTH_MAPPER` | Empty for the raw header, `.<claim>` for a JSON or JWT claim, or a fixed username. |
-| `PACKAGE_R_AUTH_JWT_JWKS_URL` | JWKS URL for strict validation of JWT proxy headers. |
-| `PACKAGE_R_AUTH_JWT_ISSUER` | Required issuer when JWKS validation is enabled. |
-| `PACKAGE_R_AUTH_JWT_AUDIENCE` | Optional expected JWT audience. |
-| `PACKAGE_R_AUTH_JWT_ALGORITHMS` | Allowed JWT algorithms. The default is `RS256`. |
-| `PACKAGE_R_AUTH_JWT_CLOCK_SKEW` | Allowed JWT clock difference. The default is `1m`. |
-| `PACKAGE_R_CREATE_USER_DIR` | Protects `/home/<username>` from sibling non-admin users. The default is `false`. Requires one bucket in `PACKAGE_R_ROOT`. |
-
-When `PACKAGE_R_CREATE_USER_DIR=true`, packageR protects new and existing
-non-admin users. A user can open `/home` and their own home directory. Sibling
-homes are hidden. The user cannot change `/home` or an ancestor because a
-recursive action could change another user's data.
-
-The default user scope is `/`. Other rules can allow access outside `/home`.
-An explicit scope limits a user to that path. Global settings can change the
-home base from `/home` to another path, such as `/users`.
-
-packageR refuses to start when `PACKAGE_R_CREATE_USER_DIR=true` and `PACKAGE_R_ROOT=/`.
-An S3 service root contains buckets, so `/home/<username>` cannot be a user
-directory at that level.
-
-Proxy authentication trusts the configured identity header. The reverse proxy
-must remove a client value before it sets this header. To validate a JWT, set
-`PACKAGE_R_AUTH_JWT_JWKS_URL` and an issuer. Without a JWKS URL, claim mapping
-only decodes the trusted proxy value.
+User-directory mode requires one bucket in `PACKAGE_R_ROOT`. packageR refuses
+to start when user-directory mode is enabled and `PACKAGE_R_ROOT=/`.
 
 ## How access is calculated
 
@@ -128,42 +199,18 @@ packageR applies these access controls in order:
 An admin bypasses hidden-file and application-rule checks. An admin does not
 bypass the storage policy, `PACKAGE_R_ROOT`, or their stored scope.
 
-By default, user-directory mode is off and new non-admin users have scope `/`.
-Permission flags still control their actions. User-directory mode hides
-sibling homes but does not limit a root-scoped user to their home.
-`PACKAGE_R_ALLOW_CHANGING=false` prevents create, delete, modify, and rename
-actions. When it is `true`, these actions are still denied for sibling homes
-and the shared home directory.
+## Catalogs
 
-## Permissions and catalogs
+The standalone binary reads these catalog environment variables directly.
+They override catalog settings stored in the database for the running process.
 
-| Variable | Description |
-| --- | --- |
-| `PACKAGE_R_ALLOW_CHANGING` | Enables create, delete, modify, and rename for default non-admin users. The default is `false`. |
-| `PACKAGE_R_CATALOG_DEFAULT_NAME` | Relative Parquet catalog path inside a share. The default is `catalog.parquet`. |
-| `PACKAGE_R_CATALOG_PREVIEW_URL` | Optional external viewer prefix for public catalog preview links. |
-| `PACKAGE_R_CATALOG_ASSET_MAPPINGS` | Optional JSON array of `from` URL prefixes and relative `to` paths. |
+| Variable | Default | Description |
+| --- | --- | --- |
+| `PACKAGE_R_CATALOG_DEFAULT_NAME` | `catalog.parquet` | Relative Parquet catalog path inside a share. |
+| `PACKAGE_R_CATALOG_PREVIEW_URL` | Empty | Optional external viewer prefix for public catalog preview links. |
+| `PACKAGE_R_CATALOG_ASSET_MAPPINGS` | Empty | Optional JSON array of `from` URL prefixes and relative `to` paths. |
 
 Catalog names must stay inside the shared path. Absolute names and parent-path
 escapes are invalid. Most catalogs do not need asset mappings.
-
-## Bootstrap behavior
-
-`init.sh` applies these settings:
-
-- disables commands and command execution
-- disables generated thumbnails and server-side preview resize
-- creates or updates the runtime configuration
-- creates configured public shares and applies their passwords
-- disables authenticated share creation and deletion
-
-The selected credential source must be available to packageR. A successful
-bootstrap does not prove that the server can connect to S3.
-
-## Runtime limits
-
-- Presigned URLs support GET and have a maximum lifetime of seven days
-- `/api/usage` returns `501 Not Implemented`
-- Object rename and move can use copy and delete operations
 
 See the [HTTP API](../reference-guides/http-api.md) for route behavior.

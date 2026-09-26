@@ -13,7 +13,7 @@ var (
 	// ErrInvalidRoot reports an PACKAGE_R_ROOT value that is not / or one bucket name.
 	ErrInvalidRoot = errors.New("PACKAGE_R_ROOT must be / or one S3 bucket name without /")
 	// ErrUserDirNeedsBucket reports a generated user directory without one bucket.
-	ErrUserDirNeedsBucket = errors.New("PACKAGE_R_CREATE_USER_DIR=true requires PACKAGE_R_ROOT to name one S3 bucket; PACKAGE_R_ROOT=/ exposes the S3 service root")
+	ErrUserDirNeedsBucket = errors.New("user-directory mode requires PACKAGE_R_ROOT to name one S3 bucket; PACKAGE_R_ROOT=/ exposes the S3 service root")
 	// ErrInvalidObjectPath reports a path outside the user's storage scope.
 	ErrInvalidObjectPath = errors.New("invalid object path")
 )
@@ -58,6 +58,12 @@ func (c Config) ValidateFilesystem() error {
 // provider chain instead of a configured static key pair.
 func (c Config) UsesAmbientCredentials() bool {
 	return strings.TrimSpace(c.AccessKeyID) == "" && strings.TrimSpace(c.SecretAccessKey) == ""
+}
+
+// UsesAWSServiceRootWithoutRegion reports a configuration that makes rclone
+// default to us-east-1 while it browses buckets at the AWS service root.
+func (c Config) UsesAWSServiceRootWithoutRegion() bool {
+	return c.Bucket == "" && strings.TrimSpace(c.Endpoint) == "" && strings.TrimSpace(c.Region) == ""
 }
 
 // ValidateRoot checks that the root is the S3 service root or one bucket.

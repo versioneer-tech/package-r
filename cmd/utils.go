@@ -97,11 +97,11 @@ func python(fn pythonFunc, cfg pythonConfig) cobraFunc {
 		if err != nil {
 			panic(err)
 		} else if exists && cfg.noDB {
-			log.Fatal(absPath + " already exists")
+			log.Fatalf("database already exists at %s", absPath)
 		} else if !exists && !cfg.noDB && !cfg.allowNoDB {
-			log.Fatal(absPath + " does not exist. Please run 'package-r config init' first.")
+			log.Fatalf(`database not found at %s; initialize config and add users first`, absPath)
 		} else if !exists && !cfg.noDB {
-			log.Println("Warning: package-r.db can't be found. Initializing in " + strings.TrimSuffix(absPath, "package-r.db"))
+			log.Printf("database not found at %s; creating it", absPath)
 		}
 
 		log.Println("Using database: " + absPath)

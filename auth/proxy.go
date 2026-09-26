@@ -20,7 +20,7 @@ import (
 	"github.com/versioneer-tech/package-r/users"
 )
 
-// MethodProxyAuth is used to identify no auth.
+// MethodProxyAuth identifies authentication through an HTTP header.
 const MethodProxyAuth settings.AuthMethod = "proxy"
 
 // ProxyAuth is a proxy implementation of an auther.
@@ -87,8 +87,21 @@ func (a ProxyAuth) strictJWTEnabled() bool {
 	return strings.TrimSpace(a.JWTJwksURL) != ""
 }
 
+// UsesUnverifiedClaimMapping reports claim mapping without JWKS validation.
+func (a ProxyAuth) UsesUnverifiedClaimMapping() bool {
+	return strings.HasPrefix(a.Mapper, ".") && !a.strictJWTEnabled()
+}
+
 func (a ProxyAuth) claimName() string {
 	return strings.TrimLeft(a.Mapper, ".")
+}
+
+func bearerToken(value string) string {
+	parts := strings.Fields(value)
+	if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+		return parts[1]
+	}
+	return value
 }
 
 func (a ProxyAuth) allowedJWTAlgorithms() []string {
@@ -269,6 +282,7 @@ func (a ProxyAuth) Extract(r *http.Request) (string, bool) {
 	if a.Mapper[0] != '.' {
 		return a.Mapper, true
 	}
+	header = bearerToken(header)
 	var claims map[string]interface{}
 	var ok bool
 	if a.strictJWTEnabled() {

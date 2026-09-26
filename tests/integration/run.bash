@@ -212,30 +212,25 @@ common_env=(
   "HOME=${tmp_dir}/home"
   "PATH=${PATH}"
   "RCLONE_CONFIG=/dev/null"
-  "PACKAGE_R_BIN=${tmp_dir}/package-r"
+  "SERVE_PACKAGE_R_BIN=${tmp_dir}/package-r"
   "PACKAGE_R_DATABASE=${tmp_dir}/package-r.db"
   "PACKAGE_R_ROOT=/"
-  "PACKAGE_R_SERVER_PORT=${package_r_port}"
+  "PACKAGE_R_PORT=${package_r_port}"
   "PACKAGE_R_AUTH_METHOD=proxy"
   "PACKAGE_R_AUTH_HEADER=X-Username"
-  "PACKAGE_R_ALLOW_CHANGING=true"
-  "PACKAGE_R_DEFAULT_SHARES=${SHARE_NAME}=/${BUCKET}/${SHARED_PREFIX}"
-  "PACKAGE_R_DEFAULT_SHARE_PASSWORDS=${SHARE_NAME}=${SHARE_PASSWORD}"
-  "PACKAGE_R_PASSWORD=my-password"
+  "SERVE_PACKAGE_R_ALLOW_CHANGING=true"
+  "SERVE_PACKAGE_R_DEFAULT_SHARES=${SHARE_NAME}=/${BUCKET}/${SHARED_PREFIX}"
+  "SERVE_PACKAGE_R_DEFAULT_SHARE_PASSWORDS=${SHARE_NAME}=${SHARE_PASSWORD}"
+  "SERVE_PACKAGE_R_PASSWORD=my-password"
   "AWS_ACCESS_KEY_ID=${ACCESS_KEY_ID}"
   "AWS_SECRET_ACCESS_KEY=${SECRET_ACCESS_KEY}"
   "AWS_ENDPOINT_URL=${rclone_url}"
   "AWS_REGION=us-east-1"
 )
 
-log "Bootstrapping isolated packageR state"
-env -i "${common_env[@]}" \
-  "${REPO_ROOT}/init.sh" \
-  >"${tmp_dir}/init.log" 2>&1
-
 log "Starting packageR on ${package_r_url}"
 env -i "${common_env[@]}" \
-  "${tmp_dir}/package-r" -a 127.0.0.1 -p "${package_r_port}" \
+  "${REPO_ROOT}/scripts/serve.sh" \
   >"${tmp_dir}/package-r.log" 2>&1 &
 package_r_pid=$!
 wait_for_http "${package_r_url}/health" "packageR" "${tmp_dir}/package-r.log" "${package_r_pid}" 200

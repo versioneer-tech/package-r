@@ -56,6 +56,58 @@ func TestConfiguredShareGetsIsReadOnlyAndDoesNotRequireSharePermission(t *testin
 	}
 }
 
+func TestConfiguredShareListIsReadOnlyAndRequiresAdmin(t *testing.T) {
+	root, store, user := newPresignTestStorage(t)
+	if err := store.Share.Save(&share.Link{
+		Hash:         "my-share",
+		Path:         "/catalog-sample",
+		UserID:       user.ID,
+		Description:  "configured share",
+		PasswordHash: "must-not-be-returned",
+		Token:        "must-not-be-returned",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	handler := handle(configuredShareListHandler, "", store, &settings.Server{Root: root})
+	token := newTestAuthToken(t, store, user)
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/shares", http.NoBody)
+	req.Header.Set("X-Auth", token)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("expected status 403 for a non-admin user, got %d", recorder.Code)
+	}
+
+	user.Perm.Admin = true
+	if err := store.Users.Update(user, "Perm"); err != nil {
+		t.Fatal(err)
+	}
+	token = newTestAuthToken(t, store, user)
+	req = httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/shares", http.NoBody)
+	req.Header.Set("X-Auth", token)
+	recorder = httptest.NewRecorder()
+	handler.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+	if strings.Contains(recorder.Body.String(), "must-not-be-returned") {
+		t.Fatal("share list exposed a secret field")
+	}
+
+	var links []configuredShareListItem
+	if err := json.NewDecoder(recorder.Body).Decode(&links); err != nil {
+		t.Fatal(err)
+	}
+	if len(links) != 1 {
+		t.Fatalf("expected one configured share, got %d", len(links))
+	}
+	if links[0].Hash != "my-share" || links[0].Path != "/catalog-sample" || links[0].URL != "/share/my-share" {
+		t.Fatalf("unexpected configured share: %#v", links[0])
+	}
+}
+
 func TestConfiguredSharesForPathIncludesEnclosingShares(t *testing.T) {
 	links := []*share.Link{
 		{Hash: "xyz-public", Path: "/public"},

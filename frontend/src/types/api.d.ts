@@ -1,10 +1,7 @@
 type ApiMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 type ApiContent =
-  | Blob
-  | File
-  | Pick<ReadableStreamDefaultReader<any>, "read">
-  | "";
+  Blob | File | Pick<ReadableStreamDefaultReader<any>, "read"> | "";
 
 interface ApiOpts {
   method?: ApiMethod;
@@ -23,6 +20,14 @@ interface Share {
   hash: string;
   url: string;
   expire?: any;
+  description?: string;
+}
+
+interface ConfiguredShare {
+  hash: string;
+  path: string;
+  url: string;
+  expire: number;
   description?: string;
 }
 

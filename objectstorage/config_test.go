@@ -79,6 +79,26 @@ func TestUsesAmbientCredentials(t *testing.T) {
 	}
 }
 
+func TestUsesAWSServiceRootWithoutRegion(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		config Config
+		want   bool
+	}{
+		{name: "service root", config: Config{}, want: true},
+		{name: "service root with whitespace", config: Config{Endpoint: " ", Region: "\t"}, want: true},
+		{name: "configured region", config: Config{Region: "eu-central-1"}},
+		{name: "configured bucket", config: Config{Bucket: "reports"}},
+		{name: "custom endpoint", config: Config{Endpoint: "https://objects.example.invalid"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := test.config.UsesAWSServiceRootWithoutRegion(); got != test.want {
+				t.Fatalf("expected warning condition %t, got %t", test.want, got)
+			}
+		})
+	}
+}
+
 func TestLoadRoot(t *testing.T) {
 	for _, test := range []struct {
 		name string

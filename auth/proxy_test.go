@@ -55,6 +55,44 @@ func TestProxyAuthKeepsTrustedProxyUnverifiedJWTDecode(t *testing.T) {
 	}
 }
 
+func TestProxyAuthReportsUnverifiedClaimMapping(t *testing.T) {
+	tests := []struct {
+		name string
+		auth ProxyAuth
+		want bool
+	}{
+		{name: "trusted username header", auth: ProxyAuth{Mapper: ""}},
+		{name: "unverified claim", auth: ProxyAuth{Mapper: ".sub"}, want: true},
+		{name: "verified claim", auth: ProxyAuth{Mapper: ".sub", JWTJwksURL: "https://identity.example/jwks.json"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := test.auth.UsesUnverifiedClaimMapping(); got != test.want {
+				t.Fatalf("expected %t, got %t", test.want, got)
+			}
+		})
+	}
+}
+
+func TestBearerToken(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		value string
+		want  string
+	}{
+		{name: "standard", value: "Bearer token", want: "token"},
+		{name: "lowercase", value: "bearer token", want: "token"},
+		{name: "raw token", value: "token", want: "token"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := bearerToken(test.value); got != test.want {
+				t.Fatalf("expected %q, got %q", test.want, got)
+			}
+		})
+	}
+}
+
 func TestProxyAuthExtractsSelfCreatedJWTWithJWKSURL(t *testing.T) {
 	key := proxyTestRSAKey(t)
 	jwks := proxyTestJWKSServer(t, key, "self-created-key")
@@ -69,7 +107,7 @@ func TestProxyAuthExtractsSelfCreatedJWTWithJWKSURL(t *testing.T) {
 	})
 
 	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("Authorization", token)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	got, ok := ProxyAuth{
 		Header:      "Authorization",
@@ -97,7 +135,7 @@ func TestProxyAuthExtractsSelfCreatedJWTWithoutJWKSURL(t *testing.T) {
 	})
 
 	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("Authorization", token)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	got, ok := ProxyAuth{
 		Header: "Authorization",

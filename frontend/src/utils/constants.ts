@@ -18,7 +18,6 @@ const enableExec: boolean = window.PackageR.EnableExec;
 const tusSettings = window.PackageR.TusSettings;
 const origin = window.location.origin;
 const tusEndpoint = `/api/tus`;
-const shareLinkDefaultHash = window.PackageR.ShareLinkDefaultHash;
 const catalogDefaultName = window.PackageR.CatalogDefaultName;
 const catalogPreviewURL = window.PackageR.CatalogPreviewURL;
 
@@ -42,7 +41,6 @@ export {
   tusSettings,
   origin,
   tusEndpoint,
-  shareLinkDefaultHash,
   catalogDefaultName,
   catalogPreviewURL,
 };

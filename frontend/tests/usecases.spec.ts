@@ -4,7 +4,7 @@ import { AuthPage } from "./fixtures/auth";
 const itemId = "67793f0b9478720001790586";
 const publicShare = "my-share";
 const sharedPrefix = "catalog-sample";
-const backendBaseURL = `http://127.0.0.1:${process.env.PACKAGE_R_SERVER_PORT || "8888"}`;
+const backendBaseURL = `http://127.0.0.1:${process.env.PACKAGE_R_PORT || "8888"}`;
 const screenshotBackendBaseURL = "http://127.0.0.1:8888";
 const thumbnailPath = `openaerialmap-assets/${itemId}/thumbnail.png`;
 const publicShareThumbnailPath = `/share/${publicShare}/${thumbnailPath}`;
@@ -169,6 +169,30 @@ test.describe("packageR use-case UI", () => {
 
     const response = await page.request.post(`/api/share/${sharedPrefix}/`);
     expect(response.status()).toBe(404);
+  });
+
+  test("lists configured shares in settings", async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto("/settings");
+
+    const sharesLink = page.getByRole("link", { name: "Share Management" });
+    await expect(sharesLink).toBeVisible();
+    await sharesLink.click();
+    await expect(page).toHaveURL(/\/settings\/shares$/);
+
+    await expect(
+      page.getByRole("heading", { name: "Share Management" })
+    ).toBeVisible();
+    const row = page.getByRole("row", { name: /my-share/ });
+    await expect(row).toContainText("/catalog-sample");
+    await expect(row).toContainText("default share");
+    await expect(row).toContainText("Permanent");
+    await expect(row.getByRole("link", { name: "my-share" })).toHaveAttribute(
+      "href",
+      /\/share\/my-share$/
+    );
+    await expect(page.getByRole("button", { name: "New" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Delete" })).toHaveCount(0);
   });
 
   test("renders authenticated image preview", async ({ page }) => {

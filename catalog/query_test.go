@@ -106,6 +106,13 @@ func TestRewriteAssetHrefs(t *testing.T) {
 			mappings:  []AssetMapping{{From: "https://imagery.example.org/openaerialmap/", To: "openaerialmap-assets"}},
 			want:      "https://package.example/api/public/share/my-share/openaerialmap-assets/67793f0b9478720001790586/thumbnail.png?presign&followRedirect",
 		},
+		{
+			name:      "explicit S3 mapping to share root",
+			href:      "s3://data/item.tif",
+			sharePath: "/deliverables/26-06",
+			mappings:  []AssetMapping{{From: "s3://data/", To: "."}},
+			want:      "https://package.example/api/public/share/my-share/item.tif?presign&followRedirect",
+		},
 	}
 
 	for _, test := range tests {

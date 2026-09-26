@@ -23,7 +23,6 @@ type Settings struct {
 	Defaults         UserDefaults        `json:"defaults"`
 	AuthMethod       AuthMethod          `json:"authMethod"`
 	Branding         Branding            `json:"branding"`
-	ShareLink        ShareLink           `json:"shareLink"`
 	Catalog          Catalog             `json:"catalog"`
 	Tus              Tus                 `json:"tus"`
 	Commands         map[string][]string `json:"commands"`

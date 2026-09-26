@@ -1,11 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
-	"path"
-	"strings"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -70,8 +65,6 @@ you want to change. Other options will remain unchanged.`,
 				set.Branding.DisableUsedPercentage = mustGetBool(flags, flag.Name)
 			case "branding.files":
 				set.Branding.Files = mustGetString(flags, flag.Name)
-			case "sharelink.defaultHash":
-				set.ShareLink.DefaultHash = mustGetString(flags, flag.Name)
 			case "catalog.defaultName":
 				set.Catalog.DefaultName = mustGetString(flags, flag.Name)
 			case "catalog.previewURL":
@@ -101,27 +94,7 @@ you want to change. Other options will remain unchanged.`,
 }
 
 func parseCatalogAssetMappings(value string) []settings.CatalogAssetMapping {
-	if value == "" {
-		return nil
-	}
-
-	var mappings []settings.CatalogAssetMapping
-	checkErr(json.Unmarshal([]byte(value), &mappings))
-	for i, mapping := range mappings {
-		if mapping.From == "" {
-			checkErr(fmt.Errorf("catalog asset mapping %d has an empty from value", i))
-		}
-		if !catalogMappingPathIsRelative(mapping.To) {
-			checkErr(fmt.Errorf("catalog asset mapping %d to value must stay inside the share", i))
-		}
-	}
+	mappings, err := settings.ParseCatalogAssetMappings(value)
+	checkErr(err)
 	return mappings
-}
-
-func catalogMappingPathIsRelative(value string) bool {
-	if strings.HasPrefix(value, "/") || strings.ContainsRune(value, '\x00') {
-		return false
-	}
-	clean := path.Clean(value)
-	return clean != ".." && !strings.HasPrefix(clean, "../")
 }

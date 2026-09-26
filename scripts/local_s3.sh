@@ -15,9 +15,10 @@ control_endpoint="http://$control_address"
 access_key_id="${AWS_ACCESS_KEY_ID:-my-access-key}"
 secret_access_key="${AWS_SECRET_ACCESS_KEY:-my-secret-key}"
 server_owned=false
+package_r_pid=""
 
 usage() {
-  printf 'Usage: %s run|serve|stop\n' "$0" >&2
+  printf 'Usage: %s dev|serve|stop\n' "$0" >&2
 }
 
 control_ready() {
@@ -70,14 +71,20 @@ cleanup() {
   local status=$?
 
   trap - EXIT INT TERM
+  if [ -n "$package_r_pid" ]; then
+    kill "$package_r_pid" >/dev/null 2>&1 || true
+    wait "$package_r_pid" >/dev/null 2>&1 || true
+  fi
   if [ "$server_owned" = "true" ]; then
     stop_server >/dev/null 2>&1 || true
   fi
   exit "$status"
 }
 
-run_local_environment() {
+run_development_environment() {
   local attempt
+  local bootstrap_log="$state_dir/package-r-bootstrap.log"
+  local bootstrap_port="${PACKAGE_R_LOCAL_BOOTSTRAP_PORT:-18888}"
   local pid=""
   local status
 
@@ -123,8 +130,38 @@ run_local_environment() {
   fi
 
   make -C "$repo_root" build-backend-dev
-  PACKAGE_R_BIN="${PACKAGE_R_BIN:-$repo_root/package-r}" \
-    "$repo_root/init.sh" --add-shares my-share=/catalog-sample
+  development_shares="my-share=/catalog-sample"
+  if [ -n "${SERVE_PACKAGE_R_DEFAULT_SHARES:-}" ]; then
+    development_shares="${SERVE_PACKAGE_R_DEFAULT_SHARES};${development_shares}"
+  fi
+  SERVE_PACKAGE_R_BIN="${SERVE_PACKAGE_R_BIN:-$repo_root/package-r}" \
+    SERVE_PACKAGE_R_DEFAULT_SHARES="$development_shares" \
+    PACKAGE_R_ADDRESS=127.0.0.1 \
+    PACKAGE_R_PORT="$bootstrap_port" \
+    "$script_dir/serve.sh" >"$bootstrap_log" 2>&1 &
+  package_r_pid=$!
+
+  attempt=1
+  while [ "$attempt" -le 120 ]; do
+    if ! kill -0 "$package_r_pid" >/dev/null 2>&1; then
+      printf '[local-dev] packageR exited during setup\n' >&2
+      sed -n '1,160p' "$bootstrap_log" >&2 || true
+      return 1
+    fi
+    if curl --max-time 1 -fsS "http://127.0.0.1:$bootstrap_port/health" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.25
+    attempt=$((attempt + 1))
+  done
+  if ! curl --max-time 1 -fsS "http://127.0.0.1:$bootstrap_port/health" >/dev/null 2>&1; then
+    printf '[local-dev] timed out while preparing packageR\n' >&2
+    sed -n '1,160p' "$bootstrap_log" >&2 || true
+    return 1
+  fi
+  kill "$package_r_pid" >/dev/null 2>&1 || true
+  wait "$package_r_pid" >/dev/null 2>&1 || true
+  package_r_pid=""
 
   printf '[local-dev] ready\n'
   if [ -n "$pid" ]; then
@@ -145,9 +182,9 @@ run_local_environment() {
   return 0
 }
 
-if [ "${1:-}" = "run" ]; then
+if [ "${1:-}" = "dev" ]; then
   trap cleanup EXIT INT TERM
-  run_local_environment
+  run_development_environment
 else
   case "${1:-}" in
     serve) serve_s3 ;;

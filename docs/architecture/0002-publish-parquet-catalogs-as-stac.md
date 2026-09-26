@@ -44,21 +44,23 @@ to leave the share. An HTTP(S) URL is external in service-root mode because it
 does not identify a bucket. An `s3://` URL includes the bucket, so packageR can
 resolve it in service-root mode.
 
-An explicit mapping is a deployment setting, not share state. The
+An explicit mapping is an application setting, not share state. The
 `PACKAGE_R_CATALOG_ASSET_MAPPINGS` value is a JSON array:
 
 ```json
 [
   {
-    "from": "https://imagery.example.org/openaerialmap/",
-    "to": "openaerialmap-assets"
+    "from": "s3://data/",
+    "to": "."
   }
 ]
 ```
 
 The `from` value is an exact string prefix. The `to` value is relative to each
-configured share. Use mappings only when automatic matching cannot identify
-the object path.
+configured share. Here, `s3://data/item.tif` maps to `item.tif` at the share
+root. Keep a trailing slash on URI prefixes to prevent partial bucket-name
+matches. Use mappings only when automatic matching cannot identify the object
+path.
 
 For each returned row, packageR supplies or normalizes required STAC Item
 fields. It moves flattened metadata into `properties`, supplies

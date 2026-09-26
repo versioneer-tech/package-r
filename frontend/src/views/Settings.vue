@@ -10,6 +10,11 @@
               {{ t("settings.profileSettings") }}
             </li></router-link
           >
+          <router-link to="/settings/shares" v-if="authStore.user?.perm.admin"
+            ><li :class="{ active: $route.path === '/settings/shares' }">
+              {{ t("settings.shareManagement") }}
+            </li></router-link
+          >
           <!-- <router-link to="/settings/global" v-if="user?.perm.admin"
             ><li :class="{ active: $route.path === '/settings/global' }">
               {{ t("settings.globalSettings") }}
@@ -46,6 +51,7 @@
 
 <script setup lang="ts">
 import { useLayoutStore } from "@/stores/layout";
+import { useAuthStore } from "@/stores/auth";
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -53,6 +59,7 @@ import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 
 const layoutStore = useLayoutStore();
+const authStore = useAuthStore();
 
 const loading = computed(() => layoutStore.loading);
 </script>

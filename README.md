@@ -6,17 +6,16 @@
 [![License](https://img.shields.io/github/license/versioneer-tech/package-r)](LICENSE)
 
 > [!NOTE]
-> This is the third packageR iteration: v1 used the AWS S3 SDK directly, v2
-> required an external S3 mount, and the current implementation uses an
-> embedded rclone VFS.
+> packageR uses an embedded rclone VFS. It does not require an external FUSE
+> mount.
 
 packageR publishes a prefix of S3-compatible objects as a public package.
 Recipients can open it in a browser without an account. An optional share
 password controls access.
 
-The Go service also provides a web interface for object storage. It uses an
-embedded rclone VFS to browse objects and create time-limited download URLs.
-Production does not need an object-storage mount or a separate rclone service.
+The Go service also provides a web interface for object storage. It can browse
+objects and create time-limited download URLs. Production does not need a
+separate rclone service.
 
 packageR provides:
 
@@ -46,6 +45,28 @@ tar -xzf package-r.tar.gz
 ./package-r version
 ```
 
+Create an administrator and a public share, then start packageR. This example
+publishes the `catalog-sample` prefix from the `data` bucket:
+
+```bash
+./package-r config init
+./package-r users add admin change-this-password --scope=/ --perm.admin=true
+./package-r shares add admin my-share /data/catalog-sample
+
+AWS_ACCESS_KEY_ID=my-access-key \
+AWS_SECRET_ACCESS_KEY=my-secret-key \
+AWS_REGION=us-east-1 \
+  ./package-r
+```
+
+If the AWS variables are already exported, run `./package-r` without repeating
+them. Replace the example values, and add `AWS_ENDPOINT_URL` for another
+S3-compatible service.
+
+Open `http://127.0.0.1:8888` and sign in with the administrator account created
+above. The public package is available without an account at
+`http://127.0.0.1:8888/share/my-share/`.
+
 We also provide a container image at
 `ghcr.io/versioneer-tech/package-r:latest`. Run it with your S3 settings:
 
@@ -54,15 +75,20 @@ docker run --rm -p 127.0.0.1:8888:8888 \
   -e AWS_ACCESS_KEY_ID=my-access-key \
   -e AWS_SECRET_ACCESS_KEY=my-secret-key \
   -e AWS_REGION=us-east-1 \
-  -e PACKAGE_R_ROOT=my-bucket \
-  -e PACKAGE_R_AUTH_METHOD=none \
-  -e PACKAGE_R_DEFAULT_SHARES='my-share=/catalog-sample' \
+  -e SERVE_PACKAGE_R_PASSWORD=change-this-password \
+  -e SERVE_PACKAGE_R_DEFAULT_SHARES='my-share=/data/catalog-sample' \
   ghcr.io/versioneer-tech/package-r:latest
 ```
 
-Replace the example values, and add `AWS_ENDPOINT_URL` for another
-S3-compatible service. See [Run packageR](https://package-r.versioneer.at/latest/how-to-guides/run-package-r/)
-for the full configuration.
+`SERVE_PACKAGE_R_PASSWORD` sets the initial administrator password. It does
+not protect the public package. To require a share password, add
+`-e SERVE_PACKAGE_R_DEFAULT_SHARE_PASSWORDS='my-share=share-password'` to the
+Docker command.
+
+See the
+[configuration guide](https://package-r.versioneer.at/latest/how-to-guides/configuration/)
+for all settings. Public settings use `PACKAGE_R_`. Settings used only by the
+container serve script use `SERVE_PACKAGE_R_`.
 
 ## Development
 
@@ -92,7 +118,7 @@ To control local S3 without VS Code, use:
 ./scripts/local_s3.sh stop
 ```
 
-`serve` stays in the foreground. The `run` command is for the VS Code task and
+`serve` stays in the foreground. The `dev` command is for the VS Code task and
 also stays active so that VS Code can manage its lifetime.
 
 ### Run tests

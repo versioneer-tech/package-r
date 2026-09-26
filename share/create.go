@@ -18,13 +18,12 @@ import (
 var HashPattern = regexp.MustCompile(`^[a-z0-9.-]{1,20}$`)
 
 type LinkOptions struct {
-	Path        string
-	UserID      uint
-	DefaultHash string
+	Path   string
+	UserID uint
 }
 
 func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
-	hash, err := resolveHash(body.Hash, opts.DefaultHash)
+	hash, err := resolveHash(body.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +81,7 @@ func CatalogPath(sharePath, catalogName string) (string, error) {
 	return path.Join("/", sharePath, cleanName), nil
 }
 
-func resolveHash(hash string, defaultHash string) (string, error) {
+func resolveHash(hash string) (string, error) {
 	if hash != "" {
 		return hash, nil
 	}
@@ -98,15 +97,7 @@ func resolveHash(hash string, defaultHash string) (string, error) {
 	}
 
 	randomHash := string(random)
-	if defaultHash == "" {
-		return randomHash, nil
-	}
-
-	if strings.Contains(defaultHash, "<random>") {
-		return strings.Replace(defaultHash, "<random>", randomHash, 1), nil
-	}
-
-	return defaultHash + randomHash, nil
+	return randomHash, nil
 }
 
 func getExpire(expires string, unit string) (int64, error) {

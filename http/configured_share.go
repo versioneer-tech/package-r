@@ -20,6 +20,42 @@ type configuredShare struct {
 	URL         string `json:"url"`
 }
 
+// configuredShareListItem is the safe view used by the administrator settings
+// page. Share passwords and access tokens must not be returned.
+type configuredShareListItem struct {
+	Hash        string `json:"hash"`
+	Path        string `json:"path"`
+	Description string `json:"description,omitempty"`
+	Expire      int64  `json:"expire"`
+	URL         string `json:"url"`
+}
+
+var configuredShareListHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	links, err := d.store.Share.All()
+	if errors.Is(err, appErrors.ErrNotExist) {
+		return renderJSON(w, r, []configuredShareListItem{})
+	}
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	configured := make([]configuredShareListItem, 0, len(links))
+	for _, link := range links {
+		configured = append(configured, configuredShareListItem{
+			Hash:        link.Hash,
+			Path:        link.Path,
+			Description: link.Description,
+			Expire:      link.Expire,
+			URL:         path.Join("/share", link.Hash),
+		})
+	}
+
+	sort.Slice(configured, func(i, j int) bool {
+		return configured[i].Hash < configured[j].Hash
+	})
+	return renderJSON(w, r, configured)
+})
+
 var configuredShareGetsHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	requestPath := cleanAccessPath(r.URL.Path)
 	if !d.Check(requestPath) {

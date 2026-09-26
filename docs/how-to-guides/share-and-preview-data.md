@@ -6,13 +6,12 @@ links in the web interface, but cannot change them.
 
 ## Package an object prefix
 
-Set `PACKAGE_R_DEFAULT_SHARES` before packageR starts. Each entry maps a public
-name to an object path. When `PACKAGE_R_ROOT` selects one bucket, the path is a
-prefix in that bucket:
+Use the share command to map a public name to an object path. When
+`PACKAGE_R_ROOT` selects one bucket, the path is a prefix in that bucket:
 
 ```bash
-export PACKAGE_R_DEFAULT_SHARES='public=/deliverables/26-06;f4ae91c8d2=/reports/report.tif'
-./init.sh --serve
+./package-r shares add admin public /deliverables/26-06
+./package-r shares add admin f4ae91c8d2 /reports/report.tif
 ```
 
 A prefix package lets a public visitor navigate below the configured path. A
@@ -30,10 +29,11 @@ open the package.
 
 ## Protect a package with a share password
 
-Set a password with `PACKAGE_R_DEFAULT_SHARE_PASSWORDS`:
+Set `PACKAGE_R_SHARE_PASSWORD` for the share command:
 
 ```bash
-export PACKAGE_R_DEFAULT_SHARE_PASSWORDS='f4ae91c8d2=1234'
+PACKAGE_R_SHARE_PASSWORD=1234 \
+  ./package-r shares add admin f4ae91c8d2 /reports/report.tif
 ```
 
 The browser asks for the password before it opens the package. API clients send
@@ -76,23 +76,24 @@ HTTP(S), and `s3://` paths that identify an object inside the share. External
 URLs stay unchanged. See [ADR-002](../architecture/0002-publish-parquet-catalogs-as-stac.md)
 for the matching rules.
 
-If a CDN URL does not contain the shared object path, set
-`PACKAGE_R_CATALOG_ASSET_MAPPINGS`. Each entry maps an exact URL prefix to a
-path inside the share:
+If an asset URI does not match the storage path, configure an asset mapping.
+Each entry maps an exact URI prefix to a path inside the share:
 
-```yaml
-PACKAGE_R_CATALOG_ASSET_MAPPINGS: >-
-  [{"from":"https://imagery.example.org/openaerialmap/","to":"openaerialmap-assets"}]
+```bash
+export PACKAGE_R_CATALOG_ASSET_MAPPINGS='[{"from":"s3://data/","to":"."}]'
 ```
 
-In this example,
-`https://imagery.example.org/openaerialmap/67793f0b9478720001790586/thumbnail.png`
-maps to
-`openaerialmap-assets/67793f0b9478720001790586/thumbnail.png` inside each
-configured share. The `to` value must be relative and stay inside the share.
+In this example, `s3://data/item.tif` maps to `item.tif` at the root of each
+configured share. Keep the trailing slash in `s3://data/` so that the prefix
+does not also match similar bucket names. The `to` value must be relative and
+stay inside the share.
 
-Set `PACKAGE_R_CATALOG_DEFAULT_NAME` to the catalog path before bootstrap. The
-path is relative to each share. The default is `catalog.parquet`.
+The default catalog path is `catalog.parquet`, relative to each share. Set a
+different path before you add the share if needed:
+
+```bash
+export PACKAGE_R_CATALOG_DEFAULT_NAME=catalogs/items.parquet
+```
 
 For a share named `my-share`, request the full catalog:
 
@@ -109,9 +110,12 @@ Add a path below the share to select matching catalog entries:
 The response is a STAC `Feature` or `FeatureCollection`. Internal asset links
 become public package URLs.
 
-Use the absolute endpoint URL in a STAC Browser. Set
-`PACKAGE_R_CATALOG_PREVIEW_URL` to the browser's external-catalog prefix.
-packageR then shows a **Preview URL** for the package path.
+Use the absolute endpoint URL in a STAC Browser. Set the browser's
+external-catalog prefix to show a **Preview URL** for the package path:
+
+```bash
+export PACKAGE_R_CATALOG_PREVIEW_URL=https://radiantearth.github.io/stac-browser/#/external/
+```
 
 See the [HTTP API](../reference-guides/http-api.md#public-catalogs) for the
 response contract and limits.

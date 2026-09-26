@@ -69,7 +69,7 @@ An authenticated user can list public packages that contain an object path:
 
 The request needs `X-Auth` and access to the object path. The response includes
 the package name, description, expiry, and public URL. It does not include
-password hashes or access tokens. Configure packages through `init.sh`.
+password hashes or access tokens. Configure packages with `package-r shares`.
 
 ## Public shares
 

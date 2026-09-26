@@ -30,7 +30,6 @@ import (
 	"github.com/versioneer-tech/package-r/rclonefs"
 	"github.com/versioneer-tech/package-r/settings"
 	"github.com/versioneer-tech/package-r/storage"
-	"github.com/versioneer-tech/package-r/users"
 )
 
 var (
@@ -48,9 +47,6 @@ func init() {
 
 	persistent.StringVarP(&cfgFile, "config", "c", "", "config file path")
 	persistent.StringP("database", "d", "/tmp/package-r.db", "database path")
-	flags.Bool("noauth", false, "use the noauth auther when using quick setup")
-	flags.String("username", "admin", "username for the first user when using quick config")
-	flags.String("password", "", "hashed password for the first user when using quick config (default \"admin\")")
 
 	addServerFlags(flags)
 }
@@ -77,14 +73,9 @@ func addServerFlags(flags *pflag.FlagSet) {
 var rootCmd = &cobra.Command{
 	Use:   "package-r",
 	Short: "Package and browse object-storage data",
-	Long: `The packageR CLI lets you create the packageR database,
-manage your users and all the configurations without accessing the
-web interface.
-
-If you have never run packageR, you need a database for
-it. Don't worry: you don't need to setup a separate database server.
-We're using Bolt DB which is a single file database and all managed
-by ourselves.
+	Long: `The packageR CLI manages the packageR database, users, and settings.
+packageR stores its state in one local Bolt DB file. It does not need an
+external database server.
 
 For this specific command, all the flags you have available (except
 "config" for the configuration file), can be given either through
@@ -109,15 +100,10 @@ The environment variables are prefixed by "PACKAGE_R_" followed by the option
 name in caps, with dots and dashes replaced by underscores. So to set
 "database" via an env variable, you should set PACKAGE_R_DATABASE.
 
-Also, if the database path doesn't exist, packageR will enter into
-the quick setup mode and a new database will be bootstrapped and a new
-user created with the credentials from options "username" and "password".`,
+Before the first start, create the database with "package-r config init" and
+add at least one user with "package-r users add".`,
 	Run: python(func(cmd *cobra.Command, _ []string, d pythonData) {
 		log.Println(cfgFile)
-
-		if !d.hadDB {
-			quickSetup(cmd.Flags(), d)
-		}
 
 		// build img service
 		workersCount, err := cmd.Flags().GetInt("img-processors")
@@ -142,10 +128,20 @@ user created with the credentials from options "username" and "password".`,
 
 		applicationSettings, err := d.store.Settings.Get()
 		checkErr(err)
+		if applicationSettings.AuthMethod == auth.MethodProxyAuth {
+			configuredAuth, err := d.store.Auth.Get(applicationSettings.AuthMethod)
+			checkErr(err)
+			if proxyAuth, ok := configuredAuth.(*auth.ProxyAuth); ok && proxyAuth.UsesUnverifiedClaimMapping() {
+				log.Println("WARNING: proxy claim mapping is enabled without a JWKS URL; token claims are decoded but not validated. Trust only a header set by the upstream proxy.")
+			}
+		}
 		storageConfig := objectstorage.Load()
 		storageConfig.SetRoot(server.Root)
 		checkErr(storageConfig.ValidateFilesystem())
 		checkErr(storageConfig.ValidateUserDir(applicationSettings.CreateUserDir))
+		if storageConfig.UsesAWSServiceRootWithoutRegion() {
+			log.Println("WARNING: AWS_REGION is not set; rclone will use us-east-1. Buckets in other regions cannot be opened from PACKAGE_R_ROOT=/. Set AWS_REGION or select one bucket with PACKAGE_R_ROOT.")
+		}
 
 		objectFileSystems := rclonefs.NewManager(context.Background(), server.Root)
 		defer func() { _ = objectFileSystems.Close() }()
@@ -221,7 +217,7 @@ user created with the credentials from options "username" and "password".`,
 				panic(err)
 			}
 		}
-	}, pythonConfig{allowNoDB: true}),
+	}, pythonConfig{}),
 }
 
 func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
@@ -277,16 +273,16 @@ func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
 		server.Socket = ""
 	}
 
-	_, disableThumbnails := getParamB(flags, "disable-thumbnails")
+	disableThumbnails, _ := getBoolParam(flags, "disable-thumbnails")
 	server.EnableThumbnails = !disableThumbnails
 
-	_, disablePreviewResize := getParamB(flags, "disable-preview-resize")
+	disablePreviewResize, _ := getBoolParam(flags, "disable-preview-resize")
 	server.ResizePreview = !disablePreviewResize
 
-	_, disableTypeDetectionByHeader := getParamB(flags, "disable-type-detection-by-header")
+	disableTypeDetectionByHeader, _ := getBoolParam(flags, "disable-type-detection-by-header")
 	server.TypeDetectionByHeader = !disableTypeDetectionByHeader
 
-	_, disableExec := getParamB(flags, "disable-exec")
+	disableExec, _ := getBoolParam(flags, "disable-exec")
 	server.EnableExec = !disableExec
 
 	if val, set := getParamB(flags, "token-expiration-time"); set {
@@ -325,6 +321,21 @@ func getParam(flags *pflag.FlagSet, key string) string {
 	return val
 }
 
+func getBoolParam(flags *pflag.FlagSet, key string) (bool, bool) {
+	value, err := flags.GetBool(key)
+	checkErr(err)
+
+	if flags.Changed(key) {
+		return value, true
+	}
+
+	if v.IsSet(key) {
+		return v.GetBool(key), true
+	}
+
+	return value, false
+}
+
 func setupLog(logMethod string) {
 	switch logMethod {
 	case "stdout":
@@ -341,89 +352,6 @@ func setupLog(logMethod string) {
 			MaxBackups: 10,
 		})
 	}
-}
-
-func quickSetup(flags *pflag.FlagSet, d pythonData) {
-	set := &settings.Settings{
-		Key:              generateKey(),
-		Signup:           false,
-		CreateUserDir:    false,
-		UserHomeBasePath: settings.DefaultUsersHomeBasePath,
-		Defaults: settings.UserDefaults{
-			Scope:       ".",
-			Locale:      "en",
-			SingleClick: false,
-			Perm: users.Permissions{
-				Admin:    false,
-				Execute:  true,
-				Create:   true,
-				Rename:   true,
-				Modify:   true,
-				Delete:   true,
-				Share:    true,
-				Download: true,
-			},
-		},
-		AuthMethod: "",
-		Branding:   settings.Branding{},
-		Tus: settings.Tus{
-			ChunkSize:  settings.DefaultTusChunkSize,
-			RetryCount: settings.DefaultTusRetryCount,
-		},
-		Commands: nil,
-		Shell:    nil,
-		Rules:    nil,
-	}
-
-	var err error
-	if _, noauth := getParamB(flags, "noauth"); noauth {
-		set.AuthMethod = auth.MethodNoAuth
-		err = d.store.Auth.Save(&auth.NoAuth{})
-	} else {
-		set.AuthMethod = auth.MethodJSONAuth
-		err = d.store.Auth.Save(&auth.JSONAuth{})
-	}
-
-	checkErr(err)
-	err = d.store.Settings.Save(set)
-	checkErr(err)
-
-	ser := &settings.Server{
-		BaseURL: getParam(flags, "baseurl"),
-		Port:    getParam(flags, "port"),
-		Log:     getParam(flags, "log"),
-		TLSKey:  getParam(flags, "key"),
-		TLSCert: getParam(flags, "cert"),
-		Address: getParam(flags, "address"),
-		Root:    getParam(flags, "root"),
-	}
-
-	err = d.store.Settings.SaveServer(ser)
-	checkErr(err)
-
-	username := getParam(flags, "username")
-	password := getParam(flags, "password")
-
-	if password == "" {
-		password, err = users.HashPwd("admin")
-		checkErr(err)
-	}
-
-	if username == "" || password == "" {
-		log.Fatal("username and password cannot be empty during quick setup")
-	}
-
-	user := &users.User{
-		Username:     username,
-		Password:     password,
-		LockPassword: false,
-	}
-
-	set.ApplyUserDefaults(user)
-	user.Perm.Admin = true
-
-	err = d.store.Users.Save(user)
-	checkErr(err)
 }
 
 func initConfig() {

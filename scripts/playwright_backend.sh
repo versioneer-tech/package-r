@@ -82,16 +82,6 @@ build_backend_if_needed() {
   fi
 }
 
-start_backend() {
-  local binary=$1
-  local address=$2
-  local port=$3
-  local log_file=$4
-
-  "$binary" -a "$address" -p "$port" >"$log_file" 2>&1 &
-  server_pid=$!
-}
-
 cleanup() {
   local status=$?
   trap - EXIT INT TERM
@@ -167,7 +157,7 @@ start_rclone() {
 }
 
 wait_for_backend() {
-  local ready_url="${PACKAGE_R_PLAYWRIGHT_READY_URL:-http://127.0.0.1:${PACKAGE_R_SERVER_PORT}/health}"
+  local ready_url="${PACKAGE_R_PLAYWRIGHT_READY_URL:-http://127.0.0.1:${PACKAGE_R_PORT}/health}"
 
   PACKAGE_R_LOG_PREFIX=playwright-backend \
     PACKAGE_R_WAIT_ATTEMPTS="${PACKAGE_R_PLAYWRIGHT_READY_TIMEOUT:-120}" \
@@ -186,12 +176,11 @@ start_rclone
 export PACKAGE_R_ROOT="${PACKAGE_R_ROOT:-$bucket_name}"
 export PACKAGE_R_DATABASE="${PACKAGE_R_DATABASE:-$tmp_dir/package-r.db}"
 export PACKAGE_R_ADDRESS="${PACKAGE_R_ADDRESS:-127.0.0.1}"
-export PACKAGE_R_SERVER_PORT="${PACKAGE_R_SERVER_PORT:-8888}"
-export PACKAGE_R_AUTH_METHOD="${PACKAGE_R_AUTH_METHOD:-json}"
-export PACKAGE_R_PASSWORD="${PACKAGE_R_PASSWORD:-admin}"
-export PACKAGE_R_ALLOW_CHANGING="${PACKAGE_R_ALLOW_CHANGING:-true}"
+export PACKAGE_R_PORT="${PACKAGE_R_PORT:-8888}"
+export SERVE_PACKAGE_R_PASSWORD="${SERVE_PACKAGE_R_PASSWORD:-admin}"
+export SERVE_PACKAGE_R_ALLOW_CHANGING="${SERVE_PACKAGE_R_ALLOW_CHANGING:-true}"
 export PACKAGE_R_CATALOG_PREVIEW_URL="${PACKAGE_R_CATALOG_PREVIEW_URL:-https://radiantearth.github.io/stac-browser/#/external/}"
-export PACKAGE_R_BIN="${PACKAGE_R_BIN:-$repo_root/package-r}"
+export SERVE_PACKAGE_R_BIN="${SERVE_PACKAGE_R_BIN:-$repo_root/package-r}"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$tmp_dir/home/.cache}"
 export RCLONE_CONFIG=/dev/null
 export AWS_ACCESS_KEY_ID="$access_key_id"
@@ -200,9 +189,14 @@ export AWS_REGION=us-east-1
 
 mkdir -p "$XDG_CACHE_HOME"
 
-build_backend_if_needed "$PACKAGE_R_BIN" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
+build_backend_if_needed "$SERVE_PACKAGE_R_BIN" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
 
-./init.sh --add-shares my-share=/catalog-sample
-start_backend "$PACKAGE_R_BIN" "$PACKAGE_R_ADDRESS" "$PACKAGE_R_SERVER_PORT" "$backend_log"
+bootstrap_shares="my-share=/catalog-sample"
+if [[ -n "${SERVE_PACKAGE_R_DEFAULT_SHARES:-}" ]]; then
+  bootstrap_shares="${SERVE_PACKAGE_R_DEFAULT_SHARES};${bootstrap_shares}"
+fi
+SERVE_PACKAGE_R_DEFAULT_SHARES="$bootstrap_shares" \
+  "$repo_root/scripts/serve.sh" >"$backend_log" 2>&1 &
+server_pid=$!
 wait_for_backend
 wait "$server_pid"

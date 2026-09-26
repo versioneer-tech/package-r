@@ -55,8 +55,7 @@ func addConfigFlags(flags *pflag.FlagSet) {
 	flags.Bool("branding.disableExternal", false, "disable external links such as GitHub links")
 	flags.Bool("branding.disableUsedPercentage", false, "disable used disk percentage graph")
 
-	flags.String("sharelink.defaultHash", "", "(optional) hash of share link, supports templating via <random>")
-	flags.String("catalog.defaultName", "", "(optional) default catalog name")
+	flags.String("catalog.defaultName", settings.DefaultCatalogName, "default catalog name")
 	flags.String("catalog.previewURL", "", "(optional) preview URL")
 	flags.String("catalog.assetMappings", "", "(optional) JSON array of catalog asset URL-to-path mappings")
 }

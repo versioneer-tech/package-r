@@ -35,7 +35,6 @@ func TestSharesAddStoresDefaultCatalogInSharedFolder(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
 	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
-	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "set", "--catalog.defaultName", "catalog.parquet")
 	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "users", "add", "admin", "password")
 	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "shares", "add", "admin", "my-share", "/files")
 

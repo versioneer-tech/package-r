@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const backendPort = process.env.PACKAGE_R_SERVER_PORT || "8888";
+const backendPort = process.env.PACKAGE_R_PORT || "8888";
 const frontendPort = process.env.PLAYWRIGHT_FRONTEND_PORT || "5173";
 const backendURL = `http://127.0.0.1:${backendPort}`;
 const frontendURL = `http://127.0.0.1:${frontendPort}`;
@@ -79,14 +79,14 @@ export default defineConfig({
   /* Run local backend and frontend dev servers before starting the tests */
   webServer: [
     {
-      command: `PACKAGE_R_SERVER_PORT=${backendPort} exec ../scripts/playwright_backend.sh`,
+      command: `PACKAGE_R_PORT=${backendPort} exec ../scripts/playwright_backend.sh`,
       url: `${backendURL}/health`,
       reuseExistingServer: !process.env.CI,
       gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
       timeout: 180 * 1000,
     },
     {
-      command: `PACKAGE_R_SERVER_PORT=${backendPort} exec node node_modules/vite/bin/vite.js --port ${frontendPort}`,
+      command: `PACKAGE_R_PORT=${backendPort} exec node node_modules/vite/bin/vite.js --port ${frontendPort}`,
       url: frontendURL,
       reuseExistingServer: !process.env.CI,
       gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },

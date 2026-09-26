@@ -9,6 +9,7 @@ import User from "@/views/settings/User.vue";
 import Settings from "@/views/Settings.vue";
 import GlobalSettings from "@/views/settings/Global.vue";
 import ProfileSettings from "@/views/settings/Profile.vue";
+import Shares from "@/views/settings/Shares.vue";
 import Errors from "@/views/Errors.vue";
 import { useAuthStore } from "@/stores/auth";
 import { baseURL, name } from "@/utils/constants";
@@ -22,6 +23,7 @@ const titles = {
   Files: "files.files",
   Settings: "sidebar.settings",
   ProfileSettings: "settings.profileSettings",
+  Shares: "settings.shareManagement",
   GlobalSettings: "settings.globalSettings",
   Users: "settings.users",
   User: "settings.user",
@@ -80,6 +82,14 @@ const routes = [
             path: "profile",
             name: "ProfileSettings",
             component: ProfileSettings,
+          },
+          {
+            path: "shares",
+            name: "Shares",
+            component: Shares,
+            meta: {
+              requiresAdmin: true,
+            },
           },
           {
             path: "global",
