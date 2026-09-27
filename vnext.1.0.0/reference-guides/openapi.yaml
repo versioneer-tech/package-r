@@ -1,0 +1,927 @@
+openapi: 3.1.0
+info:
+  title: packageR HTTP API
+  version: next
+  description: |
+    Supported packageR endpoints for object operations, profile settings,
+    configured shares, public packages, presigned URLs, and STAC catalogs.
+
+    A deployment can add a path prefix with `PACKAGE_R_BASEURL`. Object path
+    segments must be URL-encoded while `/` remains the path separator.
+servers:
+  - url: http://127.0.0.1:8888
+    description: Local packageR server
+tags:
+  - name: Metrics
+  - name: Authentication
+  - name: Resources
+  - name: Uploads
+  - name: Profile
+  - name: Shares
+  - name: Catalogs
+paths:
+  /metrics:
+    get:
+      tags: [Metrics]
+      operationId: getMetrics
+      summary: Get aggregate Prometheus metrics
+      description: |
+        The endpoint does not require a packageR session token. Restrict it
+        with the deployment network or reverse proxy. Metric labels do not
+        contain usernames, object paths, buckets, shares, or tokens.
+      security: []
+      responses:
+        "200":
+          description: Prometheus or OpenMetrics data.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/openmetrics-text:
+              schema:
+                type: string
+
+  /api/login:
+    post:
+      tags: [Authentication]
+      operationId: login
+      summary: Create a packageR session
+      description: |
+        The configured authentication method determines the credential. JSON
+        authentication uses the request body. Proxy authentication uses the
+        configured trusted identity header or a JWT in `Authorization`.
+      parameters:
+        - name: X-Username
+          in: header
+          required: false
+          description: Example trusted identity header for proxy authentication.
+          schema:
+            type: string
+        - name: Authorization
+          in: header
+          required: false
+          description: Identity-provider JWT for configured proxy authentication.
+          schema:
+            type: string
+            example: Bearer eyJhbGciOiJSUzI1NiJ9...
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginCredentials"
+      responses:
+        "200":
+          description: Signed packageR session token.
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: JWT used in the `X-Auth` header.
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/renew:
+    post:
+      tags: [Authentication]
+      operationId: renewSession
+      summary: Renew a packageR session
+      security:
+        - PackageRToken: []
+      responses:
+        "200":
+          description: Replacement packageR session token.
+          content:
+            text/plain:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/profile:
+    patch:
+      tags: [Profile]
+      operationId: updateProfile
+      summary: Update personal display settings
+      security:
+        - PackageRToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "204":
+          description: Profile updated.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/resources/{path}:
+    parameters:
+      - $ref: "#/components/parameters/ObjectPath"
+    get:
+      tags: [Resources]
+      operationId: getResource
+      summary: List a directory or get file metadata
+      security:
+        - PackageRToken: []
+      parameters:
+        - $ref: "#/components/parameters/Checksum"
+        - $ref: "#/components/parameters/Presign"
+        - $ref: "#/components/parameters/FollowRedirect"
+      responses:
+        "200":
+          description: File metadata or a directory listing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resource"
+        "307":
+          $ref: "#/components/responses/PresignedRedirect"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Resources]
+      operationId: createResource
+      summary: Upload a file or create a directory
+      description: A trailing `/` in the object path creates a directory.
+      security:
+        - PackageRToken: []
+      parameters:
+        - $ref: "#/components/parameters/Override"
+      requestBody:
+        required: false
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Resource created.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [Resources]
+      operationId: replaceResource
+      summary: Replace an existing file
+      security:
+        - PackageRToken: []
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: File replaced.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Resources]
+      operationId: copyOrMoveResource
+      summary: Copy or move an object
+      security:
+        - PackageRToken: []
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [copy, rename]
+        - name: destination
+          in: query
+          required: true
+          description: URL-encoded destination path.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Override"
+      responses:
+        "200":
+          description: Copy or move completed.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Resources]
+      operationId: deleteResource
+      summary: Delete a file or directory tree
+      security:
+        - PackageRToken: []
+      responses:
+        "204":
+          description: Resource deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/tus/{path}:
+    parameters:
+      - $ref: "#/components/parameters/ObjectPath"
+    post:
+      tags: [Uploads]
+      operationId: createChunkedUpload
+      summary: Create a chunked upload target
+      security:
+        - PackageRToken: []
+      parameters:
+        - $ref: "#/components/parameters/Override"
+        - $ref: "#/components/parameters/UploadLength"
+      responses:
+        "201":
+          description: Upload target created.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    head:
+      tags: [Uploads]
+      operationId: inspectChunkedUpload
+      summary: Get the current upload offset
+      security:
+        - PackageRToken: []
+      responses:
+        "200":
+          description: Current upload position.
+          headers:
+            Upload-Offset:
+              description: Number of stored bytes.
+              schema:
+                type: integer
+                format: int64
+                minimum: 0
+            Upload-Length:
+              description: Total size, or `-1` when it is not known.
+              schema:
+                type: integer
+                format: int64
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Uploads]
+      operationId: appendChunkedUpload
+      summary: Append a chunk at the current upload offset
+      security:
+        - PackageRToken: []
+      parameters:
+        - $ref: "#/components/parameters/UploadOffset"
+        - $ref: "#/components/parameters/UploadLength"
+      requestBody:
+        required: true
+        content:
+          application/offset+octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "204":
+          description: Chunk stored.
+          headers:
+            Upload-Offset:
+              description: Byte position after the stored chunk.
+              schema:
+                type: integer
+                format: int64
+                minimum: 0
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "415":
+          description: Content type is not `application/offset+octet-stream`.
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Uploads]
+      operationId: abortChunkedUpload
+      summary: Abort an upload and remove its partial object
+      description: |
+        The web interface uses this operation when a user cancels an upload.
+        An interrupted PATCH or failed DELETE can leave a partial object. Use
+        HEAD to get its offset before resuming or deleting it.
+      security:
+        - PackageRToken: []
+      responses:
+        "204":
+          description: Partial object removed.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/shares:
+    get:
+      tags: [Shares]
+      operationId: listShares
+      summary: List configured public shares available to the user
+      security:
+        - PackageRToken: []
+      responses:
+        "200":
+          description: Safe, read-only share definitions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConfiguredShare"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/public/share/{hash}/{path}:
+    parameters:
+      - $ref: "#/components/parameters/ShareHash"
+      - $ref: "#/components/parameters/PublicPath"
+    get:
+      tags: [Shares]
+      operationId: getPublicShareResource
+      summary: List or inspect a public share resource
+      security:
+        - {}
+        - SharePassword: []
+      parameters:
+        - $ref: "#/components/parameters/Checksum"
+        - $ref: "#/components/parameters/Presign"
+        - $ref: "#/components/parameters/Follow"
+      responses:
+        "200":
+          description: File metadata or a directory listing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resource"
+        "307":
+          $ref: "#/components/responses/PresignedRedirect"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    head:
+      tags: [Shares]
+      operationId: inspectPublicShareResource
+      summary: Inspect a public share resource without a response body
+      security:
+        - {}
+        - SharePassword: []
+      parameters:
+        - $ref: "#/components/parameters/Checksum"
+        - $ref: "#/components/parameters/Presign"
+        - $ref: "#/components/parameters/Follow"
+      responses:
+        "200":
+          description: Resource is available.
+        "307":
+          $ref: "#/components/responses/PresignedRedirect"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/public/catalog/{hash}:
+    parameters:
+      - $ref: "#/components/parameters/ShareHash"
+    get:
+      tags: [Catalogs]
+      operationId: getPublicCatalog
+      summary: Get a public STAC catalog
+      security:
+        - {}
+        - SharePassword: []
+      responses:
+        "200":
+          $ref: "#/components/responses/STACResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    head:
+      tags: [Catalogs]
+      operationId: inspectPublicCatalog
+      summary: Inspect a public STAC catalog without a response body
+      security:
+        - {}
+        - SharePassword: []
+      responses:
+        "200":
+          description: Catalog is available.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/public/catalog/{hash}/{path}:
+    parameters:
+      - $ref: "#/components/parameters/ShareHash"
+      - $ref: "#/components/parameters/PublicPath"
+    get:
+      tags: [Catalogs]
+      operationId: getPublicCatalogPath
+      summary: Get STAC entries below a public package path
+      security:
+        - {}
+        - SharePassword: []
+      responses:
+        "200":
+          $ref: "#/components/responses/STACResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    head:
+      tags: [Catalogs]
+      operationId: inspectPublicCatalogPath
+      summary: Inspect STAC entries below a public package path
+      security:
+        - {}
+        - SharePassword: []
+      responses:
+        "200":
+          description: Catalog path is available.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    PackageRToken:
+      type: apiKey
+      in: header
+      name: X-Auth
+      description: Signed packageR session token returned by `/api/login`.
+    SharePassword:
+      type: apiKey
+      in: header
+      name: X-SHARE-PASSWORD
+      description: URL-encoded password for a protected public share.
+
+  parameters:
+    ObjectPath:
+      name: path
+      in: path
+      required: true
+      description: Object path below the authenticated user's scope.
+      schema:
+        type: string
+      example: catalog-sample/catalog.parquet
+    PublicPath:
+      name: path
+      in: path
+      required: true
+      description: Resource path below the public share root.
+      schema:
+        type: string
+      example: package/metadata.json
+    ShareHash:
+      name: hash
+      in: path
+      required: true
+      description: Configured public share name.
+      schema:
+        type: string
+      example: my-share
+    Checksum:
+      name: checksum
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [md5, sha1, sha256, sha512]
+    Presign:
+      name: presign
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+    FollowRedirect:
+      name: followRedirect
+      in: query
+      required: false
+      description: Return a 307 redirect when `presign` is true.
+      schema:
+        type: boolean
+        default: false
+    Follow:
+      name: follow
+      in: query
+      required: false
+      description: Return a 307 redirect when `presign` is true.
+      schema:
+        type: boolean
+        default: false
+    Override:
+      name: override
+      in: query
+      required: false
+      description: Replace an existing destination when permitted.
+      schema:
+        type: boolean
+        default: false
+    UploadOffset:
+      name: Upload-Offset
+      in: header
+      required: true
+      description: Expected byte position before this chunk.
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+    UploadLength:
+      name: Upload-Length
+      in: header
+      required: false
+      description: Total upload size. Send it to record upload completion.
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+
+  responses:
+    STACResponse:
+      description: A matching STAC Item or an ItemCollection.
+      content:
+        application/geo+json:
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/STACFeature"
+              - $ref: "#/components/schemas/STACFeatureCollection"
+    PresignedRedirect:
+      description: Temporary redirect to object storage.
+      headers:
+        Location:
+          description: Presigned object-storage URL.
+          schema:
+            type: string
+            format: uri
+    BadRequest:
+      description: Invalid request.
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication is missing or invalid.
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: The authenticated identity cannot perform the action.
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found.
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/Error"
+    MethodNotAllowed:
+      description: Method is not valid for this resource.
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Destination already exists.
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Internal server error.
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    LoginCredentials:
+      type: object
+      additionalProperties: false
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+        recaptcha:
+          type: string
+
+    ProfileUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        locale:
+          type: string
+          minLength: 1
+          maxLength: 32
+        viewMode:
+          type: string
+          enum: [list, mosaic, "mosaic gallery"]
+        singleClick:
+          type: boolean
+        sorting:
+          $ref: "#/components/schemas/Sorting"
+        hideDotfiles:
+          type: boolean
+        dateFormat:
+          type: boolean
+
+    Sorting:
+      type: object
+      additionalProperties: false
+      required: [by, asc]
+      properties:
+        by:
+          type: string
+          enum: [name, size, modified]
+        asc:
+          type: boolean
+
+    ConfiguredShare:
+      type: object
+      additionalProperties: false
+      required:
+        - hash
+        - source
+        - path
+        - expire
+        - passwordProtected
+        - url
+      properties:
+        hash:
+          type: string
+        source:
+          type: string
+        path:
+          type: string
+        description:
+          type: string
+        expire:
+          type: integer
+          format: int64
+          description: Unix timestamp. Zero means no expiration.
+        catalog:
+          type: string
+        assetMappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetMapping"
+        passwordProtected:
+          type: boolean
+        url:
+          type: string
+
+    AssetMapping:
+      type: object
+      additionalProperties: false
+      required: [from, to]
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+
+    Resource:
+      type: object
+      required:
+        - path
+        - name
+        - size
+        - extension
+        - modified
+        - mode
+        - isDir
+        - isSymlink
+        - type
+      properties:
+        path:
+          type: string
+        name:
+          type: string
+        size:
+          type: integer
+          format: int64
+        extension:
+          type: string
+        modified:
+          type: string
+          format: date-time
+        mode:
+          type: integer
+        isDir:
+          type: boolean
+        isSymlink:
+          type: boolean
+        type:
+          type: string
+        content:
+          type: string
+        checksums:
+          type: object
+          additionalProperties:
+            type: string
+        resolution:
+          $ref: "#/components/schemas/ImageResolution"
+        presignedURL:
+          type: string
+          format: uri
+        stacBrowserURL:
+          type: string
+          format: uri
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Resource"
+        numDirs:
+          type: integer
+        numFiles:
+          type: integer
+        sorting:
+          $ref: "#/components/schemas/Sorting"
+
+    ImageResolution:
+      type: object
+      additionalProperties: false
+      required: [width, height]
+      properties:
+        width:
+          type: integer
+        height:
+          type: integer
+
+    STACFeature:
+      type: object
+      required: [type, stac_version, id, geometry, properties, links, assets]
+      properties:
+        type:
+          const: Feature
+        stac_version:
+          type: string
+        id:
+          type: string
+        geometry:
+          oneOf:
+            - $ref: "#/components/schemas/GeoJSONGeometry"
+            - type: "null"
+        bbox:
+          type: array
+          minItems: 4
+          items:
+            type: number
+        properties:
+          type: object
+          additionalProperties: true
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/STACLink"
+        assets:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/STACAsset"
+      additionalProperties: true
+
+    STACFeatureCollection:
+      type: object
+      required: [type, stac_version, features, links]
+      properties:
+        type:
+          const: FeatureCollection
+        stac_version:
+          type: string
+        features:
+          type: array
+          items:
+            $ref: "#/components/schemas/STACFeature"
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/STACLink"
+      additionalProperties: true
+
+    STACLink:
+      type: object
+      required: [rel, href]
+      properties:
+        rel:
+          type: string
+        href:
+          type: string
+          format: uri-reference
+        type:
+          type: string
+      additionalProperties: true
+
+    STACAsset:
+      type: object
+      required: [href]
+      properties:
+        href:
+          type: string
+          format: uri-reference
+      additionalProperties: true
+
+    GeoJSONGeometry:
+      type: object
+      required: [type, coordinates]
+      properties:
+        type:
+          type: string
+        coordinates: {}
+      additionalProperties: true
+
+    Error:
+      type: string
+      example: 404 Not Found
