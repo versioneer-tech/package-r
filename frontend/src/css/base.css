@@ -23,6 +23,10 @@ img {
   max-width: 100%;
 }
 
+:root.dark .logo-img {
+  filter: invert(1);
+}
+
 audio,
 video {
   width: 100%;
@@ -63,8 +67,8 @@ main {
   border-bottom: 1px solid var(--divider);
 }
 
-.breadcrumbs span,
-.breadcrumbs {
+.breadcrumbs,
+.breadcrumbs span {
   display: flex;
   align-items: center;
   color: var(--textPrimary);

@@ -6,6 +6,8 @@ const recaptcha: string = window.PackageR.ReCaptcha;
 const recaptchaKey: string = window.PackageR.ReCaptchaKey;
 const version: string = window.PackageR.Version;
 const logoURL = `${staticURL}/img/logo.svg`;
+const versioneerLogoURL = `${staticURL}/img/logo_versioneer_white.svg`;
+const eoxLogoURL = `${staticURL}/img/logo_eox.svg`;
 const loginPage: boolean = window.PackageR.LoginPage;
 const theme: UserTheme = window.PackageR.Theme;
 const enableThumbs: boolean = window.PackageR.EnableThumbs;
@@ -21,6 +23,8 @@ export {
   disableExternal,
   baseURL,
   logoURL,
+  versioneerLogoURL,
+  eoxLogoURL,
   recaptcha,
   recaptchaKey,
   version,

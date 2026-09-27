@@ -227,6 +227,12 @@ test.describe("packageR use-case UI", () => {
 
     const preview = page.locator("#previewer .preview");
     await expectImageLoaded(preview.locator("img.image-ex-img"));
+    await expect(
+      page.getByRole("button", { name: "Profile Settings", exact: true })
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Share Management", exact: true })
+    ).toHaveCount(0);
     await expect(preview).toHaveScreenshot(
       "authenticated-image-preview.png",
       screenshotOptions

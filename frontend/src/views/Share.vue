@@ -13,7 +13,7 @@
     <breadcrumbs :base="'/share/' + hash" />
 
     <div v-if="layoutStore.loading">
-      <h2 class="message delayed" style="padding-top: 3em !important">
+      <h2 class="message delayed share-loading">
         <div class="spinner">
           <div class="bounce1"></div>
           <div class="bounce2"></div>
@@ -24,7 +24,7 @@
     </div>
     <div v-else-if="error">
       <div v-if="error.status === 401">
-        <div class="card floating" id="password" style="z-index: 9999999">
+        <div class="card floating share-password" id="password">
           <div v-if="attemptedPasswordLogin" class="share__wrong__password">
             {{ t("login.wrongCredentials") }}
           </div>
@@ -59,16 +59,8 @@
     </div>
     <div v-else-if="req !== null">
       <div class="share">
-        <div
-          class="share__box share__box__info"
-          style="
-            position: -webkit-sticky;
-            position: sticky;
-            top: -20.6em;
-            z-index: 999;
-          "
-        >
-          <div class="share__box__header" style="height: 3em">
+        <div class="share__box share__box__info">
+          <div class="share__box__header share__box__header--compact">
             {{ req.isDir ? t("buttons.folder") : t("buttons.file") }}
           </div>
           <div class="share__box__element">

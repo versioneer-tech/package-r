@@ -75,10 +75,6 @@ const save = async () => {
 </script>
 
 <style scoped>
-.settings-content {
-  width: 100%;
-}
-
 .profile-fields {
   display: grid;
   gap: 1rem;

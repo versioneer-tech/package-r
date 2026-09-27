@@ -23,6 +23,7 @@
 #loading {
   background: var(--background);
 }
+
 #loading .spinner > div {
   background: var(--iconPrimary);
 }
@@ -172,8 +173,8 @@ main .spinner .bounce2 {
 #previewer header {
   background: none;
   color: #fff;
-  border-bottom: 0px;
-  box-shadow: 0px 0px 0px;
+  border-bottom: 0;
+  box-shadow: none;
   z-index: 19999;
 }
 
@@ -240,20 +241,25 @@ main .spinner .bounce2 {
   font-size: 1.5em;
   color: #fff;
 }
+
 #previewer .preview .info .title {
   margin-bottom: 1em;
 }
+
 #previewer .preview .info .title i {
   display: block;
   margin-bottom: 0.1em;
   font-size: 6rem;
 }
+
 #previewer .preview .info .button {
   display: inline-block;
 }
+
 #previewer .preview .info .button:hover {
   background-color: rgba(255, 255, 255, 0.2);
 }
+
 #previewer .preview .info .button i {
   display: block;
   margin-bottom: 4px;
@@ -271,7 +277,6 @@ main .spinner .bounce2 {
 }
 
 #previewer > button {
-  margin: 0;
   position: fixed;
   top: 50%;
   transform: translateY(-50%);

@@ -180,14 +180,21 @@ html[dir="rtl"] .card .card-title > *:first-child {
 
 .card .card-action.full .action {
   flex: 1;
+  margin: 0 0.25em 0.5em;
   padding: 2em;
   border-radius: 0.2em;
   border: 1px solid var(--borderPrimary);
   text-align: center;
 }
 
-.card .card-action.full .action {
-  margin: 0 0.25em 0.5em;
+.card-action--split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-content {
+  width: 100%;
 }
 
 .card .card-action.full .action i {

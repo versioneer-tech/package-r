@@ -43,30 +43,46 @@
       />
     </form>
 
-    <div id="about">
-      <p>
-        Powered by
-        <a href="https://github.com/versioneer-tech/package-r" target="_blank">
+    <footer id="about" aria-label="Application information">
+      <div class="about-group">
+        <span class="about-label">Powered by</span>
+        <a
+          class="about-product"
+          href="https://github.com/versioneer-tech/package-r"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <strong>packageR</strong>
+          <span class="about-version">{{ version }}</span>
         </a>
-        {{ version }}, maintained by
-        <a href="https://versioneer.at" target="_blank">
-          <img
-            src="https://raw.githubusercontent.com/versioneer-inc/versioneer-inc.github.io/master/logo_versioneer_white.png"
-            alt="Versioneer"
-            class="logo versioneer-logo"
-          />
-        </a>
-        and
-        <a href="https://eox.at" target="_blank">
-          <img
-            src="https://eox.at/EOX_Logo.svg"
-            alt="EOX"
-            class="logo eox-logo"
-          />
-        </a>
-      </p>
-    </div>
+      </div>
+
+      <span class="about-divider" aria-hidden="true"></span>
+
+      <div class="about-group about-maintainers">
+        <span class="about-label">Maintained by</span>
+        <div class="about-logos">
+          <a
+            class="logo-link"
+            href="https://versioneer.at"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Versioneer"
+          >
+            <img :src="versioneerLogoURL" alt="" class="logo versioneer-logo" />
+          </a>
+          <a
+            class="logo-link"
+            href="https://eox.at"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="EOX"
+          >
+            <img :src="eoxLogoURL" alt="" class="logo eox-logo" />
+          </a>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -77,6 +93,8 @@ import {
   name,
   baseURL,
   logoURL,
+  versioneerLogoURL,
+  eoxLogoURL,
   recaptcha,
   recaptchaKey,
   loginPage,
