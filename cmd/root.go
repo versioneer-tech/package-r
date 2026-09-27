@@ -66,10 +66,10 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.String("cache-dir", "", "file cache directory (disabled if empty)")
 	flags.String("token-expiration-time", "2h", "user session timeout")
 	flags.Int("img-processors", 4, "image processors count")
-	flags.Bool("disable-thumbnails", false, "disable image thumbnails")
-	flags.Bool("disable-preview-resize", false, "disable resize of image previews")
+	flags.Bool("disable-thumbnails", true, "disable image thumbnails")
+	flags.Bool("disable-preview-resize", true, "disable resize of image previews")
 	flags.Bool("disable-exec", false, "disables Command Runner feature")
-	flags.Bool("disable-type-detection-by-header", false, "disables type detection by reading file headers")
+	flags.Bool("disable-type-detection-by-header", true, "disables type detection by reading file headers")
 }
 
 var rootCmd = &cobra.Command{

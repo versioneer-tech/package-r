@@ -63,9 +63,6 @@ spec:
                 --signup=false \
                 --create-user-dir=false \
                 --disable-exec=true \
-                --disable-preview-resize=true \
-                --disable-thumbnails=true \
-                --disable-type-detection-by-header=true \
                 --perm.create=false \
                 --perm.delete=false \
                 --perm.modify=false \

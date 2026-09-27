@@ -2,7 +2,7 @@ package cmd
 
 import "testing"
 
-func TestConfigInitStoresServerFeatureDefaults(t *testing.T) {
+func TestConfigInitDisablesServerProcessingByDefault(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
 	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
@@ -11,8 +11,8 @@ func TestConfigInitStoresServerFeatureDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !server.EnableThumbnails || !server.ResizePreview || !server.TypeDetectionByHeader {
-		t.Fatalf("expected preview features to be enabled by default, got %#v", server)
+	if server.EnableThumbnails || server.ResizePreview || server.TypeDetectionByHeader {
+		t.Fatalf("expected server-side preview and header processing to be disabled by default, got %#v", server)
 	}
 	if server.EnableExec {
 		t.Fatalf("expected command execution to be disabled, got %#v", server)
@@ -64,7 +64,7 @@ func TestConfigInitStoresSTACBrowserURL(t *testing.T) {
 	}
 }
 
-func TestConfigSetStoresDisabledServerFeatures(t *testing.T) {
+func TestConfigSetCanEnableServerProcessing(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
 	runPackageRCommand(t, "--config", configPath, "--database", dbPath, "config", "init", "--root", rootPath)
@@ -73,10 +73,10 @@ func TestConfigSetStoresDisabledServerFeatures(t *testing.T) {
 		"--config", configPath,
 		"--database", dbPath,
 		"config", "set",
-		"--disable-thumbnails=true",
-		"--disable-preview-resize=true",
+		"--disable-thumbnails=false",
+		"--disable-preview-resize=false",
 		"--disable-exec=true",
-		"--disable-type-detection-by-header=true",
+		"--disable-type-detection-by-header=false",
 		"--token-expiration-time=30m",
 	)
 
@@ -84,8 +84,8 @@ func TestConfigSetStoresDisabledServerFeatures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if server.EnableThumbnails || server.ResizePreview || server.EnableExec || server.TypeDetectionByHeader {
-		t.Fatalf("expected server features to be disabled, got %#v", server)
+	if !server.EnableThumbnails || !server.ResizePreview || server.EnableExec || !server.TypeDetectionByHeader {
+		t.Fatalf("expected server processing to be enabled explicitly, got %#v", server)
 	}
 	if server.TokenExpirationTime != "30m" {
 		t.Fatalf("expected token expiration 30m, got %q", server.TokenExpirationTime)

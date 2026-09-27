@@ -17,7 +17,7 @@ func TestGetBoolParamUsesFalseEnvironmentValue(t *testing.T) {
 	t.Setenv("PACKAGE_R_DISABLE_THUMBNAILS", "false")
 
 	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
-	flags.Bool("disable-thumbnails", false, "")
+	flags.Bool("disable-thumbnails", true, "")
 
 	value, set := getBoolParam(flags, "disable-thumbnails")
 	if !set {
