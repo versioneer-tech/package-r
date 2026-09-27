@@ -332,7 +332,13 @@ missing_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -H "${auth_header
 
 log "Checking two-chunk TUS upload through the VFS write cache"
 tus_path="/${BUCKET}/xyz/chunked.txt"
+printf 'first chunk\n' >"${tmp_dir}/chunk-one.txt"
+printf 'second chunk\n' >"${tmp_dir}/chunk-two.txt"
+first_chunk_size="$(wc -c <"${tmp_dir}/chunk-one.txt" | tr -d ' ')"
+second_chunk_size="$(wc -c <"${tmp_dir}/chunk-two.txt" | tr -d ' ')"
+upload_size="$((first_chunk_size + second_chunk_size))"
 curl_test -fsS -X POST -H "${auth_header}" \
+  -H "Upload-Length: ${upload_size}" \
   "${package_r_url}/api/tus${tus_path}" >/dev/null
 head_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -I -H "${auth_header}" \
   "${package_r_url}/api/tus${tus_path}")"
@@ -340,17 +346,16 @@ head_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -I -H "${auth_header
 get_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -H "${auth_header}" \
   "${package_r_url}/api/tus${tus_path}")"
 [[ "${get_status}" == "404" || "${get_status}" == "405" ]]
-printf 'first chunk\n' >"${tmp_dir}/chunk-one.txt"
-printf 'second chunk\n' >"${tmp_dir}/chunk-two.txt"
 curl_test -fsS -X PATCH -H "${auth_header}" \
   -H 'Content-Type: application/offset+octet-stream' \
   -H 'Upload-Offset: 0' \
+  -H "Upload-Length: ${upload_size}" \
   --data-binary "@${tmp_dir}/chunk-one.txt" \
   "${package_r_url}/api/tus${tus_path}" >/dev/null
-first_chunk_size="$(wc -c <"${tmp_dir}/chunk-one.txt" | tr -d ' ')"
 curl_test -fsS -X PATCH -H "${auth_header}" \
   -H 'Content-Type: application/offset+octet-stream' \
   -H "Upload-Offset: ${first_chunk_size}" \
+  -H "Upload-Length: ${upload_size}" \
   --data-binary "@${tmp_dir}/chunk-two.txt" \
   "${package_r_url}/api/tus${tus_path}" >/dev/null
 cat "${tmp_dir}/chunk-one.txt" "${tmp_dir}/chunk-two.txt" >"${tmp_dir}/chunked-expected.txt"
@@ -365,10 +370,12 @@ curl_test -fsS -X DELETE -H "${auth_header}" \
 log "Checking that TUS abort removes a partial upload"
 aborted_tus_path="/${BUCKET}/xyz/aborted.txt"
 curl_test -fsS -X POST -H "${auth_header}" \
+  -H "Upload-Length: ${upload_size}" \
   "${package_r_url}/api/tus${aborted_tus_path}" >/dev/null
 curl_test -fsS -X PATCH -H "${auth_header}" \
   -H 'Content-Type: application/offset+octet-stream' \
   -H 'Upload-Offset: 0' \
+  -H "Upload-Length: ${upload_size}" \
   --data-binary "@${tmp_dir}/chunk-one.txt" \
   "${package_r_url}/api/tus${aborted_tus_path}" >/dev/null
 curl_test -fsS -X DELETE -H "${auth_header}" \
@@ -442,6 +449,35 @@ else:
 ' "${tmp_dir}/catalog.json")"
 fetch_and_compare "${catalog_asset_url}" "${thumbnail}" "${tmp_dir}/catalog-thumbnail.png" \
   -H "${share_password_header}"
+
+log "Checking Prometheus metrics"
+curl_test -fsS "${package_r_url}/metrics" >"${tmp_dir}/metrics.txt"
+for metric_name in \
+  package_r_http_requests_total \
+  package_r_http_request_duration_seconds \
+  package_r_http_requests_in_flight \
+  package_r_auth_logins_total \
+  package_r_auth_token_renewals_total \
+  package_r_tus_uploads_total \
+  package_r_presign_requests_total \
+  package_r_vfs_cache_bytes \
+  package_r_vfs_uploads_queued \
+  package_r_vfs_uploads_active \
+  package_r_vfs_cache_errored_files \
+  package_r_vfs_cache_out_of_space \
+  rclone_bytes_transferred_total \
+  rclone_errors_total; do
+  grep -q "^# HELP ${metric_name} " "${tmp_dir}/metrics.txt"
+done
+grep -q '^package_r_auth_logins_total{method="proxy",result="success"} 1$' \
+  "${tmp_dir}/metrics.txt"
+grep -q '^package_r_tus_uploads_total{result="started"} 2$' "${tmp_dir}/metrics.txt"
+grep -q '^package_r_tus_uploads_total{result="completed"} 1$' "${tmp_dir}/metrics.txt"
+grep -q '^package_r_tus_uploads_total{result="aborted"} 1$' "${tmp_dir}/metrics.txt"
+if grep -F "${BUCKET}" "${tmp_dir}/metrics.txt" >/dev/null; then
+  printf 'Metrics expose an object-storage bucket or request path.\n' >&2
+  exit 1
+fi
 
 log "Checking generated user home write isolation"
 stop_process "${package_r_pid}"

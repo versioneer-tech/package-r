@@ -15,6 +15,7 @@ import (
 
 	rclone "github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config/configstruct"
+	"github.com/rclone/rclone/fs/rc"
 	"github.com/rclone/rclone/vfs"
 	"github.com/rclone/rclone/vfs/vfscommon"
 	"github.com/spf13/afero"
@@ -24,6 +25,15 @@ import (
 type FS struct {
 	vfs       *vfs.VFS
 	closeOnce sync.Once
+}
+
+// Stats contains safe, aggregate VFS write-cache values.
+type Stats struct {
+	CacheBytes        int64
+	ErroredFiles      int64
+	UploadsInProgress int64
+	UploadsQueued     int64
+	OutOfSpace        bool
 }
 
 var _ afero.Fs = (*FS)(nil)
@@ -58,6 +68,40 @@ func (f *FS) Close() error {
 
 func (f *FS) Name() string {
 	return "rclone"
+}
+
+func (f *FS) stats() Stats {
+	values := f.vfs.Stats()
+	diskCache, ok := values["diskCache"].(rc.Params)
+	if !ok {
+		return Stats{}
+	}
+
+	return Stats{
+		CacheBytes:        metricInt64(diskCache["bytesUsed"]),
+		ErroredFiles:      metricInt64(diskCache["erroredFiles"]),
+		UploadsInProgress: metricInt64(diskCache["uploadsInProgress"]),
+		UploadsQueued:     metricInt64(diskCache["uploadsQueued"]),
+		OutOfSpace:        metricBool(diskCache["outOfSpace"]),
+	}
+}
+
+func metricInt64(value interface{}) int64 {
+	switch value := value.(type) {
+	case int:
+		return int64(value)
+	case int64:
+		return value
+	case uint64:
+		return int64(value)
+	default:
+		return 0
+	}
+}
+
+func metricBool(value interface{}) bool {
+	result, _ := value.(bool)
+	return result
 }
 
 // PublicLink creates a time-limited read URL through the backend used by the VFS.

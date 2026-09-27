@@ -14,6 +14,50 @@ import (
 	"github.com/versioneer-tech/package-r/files"
 )
 
+const uploadLengthHeader = "Upload-Length"
+
+func tusEventHandler(event string, next handleFunc) handleFunc {
+	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+		status, err := next(w, r, d)
+		if err != nil || status >= http.StatusBadRequest {
+			d.metrics.ObserveTUS("failed")
+			return status, err
+		}
+
+		switch event {
+		case "started":
+			d.metrics.ObserveTUS("started")
+			if uploadLength(r) == 0 {
+				d.metrics.ObserveTUS("completed")
+			}
+		case "patched":
+			length := uploadLength(r)
+			if length >= 0 && length == uploadOffset(w) {
+				d.metrics.ObserveTUS("completed")
+			}
+		case "aborted":
+			d.metrics.ObserveTUS("aborted")
+		}
+		return status, err
+	}
+}
+
+func uploadLength(r *http.Request) int64 {
+	length, err := strconv.ParseInt(r.Header.Get(uploadLengthHeader), 10, 64)
+	if err != nil || length < 0 {
+		return -1
+	}
+	return length
+}
+
+func uploadOffset(w http.ResponseWriter) int64 {
+	offset, err := strconv.ParseInt(w.Header().Get("Upload-Offset"), 10, 64)
+	if err != nil || offset < 0 {
+		return -1
+	}
+	return offset
+}
+
 //nolint:goconst
 func tusPostHandler() handleFunc {
 	return withUser(func(_ http.ResponseWriter, r *http.Request, d *data) (int, error) {

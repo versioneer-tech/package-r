@@ -26,6 +26,7 @@ import (
 	"github.com/versioneer-tech/package-r/frontend"
 	apphttp "github.com/versioneer-tech/package-r/http"
 	"github.com/versioneer-tech/package-r/img"
+	appmetrics "github.com/versioneer-tech/package-r/metrics"
 	"github.com/versioneer-tech/package-r/objectstorage"
 	"github.com/versioneer-tech/package-r/rclonefs"
 	"github.com/versioneer-tech/package-r/settings"
@@ -185,7 +186,8 @@ add at least one user with "package-r users add".`,
 			panic(err)
 		}
 
-		handler, err := apphttp.NewHandler(imgSvc, fileCache, d.store, server, assetsFs)
+		telemetry := appmetrics.New(context.Background(), objectFileSystems)
+		handler, err := apphttp.NewHandler(imgSvc, fileCache, d.store, server, assetsFs, telemetry)
 		checkErr(err)
 
 		defer listener.Close()

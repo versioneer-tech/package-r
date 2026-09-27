@@ -9,6 +9,7 @@ import (
 
 	"github.com/tomasen/realip"
 
+	appmetrics "github.com/versioneer-tech/package-r/metrics"
 	"github.com/versioneer-tech/package-r/rules"
 	"github.com/versioneer-tech/package-r/runner"
 	"github.com/versioneer-tech/package-r/settings"
@@ -25,6 +26,7 @@ type data struct {
 	store    *storage.Storage
 	user     *users.User
 	raw      interface{}
+	metrics  *appmetrics.Metrics
 
 	skipUserDirBaseRules bool
 }
@@ -114,7 +116,22 @@ func pathAtOrAbove(requestPath, basePath string) bool {
 	return requestPath == "/" || requestPath == basePath || strings.HasPrefix(basePath, requestPath+"/")
 }
 
-func handle(fn handleFunc, prefix string, store *storage.Storage, server *settings.Server) http.Handler {
+func handle(
+	fn handleFunc,
+	prefix string,
+	store *storage.Storage,
+	server *settings.Server,
+) http.Handler {
+	return handleWithMetrics(fn, prefix, store, server, nil)
+}
+
+func handleWithMetrics(
+	fn handleFunc,
+	prefix string,
+	store *storage.Storage,
+	server *settings.Server,
+	telemetry *appmetrics.Metrics,
+) http.Handler {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for k, v := range globalHeaders {
 			w.Header().Set(k, v)
@@ -131,6 +148,7 @@ func handle(fn handleFunc, prefix string, store *storage.Storage, server *settin
 			store:    store,
 			settings: settings,
 			server:   server,
+			metrics:  telemetry,
 		})
 
 		if status >= 400 || err != nil {

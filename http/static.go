@@ -14,6 +14,7 @@ import (
 	"text/template"
 
 	"github.com/versioneer-tech/package-r/auth"
+	appmetrics "github.com/versioneer-tech/package-r/metrics"
 	"github.com/versioneer-tech/package-r/settings"
 	"github.com/versioneer-tech/package-r/storage"
 	"github.com/versioneer-tech/package-r/version"
@@ -96,17 +97,22 @@ func handleWithStaticData(w http.ResponseWriter, _ *http.Request, d *data, fSys 
 	return 0, nil
 }
 
-func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs fs.FS) (index, static http.Handler) {
-	index = handle(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+func getStaticHandlers(
+	store *storage.Storage,
+	server *settings.Server,
+	assetsFs fs.FS,
+	telemetry *appmetrics.Metrics,
+) (index, static http.Handler) {
+	index = handleWithMetrics(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if r.Method != http.MethodGet {
 			return http.StatusNotFound, nil
 		}
 
 		w.Header().Set("x-xss-protection", "1; mode=block")
 		return handleWithStaticData(w, r, d, assetsFs, "public/index.html", "text/html; charset=utf-8")
-	}, "", store, server)
+	}, "", store, server, telemetry)
 
-	static = handle(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	static = handleWithMetrics(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if r.Method != http.MethodGet {
 			return http.StatusNotFound, nil
 		}
@@ -149,7 +155,7 @@ func getStaticHandlers(store *storage.Storage, server *settings.Server, assetsFs
 		}
 
 		return 0, nil
-	}, "/static/", store, server)
+	}, "/static/", store, server, telemetry)
 
 	return index, static
 }

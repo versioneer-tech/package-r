@@ -41,6 +41,8 @@ source files. It checks:
 - public catalogs load through the VFS with the GeoJSON media type
 - the live catalog endpoint passes STAC 1.1 validation
 - rewritten catalog asset URLs return the expected object
+- Prometheus metrics expose HTTP, authentication, upload, presign, rclone, and
+  VFS values without object paths
 - generated users can read and write their own home
 - generated users cannot read or write a sibling home
 

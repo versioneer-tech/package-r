@@ -65,6 +65,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 			localURL,
 			presignLifetime,
 		)
+		d.metrics.ObservePresign(err == nil)
 		if errors.Is(err, appErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {

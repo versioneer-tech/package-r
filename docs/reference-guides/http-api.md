@@ -1,7 +1,8 @@
 # HTTP API
 
 The packageR API supports object operations, public packages, presigned URLs,
-and STAC catalogs. All API paths start with `/api`.
+and STAC catalogs. API paths start with `/api`. The Prometheus endpoint is
+available at `/metrics`.
 
 Examples use this base URL:
 
@@ -14,6 +15,24 @@ an HTTP status code and a short text message.
 
 The [OpenAPI 3.1 specification](openapi.yaml) provides the supported API in a
 machine-readable format.
+
+## Metrics
+
+`GET /metrics` returns Prometheus or OpenMetrics data. It does not require a
+packageR session token. Restrict access with the deployment network or reverse
+proxy.
+
+The endpoint provides:
+
+- HTTP request counts, duration, status, and in-flight requests
+- Login results by authentication method and successful token renewals
+- TUS upload lifecycle and presign results
+- rclone transfer and error counters
+- VFS cache bytes, queued and active uploads, errored files, and out-of-space
+  state
+
+Metrics use aggregate labels only. They do not include usernames, object
+paths, buckets, shares, or tokens. Counters reset when the process restarts.
 
 ## Authentication
 
@@ -114,6 +133,9 @@ cache.
 | `HEAD` | Return the current byte position in `Upload-Offset`. |
 | `PATCH` | Append `application/offset+octet-stream` data at `Upload-Offset`. |
 | `DELETE` | Abort the upload and remove the partial object. |
+
+Send the total byte count in `Upload-Length` with `POST` and `PATCH` requests
+to record upload completion. The web interface sends this header.
 
 The web interface sends `DELETE` when a user cancels an upload. A successful
 request removes the partial object. If a `PATCH` is interrupted or `DELETE`

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	appmetrics "github.com/versioneer-tech/package-r/metrics"
 	"github.com/versioneer-tech/package-r/settings"
 	"github.com/versioneer-tech/package-r/storage"
 )
@@ -16,6 +17,7 @@ func NewHandler(
 	store *storage.Storage,
 	server *settings.Server,
 	assetsFs fs.FS,
+	telemetry *appmetrics.Metrics,
 ) (http.Handler, error) {
 	server.Clean()
 
@@ -26,16 +28,22 @@ func NewHandler(
 			next.ServeHTTP(w, r)
 		})
 	})
-	index, static := getStaticHandlers(store, server, assetsFs)
+	if telemetry != nil {
+		r.Use(telemetry.HTTPMiddleware)
+	}
+	index, static := getStaticHandlers(store, server, assetsFs, telemetry)
 
 	// Keep object paths unchanged. Cleaning a URL can change a valid object key.
 	r = r.SkipClean(true)
 
 	wrap := func(fn handleFunc, prefix string) http.Handler {
-		return handle(fn, prefix, store, server)
+		return handleWithMetrics(fn, prefix, store, server, telemetry)
 	}
 
 	r.HandleFunc("/health", healthHandler)
+	if telemetry != nil {
+		r.Handle("/metrics", telemetry.Handler()).Methods("GET")
+	}
 	r.PathPrefix("/static").Handler(static)
 	r.NotFoundHandler = index
 
@@ -53,10 +61,10 @@ func NewHandler(
 	api.PathPrefix("/resources").Handler(wrap(resourcePutHandler, "/api/resources")).Methods("PUT")
 	api.PathPrefix("/resources").Handler(wrap(resourcePatchHandler(fileCache), "/api/resources")).Methods("PATCH")
 
-	api.PathPrefix("/tus").Handler(wrap(tusPostHandler(), "/api/tus")).Methods("POST")
+	api.PathPrefix("/tus").Handler(wrap(tusEventHandler("started", tusPostHandler()), "/api/tus")).Methods("POST")
 	api.PathPrefix("/tus").Handler(wrap(tusHeadHandler(), "/api/tus")).Methods("HEAD")
-	api.PathPrefix("/tus").Handler(wrap(tusPatchHandler(), "/api/tus")).Methods("PATCH")
-	api.PathPrefix("/tus").Handler(wrap(resourceDeleteHandler(fileCache), "/api/tus")).Methods("DELETE")
+	api.PathPrefix("/tus").Handler(wrap(tusEventHandler("patched", tusPatchHandler()), "/api/tus")).Methods("PATCH")
+	api.PathPrefix("/tus").Handler(wrap(tusEventHandler("aborted", resourceDeleteHandler(fileCache)), "/api/tus")).Methods("DELETE")
 
 	api.Handle("/shares", wrap(configuredShareGetsHandler, "/api/shares")).Methods("GET")
 	api.PathPrefix("/shares").Handler(http.NotFoundHandler())

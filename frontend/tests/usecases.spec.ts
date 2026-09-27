@@ -10,6 +10,11 @@ const thumbnailPath = `openaerialmap-assets/${itemId}/thumbnail.png`;
 const publicShareThumbnailPath = `/share/${publicShare}/${thumbnailPath}`;
 const stacBrowserBaseURL = "https://browser.moregeo.it/external/";
 const screenshotOptions = { animations: "disabled", caret: "hide" } as const;
+const publicShareScreenshotOptions = {
+  ...screenshotOptions,
+  // Allow small Chromium text rasterization differences around object names.
+  maxDiffPixels: 350,
+} as const;
 const stableRelativeTime = "a few seconds ago";
 const stableScreenshotStyle = `
   *,
@@ -249,7 +254,7 @@ test.describe("packageR use-case UI", () => {
     await normalizeRelativeTimes(page);
     await expect(page.locator(".share").first()).toHaveScreenshot(
       "my-share-directory.png",
-      screenshotOptions
+      publicShareScreenshotOptions
     );
   });
 
@@ -290,7 +295,7 @@ test.describe("packageR use-case UI", () => {
     await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
       "my-share-presign.png",
-      screenshotOptions
+      publicShareScreenshotOptions
     );
   });
 
@@ -345,7 +350,7 @@ test.describe("packageR use-case UI", () => {
     await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
       "my-share-preview-url.png",
-      screenshotOptions
+      publicShareScreenshotOptions
     );
   });
 

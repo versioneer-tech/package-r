@@ -12,6 +12,7 @@ servers:
   - url: http://127.0.0.1:8888
     description: Local packageR server
 tags:
+  - name: Metrics
   - name: Authentication
   - name: Resources
   - name: Uploads
@@ -19,6 +20,27 @@ tags:
   - name: Shares
   - name: Catalogs
 paths:
+  /metrics:
+    get:
+      tags: [Metrics]
+      operationId: getMetrics
+      summary: Get aggregate Prometheus metrics
+      description: |
+        The endpoint does not require a packageR session token. Restrict it
+        with the deployment network or reverse proxy. Metric labels do not
+        contain usernames, object paths, buckets, shares, or tokens.
+      security: []
+      responses:
+        "200":
+          description: Prometheus or OpenMetrics data.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/openmetrics-text:
+              schema:
+                type: string
+
   /api/login:
     post:
       tags: [Authentication]
@@ -252,6 +274,7 @@ paths:
         - PackageRToken: []
       parameters:
         - $ref: "#/components/parameters/Override"
+        - $ref: "#/components/parameters/UploadLength"
       responses:
         "201":
           description: Upload target created.
@@ -302,6 +325,7 @@ paths:
         - PackageRToken: []
       parameters:
         - $ref: "#/components/parameters/UploadOffset"
+        - $ref: "#/components/parameters/UploadLength"
       requestBody:
         required: true
         content:
@@ -585,6 +609,15 @@ components:
       in: header
       required: true
       description: Expected byte position before this chunk.
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+    UploadLength:
+      name: Upload-Length
+      in: header
+      required: false
+      description: Total upload size. Send it to record upload completion.
       schema:
         type: integer
         format: int64

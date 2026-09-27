@@ -89,29 +89,40 @@ func withUser(fn handleFunc) handleFunc {
 
 func loginHandler(tokenExpireTime time.Duration) handleFunc {
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+		authMethod := string(d.settings.AuthMethod)
 		auther, err := d.store.Auth.Get(d.settings.AuthMethod)
 		if err != nil {
+			d.metrics.ObserveLogin(authMethod, false)
 			return http.StatusInternalServerError, err
 		}
 
 		user, err := auther.Auth(r, d.store.Users, d.settings, d.server)
 		switch {
 		case errors.Is(err, os.ErrPermission):
+			d.metrics.ObserveLogin(authMethod, false)
 			return http.StatusForbidden, nil
 		case errors.Is(err, appErrors.ErrNotExist):
+			d.metrics.ObserveLogin(authMethod, false)
 			return http.StatusNotFound, nil
 		case err != nil:
+			d.metrics.ObserveLogin(authMethod, false)
 			return http.StatusInternalServerError, err
 		}
 
-		return printToken(w, r, d, user, tokenExpireTime)
+		status, err := printToken(w, r, d, user, tokenExpireTime)
+		d.metrics.ObserveLogin(authMethod, status == 0 && err == nil)
+		return status, err
 	}
 }
 
 func renewHandler(tokenExpireTime time.Duration) handleFunc {
 	return withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		w.Header().Set("X-Renew-Token", "false")
-		return printToken(w, r, d, d.user, tokenExpireTime)
+		status, err := printToken(w, r, d, d.user, tokenExpireTime)
+		if status == 0 && err == nil {
+			d.metrics.ObserveTokenRenewal()
+		}
+		return status, err
 	})
 }
 

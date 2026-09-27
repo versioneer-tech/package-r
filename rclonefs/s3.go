@@ -54,6 +54,23 @@ func (m *Manager) PublicLink(ctx context.Context, name string, expire time.Durat
 	return fileSystem.PublicLink(ctx, name, expire)
 }
 
+// Stats returns aggregate values for all VFS instances owned by the manager.
+func (m *Manager) Stats() Stats {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	var total Stats
+	for _, fileSystem := range m.files {
+		stats := fileSystem.stats()
+		total.CacheBytes += stats.CacheBytes
+		total.ErroredFiles += stats.ErroredFiles
+		total.UploadsInProgress += stats.UploadsInProgress
+		total.UploadsQueued += stats.UploadsQueued
+		total.OutOfSpace = total.OutOfSpace || stats.OutOfSpace
+	}
+	return total
+}
+
 func (m *Manager) fileSystem() (*FS, error) {
 	config := objectstorage.Load()
 	config.SetRoot(m.root)

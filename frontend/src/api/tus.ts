@@ -27,8 +27,9 @@ export async function upload(
 
   filePath = removePrefix(filePath);
   const resourcePath = `${tusEndpoint}${filePath}?override=${overwrite}`;
+  const uploadLength = content instanceof Blob ? content.size : undefined;
 
-  await createUpload(resourcePath);
+  await createUpload(resourcePath, uploadLength);
 
   const authStore = useAuthStore();
 
@@ -45,6 +46,9 @@ export async function upload(
       storeFingerprintForResuming: false,
       headers: {
         "X-Auth": authStore.jwt,
+        ...(uploadLength === undefined
+          ? {}
+          : { "Upload-Length": String(uploadLength) }),
       },
       onError: function (error) {
         if (CURRENT_UPLOAD_LIST[filePath].interval) {
@@ -92,9 +96,13 @@ export async function upload(
   });
 }
 
-async function createUpload(resourcePath: string) {
+async function createUpload(resourcePath: string, uploadLength?: number) {
   const headResp = await fetchURL(resourcePath, {
     method: "POST",
+    headers:
+      uploadLength === undefined
+        ? undefined
+        : { "Upload-Length": String(uploadLength) },
   });
   if (headResp.status !== 201) {
     throw new Error(

@@ -140,6 +140,7 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 			"",
 			publicSharePresignLifetime(cf.ShareExpire),
 		)
+		d.metrics.ObservePresign(err == nil)
 		if errors.Is(err, appErrors.ErrInvalidOption) {
 			return http.StatusBadRequest, nil
 		} else if err != nil {
