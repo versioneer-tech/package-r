@@ -4,6 +4,8 @@ interface IUser {
   perm: Permissions;
   singleClick: boolean;
   dateFormat: boolean;
+  hideDotfiles: boolean;
+  sorting?: Sorting;
   viewMode: ViewModeType;
 }
 

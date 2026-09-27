@@ -1,13 +1,16 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -70,6 +73,10 @@ func TestPublicShareOpenUsesPresignedURL(t *testing.T) {
 	})
 	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/share/my-share/data.txt?presign=true&follow=true", http.NoBody)
 	recorder := httptest.NewRecorder()
+	var output bytes.Buffer
+	previousOutput := log.Writer()
+	log.SetOutput(&output)
+	t.Cleanup(func() { log.SetOutput(previousOutput) })
 
 	handler.ServeHTTP(recorder, req)
 
@@ -78,6 +85,9 @@ func TestPublicShareOpenUsesPresignedURL(t *testing.T) {
 	}
 	if location := recorder.Header().Get("Location"); location != linker.url {
 		t.Fatalf("expected object-storage URL, got %q", location)
+	}
+	if strings.Contains(output.String(), "[DOWNLOAD]") {
+		t.Fatalf("presigned redirect produced a proxy download log: %s", output.String())
 	}
 }
 
@@ -200,12 +210,21 @@ func TestResourcePresignDoesNotRequireProxyDownloadPermission(t *testing.T) {
 	if err := store.Users.Update(user, "Perm"); err != nil {
 		t.Fatal(err)
 	}
+	linker := &recordingPublicLinkStore{
+		Store: store.Users,
+		url:   "https://objects.example.invalid/data.txt?signature=xyz",
+	}
+	store.Users = linker
 
 	token := newTestAuthToken(t, store, user)
 	handler := handle(resourceGetHandler, "/api/resources", store, &settings.Server{Root: root})
 	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/resources/files/data.txt?presign=true", http.NoBody)
 	req.Header.Set("X-Auth", token)
 	recorder := httptest.NewRecorder()
+	var output bytes.Buffer
+	previousOutput := log.Writer()
+	log.SetOutput(&output)
+	t.Cleanup(func() { log.SetOutput(previousOutput) })
 
 	handler.ServeHTTP(recorder, req)
 	if recorder.Code != http.StatusOK {
@@ -220,8 +239,11 @@ func TestResourcePresignDoesNotRequireProxyDownloadPermission(t *testing.T) {
 	if err := json.NewDecoder(result.Body).Decode(&file); err != nil {
 		t.Fatal(err)
 	}
-	if file.PresignedURL == "" {
-		t.Fatal("expected presigned URL")
+	if file.PresignedURL != linker.url {
+		t.Fatalf("expected object-storage URL, got %q", file.PresignedURL)
+	}
+	if strings.Contains(output.String(), "[DOWNLOAD]") {
+		t.Fatalf("presigned URL creation produced a proxy download log: %s", output.String())
 	}
 }
 

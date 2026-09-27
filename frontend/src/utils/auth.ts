@@ -56,6 +56,19 @@ export async function login(
   }
 }
 
+export async function storeLoginCredential(form: HTMLFormElement) {
+  if (!window.PasswordCredential || !navigator.credentials) {
+    return;
+  }
+
+  try {
+    const credential = new window.PasswordCredential(form);
+    await navigator.credentials.store(credential);
+  } catch {
+    // Credential storage is optional and must not block a successful login.
+  }
+}
+
 export async function renew(jwt: string) {
   const res = await fetch(`${baseURL}/api/renew`, {
     method: "POST",

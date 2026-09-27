@@ -1,3 +1,4 @@
 # Keep these direct dependencies aligned with pyproject.toml. CI uses this file.
 mkdocs-material==9.7.7
 mike==2.2.0
+openapi-spec-validator==0.9.0

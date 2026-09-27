@@ -83,7 +83,7 @@
     "currentlyNavigating": "כרגע מנווט ב:",
     "deleteMessageMultiple": "האם אתה בטוח שברצונך למחוק {count} קבצים?",
     "deleteMessageSingle": "האם אתה בטוח שברצונך למחוק את הקובץ/התיקייה?",
-    "displayName": "שם:",
+    "displayName": "שם",
     "download": "הורדת קבצים",
     "downloadMessage": "בחר את הפורמט שברצונך להוריד",
     "fileInfo": "מידע על הקובץ",
@@ -115,5 +115,17 @@
   },
   "success": {
     "linkCopied": "הקישור הועתק!"
+  },
+  "settings": {
+    "profileSettings": "הגדרות פרופיל",
+    "hideDotfiles": "הסתר קבצים/תיקיות ששמם מתחיל בנקודה",
+    "singleClick": "השתמש בלחיצה בודדת כדי לפתוח קובץ/תיקייה",
+    "setDateFormat": "הגדר פורמט תאריך",
+    "language": "שפה",
+    "settingsUpdated": "ההגדרות עודכנו!",
+    "shareDescription": "Description",
+    "shareDuration": "משך השיתוף",
+    "shareManagement": "ניהול שיתוף",
+    "path": "נתיב"
   }
 }

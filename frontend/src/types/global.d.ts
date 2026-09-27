@@ -4,6 +4,9 @@ declare global {
   interface Window {
     PackageR: any;
     grecaptcha: any;
+    PasswordCredential?: {
+      new (form: HTMLFormElement): Credential;
+    };
   }
 
   interface HTMLElement {

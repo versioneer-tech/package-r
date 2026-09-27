@@ -71,7 +71,7 @@
     "currentlyNavigating": "För närvarande navigerar du på:",
     "deleteMessageMultiple": "Är du säker på att du vill radera {count} filer(na)?",
     "deleteMessageSingle": "Är du säker på att du vill radera denna fil/mapp",
-    "displayName": "Visningsnamn:",
+    "displayName": "Visningsnamn",
     "download": "Ladda ner filer",
     "downloadMessage": "Välj format på det du vill lada ner.",
     "fileInfo": "Fil information",
@@ -101,5 +101,17 @@
   },
   "success": {
     "linkCopied": "Länk kopierad"
+  },
+  "settings": {
+    "profileSettings": "Profil inställningar",
+    "hideDotfiles": "Hide dotfiles",
+    "singleClick": "Use single clicks to open files and directories",
+    "setDateFormat": "Set exact date format",
+    "language": "Språk",
+    "settingsUpdated": "Inställning uppdaterad!",
+    "shareDescription": "Description",
+    "shareDuration": "Share Duration",
+    "shareManagement": "Share Management",
+    "path": "Path"
   }
 }

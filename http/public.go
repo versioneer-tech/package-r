@@ -2,7 +2,6 @@ package http
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -151,8 +150,6 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 
 	follow := requestQueryEnabled(r, "follow") || requestQueryEnabled(r, "followRedirect")
 	if follow && file.PresignedURL != "" {
-		downloadPath := publicSharePresignPath(cf)
-		log.Printf("[DOWNLOAD] public_share=%q path=%q delivery=presigned_redirect", cf.ShareHash, downloadPath)
 		status := http.StatusTemporaryRedirect // 307 to preserve method
 		http.Redirect(w, r, file.PresignedURL, status)
 		return status, nil

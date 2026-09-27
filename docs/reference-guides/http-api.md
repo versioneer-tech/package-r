@@ -12,9 +12,32 @@ PACKAGE_R_URL=http://127.0.0.1:8888
 URL-encode object path segments. Keep `/` as the path separator. Errors return
 an HTTP status code and a short text message.
 
+The [OpenAPI 3.1 specification](openapi.yaml) provides the supported API in a
+machine-readable format.
+
 ## Authentication
 
-With proxy authentication, send the trusted identity header to `/api/login`:
+packageR supports two authentication methods. Both methods use `/api/login`
+and return a signed packageR session token.
+
+### Username and password
+
+The default `json` method accepts a JSON body:
+
+```bash
+PACKAGE_R_TOKEN=$(curl -fsS \
+  -X POST \
+  -H 'Content-Type: application/json' \
+  --data '{"username":"my-user","password":"my-password"}' \
+  "$PACKAGE_R_URL/api/login")
+```
+
+### Proxy authentication
+
+The `proxy` method reads the configured identity header. The header can
+contain a trusted username or a JWT.
+
+For a trusted username header:
 
 ```bash
 PACKAGE_R_TOKEN=$(curl -fsS \
@@ -23,13 +46,36 @@ PACKAGE_R_TOKEN=$(curl -fsS \
   "$PACKAGE_R_URL/api/login")
 ```
 
-The reverse proxy must remove a client value before it sets this header. The
-login response is a signed packageR token. Send the token in `X-Auth`.
+The reverse proxy must remove any client-supplied value before it sets the
+trusted header.
+
+For a validated JWT:
+
+```bash
+PACKAGE_R_TOKEN=$(curl -fsS \
+  -X POST \
+  -H 'Authorization: Bearer <identity-token>' \
+  "$PACKAGE_R_URL/api/login")
+```
+
+The proxy authentication settings select the header, username claim, and JWT
+validation rules. The identity JWT is only the login credential. A successful
+login returns a separate packageR session token. See
+[Configuration](../how-to-guides/configuration.md#authentication-and-authorization)
+for the required proxy settings.
+
+Send the packageR session token with authenticated API requests:
+
+```bash
+curl -fsS \
+  -H "X-Auth: $PACKAGE_R_TOKEN" \
+  "$PACKAGE_R_URL/api/resources/"
+```
 
 | Method | Path | Result |
 | --- | --- | --- |
-| `POST` | `/api/login` | Return a token for a trusted proxy identity. |
-| `POST` | `/api/renew` | Replace a valid packageR token. |
+| `POST` | `/api/login` | Authenticate with the configured method and return a packageR session token. |
+| `POST` | `/api/renew` | Replace a valid packageR session token. |
 
 ## Resources
 
@@ -57,47 +103,71 @@ control common operations:
 Presigned object URLs send file content directly from object storage. They are
 valid for at most seven days.
 
+## Chunked uploads
+
+Use `/api/tus/{path}` for resumable uploads through the rclone VFS write
+cache.
+
+| Method | Purpose |
+| --- | --- |
+| `POST` | Create the upload target. Use `override=true` to replace an existing file. |
+| `HEAD` | Return the current byte position in `Upload-Offset`. |
+| `PATCH` | Append `application/offset+octet-stream` data at `Upload-Offset`. |
+| `DELETE` | Abort the upload and remove the partial object. |
+
+The web interface sends `DELETE` when a user cancels an upload. A successful
+request removes the partial object. If a `PATCH` is interrupted or `DELETE`
+fails, the partial object can remain. An API client can use `HEAD` to find its
+offset and continue with `PATCH`, or delete it.
+
 ## Shares
 
-Authenticated users can list the configured public shares available in their
-scope:
+Shares are declared when the runtime database is prepared. Authenticated users
+can list the public shares available in their scope:
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/shares` | Return safe, read-only public share links. |
 
-The response does not include password hashes or access tokens. Configure
-shares with `package-r shares`.
+The response includes the source root, path, expiry, description, catalog,
+asset mappings, and whether the share has a password.
 
 ## Public shares
 
-Public shares are declared when the runtime database is prepared. They do not
-need a packageR token.
+Share resources do not require a packageR session token.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` or `HEAD` | `/api/public/share/{hash}/{path}` | List or inspect a shared resource. |
 
-For a share protected by a share password, send the URL-encoded share password
-in `X-SHARE-PASSWORD`. A successful response contains a temporary share token.
-Send this token in the `token` query value for later requests. Public file
-metadata supports the same checksum and presign query values as an
-authenticated resource. With both `presign=true` and `follow=true`, it returns
-`307 Temporary Redirect` to object storage. Public shares do not provide a
+For a protected share, send the URL-encoded share password in
+`X-SHARE-PASSWORD` with each request. No preliminary request is necessary.
+
+```bash
+curl -fsS \
+  -H 'X-SHARE-PASSWORD: my-password' \
+  "$PACKAGE_R_URL/api/public/share/my-share/"
+```
+
+Public file metadata supports the same checksum and presign query values as an
+authenticated resource. With `presign=true` and `follow=true`, the response is
+a `307 Temporary Redirect` to object storage. Public shares do not provide a
 packageR download or directory archive endpoint.
 
 ## Public catalogs
 
-Request a share's complete catalog or select entries below a package path:
+For a share with a Parquet catalog, use these paths to get the complete catalog
+or the entries below a package path:
 
 ```text
 /api/public/catalog/{hash}
 /api/public/catalog/{hash}/{path}
 ```
 
-The route accepts `GET` and `HEAD`. Shares protected by a share password use
-`X-SHARE-PASSWORD`. One matching row returns a STAC `Feature`; zero or
-multiple rows return a versioned `FeatureCollection` with a `links` array.
+The route accepts `GET` and `HEAD`. For a protected share, send
+`X-SHARE-PASSWORD` with each request. One matching row returns a STAC
+`Feature`. Zero or multiple rows return a versioned `FeatureCollection` with a
+`links` array.
 Responses use the `application/geo+json` media type.
 
 The Parquet catalog does not need full STAC GeoParquet compliance. Each row
@@ -118,15 +188,13 @@ public share URLs with `?presign&followRedirect`. Other absolute URLs stay
 unchanged. [ADR-002](../architecture/0002-publish-parquet-catalogs-as-stac.md)
 defines the matching rules.
 
-The `package-r shares add --asset-mappings` option maps nonstandard URL
-prefixes to paths inside that share. Its value is a JSON array of `from` and
-`to` strings. Each `to` path must be relative and stay inside the share.
+Asset mappings map nonstandard URL prefixes to paths inside a share. Each
+mapping contains `from` and `to` strings. The `to` path must be relative and
+stay inside the share.
 
-Catalog queries have these limits:
+Catalog queries have these requirements:
 
 - The catalog must be inside the shared tree
-- One catalog cannot exceed 256 MiB
-- At most four catalog queries can run at the same time
 - DuckDB reads a signed URL with HTTP range requests and does not stage the
   catalog on local disk
 - The internal catalog URL is valid for at most 15 minutes

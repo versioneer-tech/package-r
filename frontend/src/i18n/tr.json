@@ -75,7 +75,7 @@
     "currentlyNavigating": "Şu anki lokasyon:",
     "deleteMessageMultiple": "{count} dosyayı/dosyaları silmek istediğinizden emin misiniz?",
     "deleteMessageSingle": "Bu dosyayı/klasörü silmek istediğinizden emin misiniz?",
-    "displayName": "Görünen Ad:",
+    "displayName": "Görünen Ad",
     "download": "Dosyaları indirŞ",
     "downloadMessage": "İndirmek istediğiniz formatı seçin.",
     "fileInfo": "Dosya bilgisi",
@@ -105,5 +105,17 @@
   },
   "success": {
     "linkCopied": "Link kopyalandı!"
+  },
+  "settings": {
+    "profileSettings": "Profil ayarları",
+    "hideDotfiles": ". ile başlayan dosyaları gizle",
+    "singleClick": "Dosyaları ve dizinleri açmak için tek tıklamayı kullanın",
+    "setDateFormat": "Set exact date format",
+    "language": "Dil",
+    "settingsUpdated": "Ayarlar güncellendi!",
+    "shareDescription": "Description",
+    "shareDuration": "Paylaşım süresi",
+    "shareManagement": "Paylaşım yönetimi",
+    "path": "Yol"
   }
 }

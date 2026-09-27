@@ -72,7 +72,7 @@
     "currentlyNavigating": "A navegar em:",
     "deleteMessageMultiple": "Quer eliminar {count} ficheiro(s)?",
     "deleteMessageSingle": "Quer eliminar esta pasta/ficheiro?",
-    "displayName": "Nome:",
+    "displayName": "Nome",
     "download": "Descarregar ficheiros",
     "downloadMessage": "Escolha o formato do ficheiro que quer descarregar.",
     "fileInfo": "Informação do ficheiro",
@@ -102,5 +102,17 @@
   },
   "success": {
     "linkCopied": "Link copiado!"
+  },
+  "settings": {
+    "profileSettings": "Configurações do utilizador",
+    "hideDotfiles": "Hide dotfiles",
+    "singleClick": "Use single clicks to open files and directories",
+    "setDateFormat": "Set exact date format",
+    "language": "Linguagem",
+    "settingsUpdated": "Configurações atualizadas!",
+    "shareDescription": "Description",
+    "shareDuration": "Share Duration",
+    "shareManagement": "Share Management",
+    "path": "Path"
   }
 }

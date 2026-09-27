@@ -20,6 +20,8 @@ export default defineConfig({
   workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
+  /* Visual tests also provide the screenshots used by the documentation. */
+  snapshotPathTemplate: "../docs/imgs/screenshots/{arg}{ext}",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */

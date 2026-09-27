@@ -82,7 +82,7 @@
     "currentlyNavigating": "現在閲覧しているディレクトリ：",
     "deleteMessageMultiple": "{count} 個のファイルを削除してもよろしいですか？",
     "deleteMessageSingle": "このファイル／フォルダーを削除してもよろしいですか？",
-    "displayName": "表示名：",
+    "displayName": "表示名",
     "download": "ファイルのダウンロード",
     "downloadMessage": "ダウンロードする際の圧縮形式を選んでください：",
     "fileInfo": "ファイル情報",
@@ -113,5 +113,17 @@
   },
   "success": {
     "linkCopied": "リンクをコピーしました！"
+  },
+  "settings": {
+    "profileSettings": "プロフィール設定",
+    "hideDotfiles": "ドットで始まるファイルを表示しない",
+    "singleClick": "ダブルクリックの代わりにクリックでファイルやフォルダーを開く",
+    "setDateFormat": "正確な日時表記を使用する",
+    "language": "言語",
+    "settingsUpdated": "設定を更新しました！",
+    "shareDescription": "Description",
+    "shareDuration": "共有期間",
+    "shareManagement": "共有の管理",
+    "path": "パス"
   }
 }

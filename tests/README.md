@@ -34,7 +34,8 @@ source files. It checks:
 - create, copy, rename, presigned read, and delete operations work
 - a two-chunk TUS upload works through the VFS write cache
 - TUS accepts `HEAD` and rejects its old `GET` alias
-- authenticated presigned URLs work
+- aborting a TUS upload removes its partial object
+- authenticated presigned URLs work without proxy-download audit records
 - password-protected public presigned URLs and temporary-token redirects work
 - runtime share creation is unavailable
 - public catalogs load through the VFS with the GeoJSON media type
@@ -59,8 +60,8 @@ presigned URLs, or several API operations.
 ## Browser tests
 
 Browser tests use Playwright and Chromium. They start rclone, packageR, and
-Vite on loopback addresses. They cover login, settings, public shares,
-previews, and other user workflows.
+Vite on loopback addresses. They cover login, personal settings, the read-only
+share list, public shares, previews, and other user workflows.
 
 Install the Chromium runtime once, then run the suite:
 

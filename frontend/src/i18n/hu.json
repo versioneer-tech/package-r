@@ -77,7 +77,7 @@
     "currentlyNavigating": "Jelenlegi helyzet:",
     "deleteMessageMultiple": "Biztosan törölni szeretne {count} fájlt?",
     "deleteMessageSingle": "Biztosan törölni szeretné ezt a fájl vagy mappát?",
-    "displayName": "Megjelenített név:",
+    "displayName": "Megjelenített név",
     "download": "Fájlok letöltése",
     "downloadMessage": "Válassza ki a letöltés formátumát.",
     "fileInfo": "Fájlinformáció",
@@ -108,5 +108,17 @@
   },
   "success": {
     "linkCopied": "Link másolva!"
+  },
+  "settings": {
+    "profileSettings": "Profilbeállítások",
+    "hideDotfiles": "Rejtett fájlok elrejtése",
+    "singleClick": "Fájlok és könyvtárak megnyitása egyetlen kattintással",
+    "setDateFormat": "Pontos dátumformátum beállítása",
+    "language": "Nyelv",
+    "settingsUpdated": "Beállítások frissítve!",
+    "shareDescription": "Description",
+    "shareDuration": "Megosztás időtartama",
+    "shareManagement": "Megosztáskezelés",
+    "path": "Elérési útvonal"
   }
 }

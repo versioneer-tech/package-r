@@ -12,16 +12,21 @@ import (
 )
 
 func TestConfiguredShareGetsReturnsSafeLinksForUserScope(t *testing.T) {
-	root, store, user := newPresignTestStorage(t)
+	_, store, user := newPresignTestStorage(t)
 	user.Scope = "/team/xyz"
 	if err := store.Users.Update(user, "Scope"); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Share.Save(&share.Link{
-		Hash:         "xyz-share",
-		Path:         "/team/xyz/public",
-		UserID:       user.ID,
-		Description:  "configured share",
+		Hash:        "xyz-share",
+		Path:        "/team/xyz/public",
+		UserID:      user.ID,
+		Description: "configured share",
+		CatalogURL:  "/team/xyz/public/catalog.parquet",
+		AssetMappings: []share.CatalogAssetMapping{{
+			From: "s3://data/",
+			To:   ".",
+		}},
 		PasswordHash: "must-not-be-returned",
 		Token:        "must-not-be-returned",
 	}); err != nil {
@@ -36,7 +41,7 @@ func TestConfiguredShareGetsReturnsSafeLinksForUserScope(t *testing.T) {
 	}
 
 	token := newTestAuthToken(t, store, user)
-	handler := handle(configuredShareGetsHandler, "/api/shares", store, &settings.Server{Root: root})
+	handler := handle(configuredShareGetsHandler, "/api/shares", store, &settings.Server{Root: "my-bucket"})
 	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/shares", http.NoBody)
 	req.Header.Set("X-Auth", token)
 	recorder := httptest.NewRecorder()
@@ -60,6 +65,11 @@ func TestConfiguredShareGetsReturnsSafeLinksForUserScope(t *testing.T) {
 	if links[0].Hash != "xyz-share" || links[0].URL != "/share/xyz-share/" {
 		t.Fatalf("unexpected configured share: %#v", links[0])
 	}
+	if links[0].Source != "my-bucket" || links[0].Path != "/team/xyz/public" ||
+		links[0].Catalog != "/team/xyz/public/catalog.parquet" ||
+		len(links[0].AssetMappings) != 1 || !links[0].PasswordProtected {
+		t.Fatalf("configured share fields are missing: %#v", links[0])
+	}
 }
 
 func TestConfiguredSharesForUserAppliesRules(t *testing.T) {
@@ -68,7 +78,7 @@ func TestConfiguredSharesForUserAppliesRules(t *testing.T) {
 		{Hash: "denied", Path: "/team/xyz/private"},
 	}
 
-	configured := configuredSharesForUser(links, "/team/xyz", func(requestPath string) bool {
+	configured := configuredSharesForUser(links, "my-bucket", "/team/xyz", func(requestPath string) bool {
 		return requestPath != "/private"
 	})
 	if len(configured) != 1 || configured[0].Hash != "allowed" {

@@ -72,7 +72,7 @@
     "currentlyNavigating": "Attualmente navigando su:",
     "deleteMessageMultiple": "Sei sicuro di voler eliminare {count} file?",
     "deleteMessageSingle": "Sei sicuro di voler eliminare questo file/cartella?",
-    "displayName": "Nome visualizzato:",
+    "displayName": "Nome visualizzato",
     "download": "Scarica files",
     "downloadMessage": "Seleziona il formato che vuoi scaricare.",
     "fileInfo": "Informazioni sul file",
@@ -102,5 +102,17 @@
   },
   "success": {
     "linkCopied": "Link copiato!"
+  },
+  "settings": {
+    "profileSettings": "Impostazioni del profilo",
+    "hideDotfiles": "Nascondi dotfile",
+    "singleClick": "Usa un singolo click per aprire file e cartelle",
+    "setDateFormat": "Set exact date format",
+    "language": "Lingua",
+    "settingsUpdated": "Impostazioni aggiornate!",
+    "shareDescription": "Description",
+    "shareDuration": "Durata della condivisione",
+    "shareManagement": "Gestione delle condivisioni",
+    "path": "Percorso"
   }
 }

@@ -78,7 +78,7 @@
     "currentlyNavigating": "Navegando em:",
     "deleteMessageMultiple": "Deseja apagar {count} arquivo(s)?",
     "deleteMessageSingle": "Deseja apagar esta pasta/arquivo?",
-    "displayName": "Nome:",
+    "displayName": "Nome",
     "download": "Baixar arquivos",
     "downloadMessage": "Escolha o formato do arquivo.",
     "fileInfo": "Informação do arquivo",
@@ -109,5 +109,17 @@
   },
   "success": {
     "linkCopied": "Link copiado!"
+  },
+  "settings": {
+    "profileSettings": "Configurações do usuário",
+    "hideDotfiles": "Ocultar dotfiles",
+    "singleClick": "Usar clique único para abrir arquivos e diretórios",
+    "setDateFormat": "Definir formato exato de data",
+    "language": "Idioma",
+    "settingsUpdated": "Configurações atualizadas!",
+    "shareDescription": "Description",
+    "shareDuration": "Duração do compartilhamento",
+    "shareManagement": "Gerenciamento do compartilhamento",
+    "path": "Path"
   }
 }

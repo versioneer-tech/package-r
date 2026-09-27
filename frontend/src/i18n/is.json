@@ -71,7 +71,7 @@
     "currentlyNavigating": "Núverandi staðsetning:",
     "deleteMessageMultiple": "Ertu viss um að þú viljir eyða {count} skjölum?",
     "deleteMessageSingle": "Ertu viss um að þú viljir eyða þessu skjali/möppu?",
-    "displayName": "Nafn: ",
+    "displayName": "Nafn",
     "download": "Sækja skjöl",
     "downloadMessage": "Veldu skrárgerð sem þú vilt sækja.",
     "fileInfo": "Upplýsingar um gögn",
@@ -101,5 +101,17 @@
   },
   "success": {
     "linkCopied": "Hlekkur afritaður!"
+  },
+  "settings": {
+    "profileSettings": "Stilla prófíl",
+    "hideDotfiles": "Hide dotfiles",
+    "singleClick": "Use single clicks to open files and directories",
+    "setDateFormat": "Set exact date format",
+    "language": "Tungumál",
+    "settingsUpdated": "Stillingar vistaðar!",
+    "shareDescription": "Description",
+    "shareDuration": "Share Duration",
+    "shareManagement": "Share Management",
+    "path": "Path"
   }
 }

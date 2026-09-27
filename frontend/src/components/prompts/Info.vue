@@ -10,7 +10,7 @@
       </p>
 
       <p class="break-word" v-if="selected.length < 2">
-        <strong>{{ $t("prompts.displayName") }}</strong> {{ name }}
+        <strong>{{ $t("prompts.displayName") }}:</strong> {{ name }}
       </p>
 
       <p v-if="!dir || selected.length > 1">

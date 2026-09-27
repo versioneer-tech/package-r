@@ -36,17 +36,20 @@ func TestRawGetRequiresPermissionAndLogsDelivery(t *testing.T) {
 		},
 	}
 	req := httptest.NewRequest(http.MethodGet, "/xyz.txt", http.NoBody)
+	var output bytes.Buffer
+	previousOutput := log.Writer()
+	log.SetOutput(&output)
+	t.Cleanup(func() { log.SetOutput(previousOutput) })
 
 	status, err := rawGetHandler(httptest.NewRecorder(), req, d)
 	if status != http.StatusForbidden || err != nil {
 		t.Fatalf("expected denied raw read, status=%d err=%v", status, err)
 	}
+	if strings.Contains(output.String(), "[DOWNLOAD]") {
+		t.Fatalf("denied raw read produced a download log: %s", output.String())
+	}
 
 	d.user.Perm.Download = true
-	var output bytes.Buffer
-	previousOutput := log.Writer()
-	log.SetOutput(&output)
-	t.Cleanup(func() { log.SetOutput(previousOutput) })
 	recorder := httptest.NewRecorder()
 	status, err = rawGetHandler(recorder, req, d)
 	if status != 0 || err != nil {

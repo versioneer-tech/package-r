@@ -89,28 +89,6 @@ html[dir="rtl"] .card .card-title > *:first-child {
   max-width: 15em;
 }
 
-#settings-shares {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-#settings-shares li {
-  display: flex;
-  align-items: center;
-  gap: 1em;
-  justify-content: space-between;
-}
-
-#settings-shares a {
-  color: var(--blue);
-  overflow-wrap: anywhere;
-}
-
-#settings-shares .action i {
-  font-size: 1rem;
-}
-
 .overlay {
   background-color: rgba(0, 0, 0, 0.5);
   position: fixed;

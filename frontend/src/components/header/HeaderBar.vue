@@ -10,8 +10,14 @@
     <Action
       v-if="authStore.user"
       icon="settings"
-      :label="t('sidebar.settings')"
-      @action="layoutStore.showHover('settings')"
+      :label="t('settings.profileSettings')"
+      @action="openProfileSettings"
+    />
+    <Action
+      v-if="authStore.user"
+      icon="link"
+      :label="t('settings.shareManagement')"
+      @action="openShareManagement"
     />
     <Action
       v-if="showMenu && authStore.user"
@@ -53,6 +59,7 @@ import { logoURL } from "@/utils/constants";
 import Action from "@/components/header/Action.vue";
 import { computed, useSlots } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import * as auth from "@/utils/auth";
 
 defineProps<{
@@ -62,11 +69,22 @@ defineProps<{
 
 const authStore = useAuthStore();
 const layoutStore = useLayoutStore();
+const router = useRouter();
 const slots = useSlots();
 
 const { t } = useI18n();
 
 const ifActionsSlot = computed(() => (slots.actions ? true : false));
+
+const openProfileSettings = () => {
+  layoutStore.closeHovers();
+  router.push("/settings");
+};
+
+const openShareManagement = () => {
+  layoutStore.closeHovers();
+  router.push("/shares");
+};
 </script>
 
 <style scoped>

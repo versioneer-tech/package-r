@@ -77,7 +77,7 @@
     "currentlyNavigating": "Aktuálna cesta:",
     "deleteMessageMultiple": "Naozaj chcete odstrániť {count} súbor(ov)?",
     "deleteMessageSingle": "Naozaj chcete odstrániť tento súbor/priečinok?",
-    "displayName": "Zobrazený názov:",
+    "displayName": "Zobrazený názov",
     "download": "Stiahnuť súbory",
     "downloadMessage": "Vyberte formát, ktorý chcete stiahnuť.",
     "fileInfo": "Informácie o súbore",
@@ -107,5 +107,17 @@
   },
   "success": {
     "linkCopied": "Odkaz skopírovaný!"
+  },
+  "settings": {
+    "profileSettings": "Nastavenia profilu",
+    "hideDotfiles": "Skryť súbory začínajúce bodkou",
+    "singleClick": "Používať jeden klik na otváranie súborov a priečinkov",
+    "setDateFormat": "Set exact date format",
+    "language": "Jazyk",
+    "settingsUpdated": "Nastavenia upravené!",
+    "shareDescription": "Description",
+    "shareDuration": "Trvanie zdieľania",
+    "shareManagement": "Správa zdieľania",
+    "path": "Cesta"
   }
 }

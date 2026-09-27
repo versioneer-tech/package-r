@@ -77,7 +77,7 @@
     "currentlyNavigating": "Aktueller Ort:",
     "deleteMessageMultiple": "Sind Sie sicher, dass Sie {count} Datei(en) löschen möchten?",
     "deleteMessageSingle": "Sind Sie sicher, dass Sie diesen Ordner/diese Datei löschen möchten?",
-    "displayName": "Anzeigename:",
+    "displayName": "Anzeigename",
     "download": "Lade Dateien",
     "downloadMessage": "Wählen Sie ein Format zum Herunterladen aus.",
     "fileInfo": "Dateiinformation",
@@ -108,5 +108,17 @@
   },
   "success": {
     "linkCopied": "Verweis wurde kopiert!"
+  },
+  "settings": {
+    "profileSettings": "Profileinstellungen",
+    "hideDotfiles": "Versteckte Dateien ausblenden",
+    "singleClick": "Einfacher Klick zum Öffnen von Dateien und Ordnern",
+    "setDateFormat": "Exaktes Datumsformat setzen",
+    "language": "Sprache",
+    "settingsUpdated": "Einstellungen aktualisiert!",
+    "shareDescription": "Description",
+    "shareDuration": "Dauer",
+    "shareManagement": "Freigaben verwalten",
+    "path": "Pfad"
   }
 }

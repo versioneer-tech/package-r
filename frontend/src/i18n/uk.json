@@ -77,7 +77,7 @@
     "currentlyNavigating": "Поточний каталог:",
     "deleteMessageMultiple": "Видалити ці файли ({count})?",
     "deleteMessageSingle": "Видалити цей файл/каталог?",
-    "displayName": "Відображене ім'я:",
+    "displayName": "Відображене ім'я",
     "download": "Завантажити файли",
     "downloadMessage": "Виберіть формат, в якому хочете завантажити.",
     "fileInfo": "Інформація про файл",
@@ -107,5 +107,17 @@
   },
   "success": {
     "linkCopied": "Посилання скопійоване!"
+  },
+  "settings": {
+    "profileSettings": "Налаштування профілю",
+    "hideDotfiles": "Приховати точкові файли",
+    "singleClick": "Відкриття файлів та каталогів одним кліком",
+    "setDateFormat": "Встановити точний формат дати",
+    "language": "Мова",
+    "settingsUpdated": "Налаштування застосовані!",
+    "shareDescription": "Description",
+    "shareDuration": "Тривалість спільного посилання",
+    "shareManagement": "Управління спільними посиланнями",
+    "path": "Шлях"
   }
 }

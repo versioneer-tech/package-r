@@ -62,6 +62,7 @@ test-frontend: ## Run frontend Playwright tests
 
 .PHONY: docs
 docs: ## Build documentation with strict validation
+	$Q uv run openapi-spec-validator docs/reference-guides/openapi.yaml
 	$Q uv run mkdocs build --strict
 
 # ------------------------------------------------------------------------------

@@ -87,7 +87,7 @@
     "currentlyNavigating": "Currently navigating on:",
     "deleteMessageMultiple": "Are you sure you wish to delete {count} file(s)?",
     "deleteMessageSingle": "Are you sure you wish to delete this file/folder?",
-    "displayName": "Display Name:",
+    "displayName": "Display Name",
     "download": "Download files",
     "downloadMessage": "Choose the format you wish to download.",
     "fileInfo": "File information",
@@ -123,5 +123,23 @@
   },
   "success": {
     "linkCopied": "Link copied!"
+  },
+  "settings": {
+    "profileSettings": "Profile Settings",
+    "hideDotfiles": "Hide dotfiles",
+    "singleClick": "Use single clicks to open files and directories",
+    "setDateFormat": "Set exact date format",
+    "language": "Language",
+    "settingsUpdated": "Settings updated!",
+    "shareDescription": "Description",
+    "shareDuration": "Share Duration",
+    "shareManagement": "Share Management",
+    "source": "Source",
+    "path": "Path",
+    "catalog": "Catalog",
+    "assetMappings": "Asset mapping",
+    "passwordProtected": "Password protected",
+    "yes": "Yes",
+    "no": "No"
   }
 }

@@ -19,7 +19,6 @@ import NewFile from "./NewFile.vue";
 import NewDir from "./NewDir.vue";
 import Replace from "./Replace.vue";
 import ReplaceRename from "./ReplaceRename.vue";
-import Settings from "./Settings.vue";
 import Upload from "./Upload.vue";
 import DiscardEditorChanges from "./DiscardEditorChanges.vue";
 
@@ -37,7 +36,6 @@ const components = new Map<string, any>([
   ["download", Download],
   ["replace", Replace],
   ["replace-rename", ReplaceRename],
-  ["settings", Settings],
   ["upload", Upload],
   ["discardEditorChanges", DiscardEditorChanges],
 ]);

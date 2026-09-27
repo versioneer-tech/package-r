@@ -45,6 +45,7 @@ func NewHandler(
 	tokenExpirationTime := server.GetTokenExpirationTime(DefaultTokenExpirationTime)
 	api.Handle("/login", wrap(loginHandler(tokenExpirationTime), "")).Methods("POST")
 	api.Handle("/renew", wrap(renewHandler(tokenExpirationTime), "")).Methods("POST")
+	api.Handle("/profile", wrap(profilePatchHandler, "")).Methods("PATCH")
 
 	api.PathPrefix("/resources").Handler(wrap(resourceGetHandler, "/api/resources")).Methods("GET")
 	api.PathPrefix("/resources").Handler(wrap(resourceDeleteHandler(fileCache), "/api/resources")).Methods("DELETE")

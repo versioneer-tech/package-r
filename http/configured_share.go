@@ -14,10 +14,15 @@ import (
 // configuredShare is the safe, read-only view of a configured public share.
 // Password hashes and access tokens must not be returned by this endpoint.
 type configuredShare struct {
-	Hash        string `json:"hash"`
-	Description string `json:"description,omitempty"`
-	Expire      int64  `json:"expire"`
-	URL         string `json:"url"`
+	Hash              string                      `json:"hash"`
+	Source            string                      `json:"source"`
+	Path              string                      `json:"path"`
+	Description       string                      `json:"description,omitempty"`
+	Expire            int64                       `json:"expire"`
+	Catalog           string                      `json:"catalog,omitempty"`
+	AssetMappings     []share.CatalogAssetMapping `json:"assetMappings,omitempty"`
+	PasswordProtected bool                        `json:"passwordProtected"`
+	URL               string                      `json:"url"`
 }
 
 var configuredShareGetsHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
@@ -29,11 +34,11 @@ var configuredShareGetsHandler = withUser(func(w http.ResponseWriter, r *http.Re
 		return http.StatusInternalServerError, err
 	}
 
-	configured := configuredSharesForUser(links, d.user.Scope, d.Check)
+	configured := configuredSharesForUser(links, d.server.Root, d.user.Scope, d.Check)
 	return renderJSON(w, r, configured)
 })
 
-func configuredSharesForUser(links []*share.Link, scope string, allowed func(string) bool) []configuredShare {
+func configuredSharesForUser(links []*share.Link, source, scope string, allowed func(string) bool) []configuredShare {
 	scope = cleanAccessPath(scope)
 	configured := make([]configuredShare, 0)
 
@@ -50,10 +55,15 @@ func configuredSharesForUser(links []*share.Link, scope string, allowed func(str
 		}
 
 		configured = append(configured, configuredShare{
-			Hash:        link.Hash,
-			Description: link.Description,
-			Expire:      link.Expire,
-			URL:         path.Join("/share", link.Hash) + "/",
+			Hash:              link.Hash,
+			Source:            source,
+			Path:              link.Path,
+			Description:       link.Description,
+			Expire:            link.Expire,
+			Catalog:           link.CatalogURL,
+			AssetMappings:     append([]share.CatalogAssetMapping(nil), link.AssetMappings...),
+			PasswordProtected: link.PasswordHash != "",
+			URL:               path.Join("/share", link.Hash) + "/",
 		})
 	}
 

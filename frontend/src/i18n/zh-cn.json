@@ -83,7 +83,7 @@
     "currentlyNavigating": "当前目录：",
     "deleteMessageMultiple": "你确定要删除这 {count} 个文件吗？",
     "deleteMessageSingle": "你确定要删除这个文件/文件夹吗？",
-    "displayName": "名称：",
+    "displayName": "名称",
     "download": "下载文件",
     "downloadMessage": "请选择要下载的压缩格式。",
     "fileInfo": "文件信息",
@@ -116,5 +116,17 @@
   },
   "success": {
     "linkCopied": "链接已复制！"
+  },
+  "settings": {
+    "profileSettings": "个人设置",
+    "hideDotfiles": "不显示隐藏文件",
+    "singleClick": "使用单击来打开文件和文件夹",
+    "setDateFormat": "显示精确的日期格式",
+    "language": "语言",
+    "settingsUpdated": "设置已更新！",
+    "shareDescription": "Description",
+    "shareDuration": "分享期限",
+    "shareManagement": "分享管理",
+    "path": "路径"
   }
 }

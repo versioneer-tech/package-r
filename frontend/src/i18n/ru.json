@@ -77,7 +77,7 @@
     "currentlyNavigating": "Текущий каталог:",
     "deleteMessageMultiple": "Удалить эти файлы ({count})?",
     "deleteMessageSingle": "Удалить этот файл/каталог?",
-    "displayName": "Отображаемое имя:",
+    "displayName": "Отображаемое имя",
     "download": "Скачать файлы",
     "downloadMessage": "Выберите формат в котором хотите скачать.",
     "fileInfo": "Информация о файле",
@@ -107,5 +107,17 @@
   },
   "success": {
     "linkCopied": "Ссылка скопирована!"
+  },
+  "settings": {
+    "profileSettings": "Настройки профиля",
+    "hideDotfiles": "Скрыть точечные файлы",
+    "singleClick": "Открытие файлов и каталогов одним кликом",
+    "setDateFormat": "Установить точный формат даты",
+    "language": "Язык",
+    "settingsUpdated": "Настройки применены!",
+    "shareDescription": "Description",
+    "shareDuration": "Время расшаренной ссылки",
+    "shareManagement": "Управление расшаренными ссылками",
+    "path": "Путь"
   }
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -54,12 +53,16 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 
 	presign, ok := r.URL.Query()["presign"]
 	if ok && !strings.EqualFold(presign[0], "false") {
+		localURL := ""
+		if d.user.Perm.Download {
+			localURL = localRawURL(r, d.server.BaseURL, file.Path)
+		}
 		url, err := presignOrLocalURL(
 			r,
 			d.store.Users,
 			d.user,
 			file.Path,
-			localRawURL(r, d.server.BaseURL, file.Path),
+			localURL,
 			presignLifetime,
 		)
 		if errors.Is(err, appErrors.ErrInvalidOption) {
@@ -70,9 +73,7 @@ var resourceGetHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 		file.PresignedURL = url
 	}
 
-	follow, ok := r.URL.Query()["followRedirect"]
-	if ok && !strings.EqualFold(follow[0], "false") && file.PresignedURL != "" {
-		log.Printf("[DOWNLOAD] user=%q path=%q delivery=presigned_redirect", d.user.Username, file.Path)
+	if requestQueryEnabled(r, "followRedirect") && file.PresignedURL != "" {
 		status := http.StatusTemporaryRedirect // 307 to preserve method
 		http.Redirect(w, r, file.PresignedURL, status)
 		return status, nil

@@ -100,14 +100,12 @@ func rawGetHandler(w http.ResponseWriter, r *http.Request, d *data) (int, error)
 	}
 
 	if files.IsNamedPipe(file.Mode) {
-		log.Printf("[DOWNLOAD] user=%q path=%q delivery=package_r", d.user.Username, file.Path)
 		setContentDisposition(w, r, file)
 		return 0, nil
 	}
 
-	log.Printf("[DOWNLOAD] user=%q path=%q delivery=package_r", d.user.Username, file.Path)
 	if !file.IsDir {
-		return rawFileHandler(w, r, file)
+		return rawDownloadFileHandler(w, r, d.user.Username, file)
 	}
 
 	return rawDirHandler(w, r, d, file)
@@ -201,6 +199,9 @@ func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.
 	}
 	name += extension
 	w.Header().Set("Content-Disposition", "attachment; filename*=utf-8''"+url.PathEscape(name))
+	if d.user.Username != "" {
+		log.Printf("[DOWNLOAD] user=%q path=%q delivery=package_r", d.user.Username, file.Path)
+	}
 
 	if err := ar.Archive(r.Context(), w, entries); err != nil {
 		return http.StatusInternalServerError, err
@@ -210,11 +211,22 @@ func rawDirHandler(w http.ResponseWriter, r *http.Request, d *data, file *files.
 }
 
 func rawFileHandler(w http.ResponseWriter, r *http.Request, file *files.FileInfo) (int, error) {
+	return serveRawFile(w, r, file, "")
+}
+
+func rawDownloadFileHandler(w http.ResponseWriter, r *http.Request, username string, file *files.FileInfo) (int, error) {
+	return serveRawFile(w, r, file, username)
+}
+
+func serveRawFile(w http.ResponseWriter, r *http.Request, file *files.FileInfo, downloadUser string) (int, error) {
 	fd, err := file.Fs.Open(file.Path)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 	defer fd.Close()
+	if downloadUser != "" {
+		log.Printf("[DOWNLOAD] user=%q path=%q delivery=package_r", downloadUser, file.Path)
+	}
 
 	setContentDisposition(w, r, file)
 	w.Header().Add("Content-Security-Policy", `script-src 'none';`)

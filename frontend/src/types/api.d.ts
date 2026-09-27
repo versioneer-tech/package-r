@@ -18,9 +18,19 @@ type ChecksumAlg = "md5" | "sha1" | "sha256" | "sha512";
 
 interface ConfiguredShare {
   hash: string;
+  source: string;
+  path: string;
   url: string;
   expire: number;
   description?: string;
+  catalog?: string;
+  assetMappings?: CatalogAssetMapping[];
+  passwordProtected: boolean;
+}
+
+interface CatalogAssetMapping {
+  from: string;
+  to: string;
 }
 
 interface SearchParams {

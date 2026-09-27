@@ -71,7 +71,7 @@
     "currentlyNavigating": "Navigare curentă în:",
     "deleteMessageMultiple": "Ești sigur că vrei să ștergi aceste {count} fișier(e)?",
     "deleteMessageSingle": "Ești sigur că vrei să ștergi acest fișier/director?",
-    "displayName": "Nume afișat:",
+    "displayName": "Nume afișat",
     "download": "Descarcă fișiere",
     "downloadMessage": "Alege formatul în care vrei să descarci.",
     "fileInfo": "Informații fișier",
@@ -101,5 +101,17 @@
   },
   "success": {
     "linkCopied": "Legătură copiată!"
+  },
+  "settings": {
+    "profileSettings": "Setări profil",
+    "hideDotfiles": "Hide dotfiles",
+    "singleClick": "Use single clicks to open files and directories",
+    "setDateFormat": "Set exact date format",
+    "language": "Limba",
+    "settingsUpdated": "Setări actualizate!",
+    "shareDescription": "Description",
+    "shareDuration": "Share Duration",
+    "shareManagement": "Share Management",
+    "path": "Path"
   }
 }

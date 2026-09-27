@@ -4,6 +4,8 @@ import Login from "@/views/Login.vue";
 import Layout from "@/views/Layout.vue";
 import Files from "@/views/Files.vue";
 import Share from "@/views/Share.vue";
+import ProfileSettings from "@/views/settings/Profile.vue";
+import Shares from "@/views/settings/Shares.vue";
 import Errors from "@/views/Errors.vue";
 import { useAuthStore } from "@/stores/auth";
 import { baseURL, name } from "@/utils/constants";
@@ -15,6 +17,8 @@ const titles = {
   Login: "sidebar.login",
   Share: "buttons.share",
   Files: "files.files",
+  ProfileSettings: "settings.profileSettings",
+  Shares: "settings.shareManagement",
   Forbidden: "errors.forbidden",
   NotFound: "errors.notFound",
   InternalServerError: "errors.internal",
@@ -48,6 +52,34 @@ const routes = [
         path: ":path*",
         name: "Files",
         component: Files,
+      },
+    ],
+  },
+  {
+    path: "/settings",
+    component: Layout,
+    meta: {
+      requiresAuth: true,
+    },
+    children: [
+      {
+        path: "",
+        name: "ProfileSettings",
+        component: ProfileSettings,
+      },
+    ],
+  },
+  {
+    path: "/shares",
+    component: Layout,
+    meta: {
+      requiresAuth: true,
+    },
+    children: [
+      {
+        path: "",
+        name: "Shares",
+        component: Shares,
       },
     ],
   },

@@ -324,6 +324,8 @@ func itemSelfHref(entry map[string]interface{}, assetsURL, catalogEndpoint strin
 func QueryCatalogParquet(ctx context.Context, options QueryOptions) (map[string]interface{}, error) {
 	relativePrefix := relativeAssetPrefix(options.SharePath, options.RequestPath)
 
+	// TODO: Review and optimize this full catalog scan. Push filtering into
+	// DuckDB and add bounded or paginated results where the catalog schema permits.
 	query := `
 SELECT *
 FROM read_parquet(?)

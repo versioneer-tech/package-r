@@ -273,7 +273,7 @@ import { useClipboardStore } from "@/stores/clipboard";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 
-import { files as api } from "@/api";
+import { files as api, settings as settingsApi } from "@/api";
 import { enableExec } from "@/utils/constants";
 import * as upload from "@/utils/upload";
 import css from "@/utils/css";
@@ -813,6 +813,8 @@ const sort = (by: string) => {
   if (!fileStore.req) return;
 
   fileStore.req.sorting = { by, asc };
+  authStore.updateUser({ sorting: { by, asc } });
+  settingsApi.updateProfile({ sorting: { by, asc } }).catch($showError);
   const direction = asc ? 1 : -1;
   fileStore.req.items.sort((left, right) => {
     if (left.isDir !== right.isDir) return left.isDir ? -1 : 1;
@@ -875,7 +877,7 @@ const download = () => {
   });
 };
 
-const switchView = async () => {
+const switchView = () => {
   layoutStore.closeHovers();
 
   const modes = {
@@ -885,12 +887,12 @@ const switchView = async () => {
   };
 
   const data = {
-    id: authStore.user?.id,
     viewMode: (modes[authStore.user?.viewMode ?? "list"] ||
       "list") as ViewModeType,
   };
 
   authStore.updateUser(data);
+  settingsApi.updateProfile(data).catch($showError);
 
   setItemWeight();
   fillWindow();

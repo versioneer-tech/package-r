@@ -78,7 +78,7 @@
     "currentlyNavigating": "Actualmente estás en:",
     "deleteMessageMultiple": "¿Estás seguro que quieres eliminar {count} archivo(s)?",
     "deleteMessageSingle": "¿Estás seguro que quieres eliminar este archivo/carpeta?",
-    "displayName": "Nombre:",
+    "displayName": "Nombre",
     "download": "Descargar archivos",
     "downloadMessage": "Elige el formato de descarga.",
     "fileInfo": "Información del archivo",
@@ -109,5 +109,17 @@
   },
   "success": {
     "linkCopied": "¡Link copiado!"
+  },
+  "settings": {
+    "profileSettings": "Ajustes del perfil",
+    "hideDotfiles": "Ocultar archivos empezados por punto",
+    "singleClick": "Utilice un solo clic para abrir archivos y directorios",
+    "setDateFormat": "Establecer el formato exacto de la fecha",
+    "language": "Idioma",
+    "settingsUpdated": "¡Ajustes actualizados!",
+    "shareDescription": "Description",
+    "shareDuration": "Compartir Duración",
+    "shareManagement": "Gestión Compartida",
+    "path": "Ruta"
   }
 }

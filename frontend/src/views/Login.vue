@@ -1,6 +1,12 @@
 <template>
   <div id="login" :class="{ recaptcha: recaptcha }">
-    <form @submit="submit">
+    <form
+      ref="loginForm"
+      method="post"
+      :action="`${baseURL}/api/login`"
+      autocomplete="on"
+      @submit.prevent="submit"
+    >
       <img :src="logoURL" class="logo-img" title="Home" />
       <h1>{{ name }}</h1>
       <div v-if="error !== ''" class="wrong">{{ error }}</div>
@@ -10,9 +16,11 @@
         autofocus
         class="input input--block"
         type="text"
+        id="username"
         name="username"
         autocomplete="username"
         autocapitalize="off"
+        required
         v-model="username"
         :placeholder="t('login.username')"
       />
@@ -20,8 +28,10 @@
         v-if="loginPage"
         class="input input--block"
         type="password"
+        id="password"
         name="password"
         autocomplete="current-password"
+        required
         v-model="password"
         :placeholder="t('login.password')"
       />
@@ -65,6 +75,7 @@ import { StatusError } from "@/api/utils";
 import * as auth from "@/utils/auth";
 import {
   name,
+  baseURL,
   logoURL,
   recaptcha,
   recaptchaKey,
@@ -78,6 +89,7 @@ import { useRoute, useRouter } from "vue-router";
 const error = ref<string>("");
 const username = ref<string>("");
 const password = ref<string>("");
+const loginForm = ref<HTMLFormElement | null>(null);
 
 const route = useRoute();
 const router = useRouter();
@@ -102,7 +114,10 @@ const submit = async (event: Event) => {
 
   try {
     await auth.login(username.value, password.value, captcha);
-    router.push({ path: redirect });
+    if (loginPage && loginForm.value) {
+      await auth.storeLoginCredential(loginForm.value);
+    }
+    await router.push({ path: redirect });
   } catch (e: any) {
     if (e instanceof StatusError) {
       if (e.status === 403) {

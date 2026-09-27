@@ -71,7 +71,7 @@
     "currentlyNavigating": "Momenteel zoeken op: ",
     "deleteMessageMultiple": "Weet u zeker dat u {count} bestand(en) wil verwijderen?",
     "deleteMessageSingle": "Weet u zeker dat u dit bestand/map wil verwijderen?",
-    "displayName": "Weergavenaam: ",
+    "displayName": "Weergavenaam",
     "download": "Bestanden downloaden",
     "downloadMessage": "Kies het vermat dat u wilt downloaden. ",
     "fileInfo": "Bestandinformatie",
@@ -101,5 +101,17 @@
   },
   "success": {
     "linkCopied": "Link gekopieerd!"
+  },
+  "settings": {
+    "profileSettings": "Profielinstellingen",
+    "hideDotfiles": "Hide dotfiles",
+    "singleClick": "Use single clicks to open files and directories",
+    "setDateFormat": "Set exact date format",
+    "language": "Taal",
+    "settingsUpdated": "Instellingen bijgewerkt!",
+    "shareDescription": "Description",
+    "shareDuration": "Share Duration",
+    "shareManagement": "Share Management",
+    "path": "Path"
   }
 }

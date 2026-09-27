@@ -82,7 +82,7 @@
     "currentlyNavigating": "目前目錄：",
     "deleteMessageMultiple": "你確定要刪除這 {count} 個檔案嗎?",
     "deleteMessageSingle": "你確定要刪除這個檔案/資料夾嗎?",
-    "displayName": "名稱：",
+    "displayName": "名稱",
     "download": "下載檔案",
     "downloadMessage": "請選擇要下載的壓縮格式。",
     "fileInfo": "檔案資訊",
@@ -115,5 +115,17 @@
   },
   "success": {
     "linkCopied": "連結已複製！"
+  },
+  "settings": {
+    "profileSettings": "個人設定",
+    "hideDotfiles": "隱藏隱藏檔案",
+    "singleClick": "使用單擊開啟檔案和目錄",
+    "setDateFormat": "顯示精確的日期格式",
+    "language": "語言",
+    "settingsUpdated": "設定已更新！",
+    "shareDescription": "Description",
+    "shareDuration": "分享期限",
+    "shareManagement": "分享管理",
+    "path": "路徑"
   }
 }

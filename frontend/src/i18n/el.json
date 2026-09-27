@@ -78,7 +78,7 @@
     "copyMessage": "Επιλέξτε τοποθεσία για αντιγραφή των αρχείων σας:",
     "deleteMessageMultiple": "Είστε σίγουροι ότι θέλετε να διαγράψετε {count} αρχεία;",
     "deleteMessageSingle": "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το αρχείο/φάκελο;",
-    "displayName": "Εμφάνιση ονόματος:",
+    "displayName": "Εμφάνιση ονόματος",
     "download": "Λήψη αρχείων",
     "downloadMessage": "Επιλέξτε τη μορφή που θέλετε να λάβετε.",
     "fileInfo": "Πληροφορίες αρχείου",
@@ -109,5 +109,17 @@
   },
   "success": {
     "linkCopied": "Ο σύνδεσμος αντιγράφηκε!"
+  },
+  "settings": {
+    "profileSettings": "Ρυθμίσεις προφίλ",
+    "hideDotfiles": "Απόκρυψη κρυφών αρχείων (dotfiles)",
+    "singleClick": "Χρήση μονού κλικ για να ανοίξετε αρχεία και φακέλους",
+    "setDateFormat": "Ορισμός ακριβούς μορφής ημερομηνίας",
+    "language": "Γλώσσα",
+    "settingsUpdated": "Οι ρυθμίσεις ενημερώθηκαν!",
+    "shareDescription": "Description",
+    "shareDuration": "Διάρκεια κοινοποίησης",
+    "shareManagement": "Διαχείριση κοινοποίησης",
+    "path": "Διαδρομή"
   }
 }

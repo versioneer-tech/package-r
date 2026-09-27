@@ -82,7 +82,7 @@
     "currentlyNavigating": "Actualment estàs a:",
     "deleteMessageMultiple": "Estàs segur que vols eliminar {count} fitxer(s)?",
     "deleteMessageSingle": "Estàs segur que vols eliminar aquest fitxer/carpeta?",
-    "displayName": "Nom:",
+    "displayName": "Nom",
     "download": "Descarregar fitxers",
     "downloadMessage": "Tria el format de descàrrega.",
     "fileInfo": "Informació del fitxer",
@@ -115,5 +115,17 @@
   },
   "success": {
     "linkCopied": "Enllaç copiat!"
+  },
+  "settings": {
+    "profileSettings": "Ajustos del perfil",
+    "hideDotfiles": "Ocultar fitxers que comencen per punt",
+    "singleClick": "Utilitza un sol clic per obrir fitxers i directoris",
+    "setDateFormat": "Establir el format exacte de la data",
+    "language": "Idioma",
+    "settingsUpdated": "Ajustos actualitzats!",
+    "shareDescription": "Description",
+    "shareDuration": "Compartir Duració",
+    "shareManagement": "Gestió Compartida",
+    "path": "Ruta"
   }
 }

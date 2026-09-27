@@ -71,7 +71,7 @@
     "currentlyNavigating": "현재 위치:",
     "deleteMessageMultiple": "{count} 개의 파일을 삭제하시겠습니까?",
     "deleteMessageSingle": "파일 혹은 디렉토리를 삭제하시겠습니까?",
-    "displayName": "게시 이름:",
+    "displayName": "게시 이름",
     "download": "파일 다운로드",
     "downloadMessage": "다운로드 포맷 설정.",
     "fileInfo": "파일 정보",
@@ -101,5 +101,17 @@
   },
   "success": {
     "linkCopied": "링크가 복사되었습니다!"
+  },
+  "settings": {
+    "profileSettings": "프로필 설정",
+    "hideDotfiles": "숨김파일(dotfile)을 표시하지 않습니다.",
+    "singleClick": "한번 클릭으로 파일과 폴더를 열도록 합니다.",
+    "setDateFormat": "Set exact date format",
+    "language": "언어",
+    "settingsUpdated": "설정 수정됨!",
+    "shareDescription": "Description",
+    "shareDuration": "공유 기간",
+    "shareManagement": "공유 내역 관리",
+    "path": "경로"
   }
 }

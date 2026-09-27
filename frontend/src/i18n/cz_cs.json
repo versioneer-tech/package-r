@@ -82,7 +82,7 @@
     "currentlyNavigating": "Aktuálně navigujete v:",
     "deleteMessageMultiple": "Opravdu chcete smazat {count} soubor(ů)?",
     "deleteMessageSingle": "Opravdu chcete smazat tento soubor/složku?",
-    "displayName": "Zobrazované jméno:",
+    "displayName": "Zobrazované jméno",
     "download": "Stáhnout soubory",
     "downloadMessage": "Vyberte formát, který chcete stáhnout.",
     "fileInfo": "Informace o souboru",
@@ -115,5 +115,17 @@
   },
   "success": {
     "linkCopied": "Odkaz zkopírován!"
+  },
+  "settings": {
+    "profileSettings": "Nastavení profilu",
+    "hideDotfiles": "Skrýt skryté soubory",
+    "singleClick": "Použít jediné kliknutí pro otevření souborů a adresářů",
+    "setDateFormat": "Nastavit přesný formát data",
+    "language": "Jazyk",
+    "settingsUpdated": "Nastavení aktualizována!",
+    "shareDescription": "Description",
+    "shareDuration": "Doba sdílení",
+    "shareManagement": "Správa sdílení",
+    "path": "Cesta"
   }
 }

@@ -274,7 +274,7 @@ for api_path in users settings; do
   fi
 done
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/shares" |
-  python3 -c 'import json, sys; shares = json.load(sys.stdin); assert len(shares) == 1; assert shares[0]["hash"] == sys.argv[1]; assert shares[0]["url"] == "/share/" + sys.argv[1] + "/"; assert "passwordHash" not in shares[0] and "token" not in shares[0] and "path" not in shares[0]' "${SHARE_NAME}"
+  python3 -c 'import json, sys; shares = json.load(sys.stdin); assert len(shares) == 1; share = shares[0]; assert share["hash"] == sys.argv[1]; assert share["url"] == "/share/" + sys.argv[1] + "/"; assert share["source"] == "/"; assert share["path"] == "/my-bucket/catalog-sample"; assert share["catalog"] == "/my-bucket/catalog-sample/catalog.parquet"; assert share["passwordProtected"] is True; assert "passwordHash" not in share and "token" not in share' "${SHARE_NAME}"
 share_management_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
   -H "${auth_header}" "${package_r_url}/api/shares")"
 if [[ "${share_management_status}" != "404" ]]; then
@@ -361,6 +361,23 @@ curl_test -fsS -H "${auth_header}" \
 cmp "${tmp_dir}/chunked-expected.txt" "${tmp_dir}/chunked-actual.txt"
 curl_test -fsS -X DELETE -H "${auth_header}" \
   "${package_r_url}/api/resources${tus_path}" >/dev/null
+
+log "Checking that TUS abort removes a partial upload"
+aborted_tus_path="/${BUCKET}/xyz/aborted.txt"
+curl_test -fsS -X POST -H "${auth_header}" \
+  "${package_r_url}/api/tus${aborted_tus_path}" >/dev/null
+curl_test -fsS -X PATCH -H "${auth_header}" \
+  -H 'Content-Type: application/offset+octet-stream' \
+  -H 'Upload-Offset: 0' \
+  --data-binary "@${tmp_dir}/chunk-one.txt" \
+  "${package_r_url}/api/tus${aborted_tus_path}" >/dev/null
+curl_test -fsS -X DELETE -H "${auth_header}" \
+  "${package_r_url}/api/tus${aborted_tus_path}" >/dev/null
+aborted_head_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -I \
+  -H "${auth_header}" "${package_r_url}/api/tus${aborted_tus_path}")"
+[[ "${aborted_head_status}" == "404" ]]
+[[ ! -e "${backing_dir}/aborted.txt" ]]
+
 curl_test -fsS -X DELETE -H "${auth_header}" \
   "${package_r_url}/api/resources/${BUCKET}/xyz/" >/dev/null
 
@@ -371,6 +388,10 @@ authenticated_url="$(
     json_field presignedURL
 )"
 fetch_and_compare "${authenticated_url}" "${thumbnail}" "${tmp_dir}/authenticated-thumbnail.png"
+if grep -F "[DOWNLOAD]" "${tmp_dir}/package-r.log" >/dev/null; then
+  printf 'Presigned object-storage access produced a proxy download audit record.\n' >&2
+  exit 1
+fi
 
 pin_required_status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
   "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}")"

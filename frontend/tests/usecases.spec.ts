@@ -143,37 +143,80 @@ test.describe("packageR use-case UI", () => {
     await expect(page.getByLabel("catalog.parquet")).toBeVisible();
     await normalizeRelativeTimes(page);
     await expect(page.locator("#listing").first()).toHaveScreenshot(
-      "authenticated-catalog-sample-listing.png",
+      "authenticated-public-listing.png",
       screenshotOptions
     );
   });
 
-  test("shows configured shares only in settings", async ({ page }) => {
+  test("saves user settings and lists shares without management actions", async ({
+    page,
+  }) => {
     await loginAsInitialUser(page);
     await page.goto("/files/");
 
-    const settingsButton = page.getByRole("button", {
-      name: "Settings",
+    const profileSettingsButton = page.getByRole("button", {
+      name: "Profile Settings",
       exact: true,
     });
-    await expect(settingsButton).toBeVisible();
+    const shareManagementButton = page.getByRole("button", {
+      name: "Share Management",
+      exact: true,
+    });
+    await expect(profileSettingsButton).toBeVisible();
+    await expect(shareManagementButton).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Share", exact: true })
     ).toHaveCount(0);
 
-    await settingsButton.click();
-    const settings = page.locator("#settings");
-    await expect(settings).toBeVisible();
+    await profileSettingsButton.click();
+    await expect(page).toHaveURL(/\/settings$/);
+
+    const singleClick = page.getByRole("checkbox", {
+      name: "Use single clicks to open files and directories",
+    });
+    const initialSingleClick = await singleClick.isChecked();
+    await singleClick.setChecked(!initialSingleClick);
+    await page.getByRole("button", { name: "Save" }).click();
     await expect(
-      settings.getByRole("link", { name: /my-share/ })
-    ).toHaveAttribute("href", /\/share\/my-share\/$/);
+      page.getByText("Settings updated!", { exact: true })
+    ).toBeVisible();
+
+    await page.reload();
+    await expect(singleClick).toBeChecked({ checked: !initialSingleClick });
+
+    await singleClick.setChecked(initialSingleClick);
+    await page.getByRole("button", { name: "Save" }).click();
+
+    await shareManagementButton.click();
+    await expect(page).toHaveURL(/\/shares$/);
+    const settings = page.locator("#settings-shares");
+    const pathLink = settings.getByRole("link", { name: "/catalog-sample" });
+    await expect(pathLink).toHaveAttribute("href", /\/share\/my-share\/$/);
+    await expect(settings).toContainText("my-bucket");
+    await expect(settings).toContainText("/catalog-sample");
+    await expect(settings).toContainText("/catalog-sample/catalog.parquet");
+    await expect(settings).toContainText("No");
+    for (const heading of [
+      "Source",
+      "Path",
+      "Share Duration",
+      "Description",
+      "Catalog",
+      "Asset mapping",
+      "Password protected",
+    ]) {
+      await expect(
+        settings.getByRole("columnheader", { name: heading })
+      ).toBeVisible();
+    }
     await expect(settings.getByRole("button", { name: "New" })).toHaveCount(0);
     await expect(settings.getByRole("button", { name: "Delete" })).toHaveCount(
       0
     );
-
-    const settingsResponse = await page.request.get("/api/shares");
-    expect(settingsResponse.status()).toBe(200);
+    await expect(settings.getByRole("button", { name: "Edit" })).toHaveCount(0);
+    await expect(
+      settings.getByRole("button", { name: "Copy to clipboard" })
+    ).toHaveCount(0);
   });
 
   test("renders authenticated image preview", async ({ page }) => {
@@ -295,7 +338,7 @@ test.describe("packageR use-case UI", () => {
       });
     await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
-      "my-share-stac-browser-url.png",
+      "my-share-preview-url.png",
       screenshotOptions
     );
   });
