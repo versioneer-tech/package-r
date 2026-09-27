@@ -18,7 +18,9 @@ platform storage support.
 packageR embeds rclone in the Go process.
 
 - rclone creates an S3 backend at the service root or one bucket
-- The service root shows all buckets that the credentials can access
+- The service root uses S3 discovery by default
+- An explicit bucket catalog creates a synthetic service root without S3
+  bucket discovery and routes each bucket to its own backend
 - An adapter exposes rclone VFS as the inherited `afero.Fs` interface
 - One VFS instance holds the process storage configuration
 - A user scope selects a path below the backend root
@@ -29,9 +31,11 @@ packageR embeds rclone in the Go process.
 - DuckDB reads checked catalog files from short-lived signed URLs
 
 Bootstrap configuration rebuilds the packageR database. The database is a
-disposable runtime cache. `PACKAGE_R_ROOT=/` exposes permitted buckets. A
-bucket name exposes that bucket as `/`. User records do not set the storage
-root, endpoint, or credentials. Public shares are set before startup.
+disposable runtime cache. `PACKAGE_R_ROOT=/` exposes discovered buckets, or
+the buckets in `PACKAGE_R_BUCKETS` when that value is set. A bucket name in
+`PACKAGE_R_ROOT` exposes that bucket as `/` and requires an empty bucket
+catalog. User records do not set the storage root, endpoint, credentials, or
+bucket catalog. Public shares are set before startup.
 
 One S3 identity is used by each packageR process. Its storage policy sets the
 maximum access. User scopes, path rules, and action permissions can reduce

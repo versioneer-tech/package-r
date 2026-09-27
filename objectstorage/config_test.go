@@ -108,12 +108,49 @@ func TestLoadRoot(t *testing.T) {
 		{name: "default", want: ""},
 		{name: "service root", root: "/", want: ""},
 		{name: "bucket", root: "reports", want: "reports"},
+		{name: "bucket with trailing slash", root: "reports/", want: "reports"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Setenv("PACKAGE_R_ROOT", test.root)
 			config := Load()
 			if config.Root() != test.want {
 				t.Fatalf("expected root %q, got %q", test.want, config.Root())
+			}
+		})
+	}
+}
+
+func TestLoadBuckets(t *testing.T) {
+	t.Setenv("PACKAGE_R_ROOT", "/")
+	t.Setenv("PACKAGE_R_BUCKETS", "xyz-data, xyz-archive")
+
+	config := Load()
+	if err := config.ValidateRoot(); err != nil {
+		t.Fatal(err)
+	}
+	if got := config.ConfiguredBuckets(); len(got) != 2 || got[0] != "xyz-data" || got[1] != "xyz-archive" {
+		t.Fatalf("unexpected configured buckets: %#v", got)
+	}
+}
+
+func TestValidateRootBucketCatalog(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		config  Config
+		wantErr error
+	}{
+		{name: "discovery root"},
+		{name: "configured service root", config: Config{Buckets: "xyz-data,xyz-archive"}},
+		{name: "direct bucket", config: Config{Bucket: "xyz-data"}},
+		{name: "catalog with direct bucket", config: Config{Bucket: "xyz-data", Buckets: "xyz-data"}, wantErr: ErrBucketsNeedServiceRoot},
+		{name: "empty entry", config: Config{Buckets: "xyz-data,,xyz-archive"}, wantErr: ErrInvalidBuckets},
+		{name: "duplicate", config: Config{Buckets: "xyz-data,xyz-data"}, wantErr: ErrInvalidBuckets},
+		{name: "invalid name", config: Config{Buckets: "xyz-data,../xyz-archive"}, wantErr: ErrInvalidBuckets},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.config.ValidateRoot()
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("expected %v, got %v", test.wantErr, err)
 			}
 		})
 	}

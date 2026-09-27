@@ -38,6 +38,7 @@ func (s *Settings) GetRules() []rules.Rule {
 // Server specific settings.
 type Server struct {
 	Root                  string `json:"root"`
+	Buckets               string `json:"buckets"`
 	BaseURL               string `json:"baseURL"`
 	Socket                string `json:"socket"`
 	TLSKey                string `json:"tlsKey"`

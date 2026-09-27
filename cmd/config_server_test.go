@@ -22,6 +22,27 @@ func TestConfigInitStoresServerFeatureDefaults(t *testing.T) {
 	}
 }
 
+func TestConfigInitStoresBucketCatalog(t *testing.T) {
+	dbPath, configPath, rootPath := newConfigTestDB(t)
+
+	runPackageRCommand(
+		t,
+		"--config", configPath,
+		"--database", dbPath,
+		"config", "init",
+		"--root", rootPath,
+		"--buckets=xyz-data,xyz-archive",
+	)
+
+	server, err := openTestStorage(t, dbPath).Settings.GetServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if server.Buckets != "xyz-data,xyz-archive" {
+		t.Fatalf("unexpected bucket catalog %q", server.Buckets)
+	}
+}
+
 func TestConfigInitStoresSTACBrowserURL(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 

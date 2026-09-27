@@ -23,21 +23,30 @@ var ErrManagerClosed = errors.New("rclone filesystem manager is closed")
 
 // Manager owns and reuses one rclone VFS for each distinct S3 configuration.
 type Manager struct {
-	ctx    context.Context
-	root   string
-	mux    sync.Mutex
-	files  map[objectstorage.Config]*FS
-	nextID uint64
-	closed bool
+	ctx        context.Context
+	root       string
+	buckets    string
+	setBuckets bool
+	mux        sync.Mutex
+	files      map[objectstorage.Config]*FS
+	views      map[objectstorage.Config]afero.Fs
+	nextID     uint64
+	closed     bool
 }
 
 // NewManager creates a process-scoped filesystem manager.
-func NewManager(ctx context.Context, root string) *Manager {
-	return &Manager{
+func NewManager(ctx context.Context, root string, buckets ...string) *Manager {
+	manager := &Manager{
 		ctx:   ctx,
 		root:  root,
 		files: make(map[objectstorage.Config]*FS),
+		views: make(map[objectstorage.Config]afero.Fs),
 	}
+	if len(buckets) > 0 {
+		manager.buckets = buckets[0]
+		manager.setBuckets = true
+	}
+	return manager
 }
 
 // FileSystem returns the process-owned shared filesystem.
@@ -51,7 +60,17 @@ func (m *Manager) PublicLink(ctx context.Context, name string, expire time.Durat
 	if err != nil {
 		return "", err
 	}
-	return fileSystem.PublicLink(ctx, name, expire)
+	if catalog, ok := fileSystem.(*bucketCatalogFS); ok {
+		backend, child, exact, err := catalog.resolve("public link", name)
+		if err != nil {
+			return "", err
+		}
+		if exact {
+			return "", pathError("public link", name, errors.New("bucket roots do not have public links"))
+		}
+		return backend.(*FS).PublicLink(ctx, child, expire)
+	}
+	return fileSystem.(*FS).PublicLink(ctx, name, expire)
 }
 
 // Stats returns aggregate values for all VFS instances owned by the manager.
@@ -71,9 +90,12 @@ func (m *Manager) Stats() Stats {
 	return total
 }
 
-func (m *Manager) fileSystem() (*FS, error) {
+func (m *Manager) fileSystem() (afero.Fs, error) {
 	config := objectstorage.Load()
 	config.SetRoot(m.root)
+	if m.setBuckets {
+		config.SetBuckets(m.buckets)
+	}
 	if err := config.ValidateFilesystem(); err != nil {
 		return nil, err
 	}
@@ -83,10 +105,42 @@ func (m *Manager) fileSystem() (*FS, error) {
 	if m.closed {
 		return nil, ErrManagerClosed
 	}
+	if view, ok := m.views[config]; ok {
+		return view, nil
+	}
+
+	if buckets := config.ConfiguredBuckets(); len(buckets) > 0 {
+		backends := make(map[string]afero.Fs, len(buckets))
+		for _, bucket := range buckets {
+			bucketConfig := config
+			bucketConfig.SetBuckets("")
+			bucketConfig.SetRoot(bucket)
+			fileSystem, err := m.fileSystemLocked(bucketConfig)
+			if err != nil {
+				return nil, err
+			}
+			backends[bucket] = fileSystem
+		}
+		catalog, err := newBucketCatalogFS(backends)
+		if err != nil {
+			return nil, fmt.Errorf("create configured bucket catalog: %w", err)
+		}
+		m.views[config] = catalog
+		return catalog, nil
+	}
+
+	fileSystem, err := m.fileSystemLocked(config)
+	if err != nil {
+		return nil, err
+	}
+	m.views[config] = fileSystem
+	return fileSystem, nil
+}
+
+func (m *Manager) fileSystemLocked(config objectstorage.Config) (*FS, error) {
 	if fileSystem, ok := m.files[config]; ok {
 		return fileSystem, nil
 	}
-
 	m.nextID++
 	name := fmt.Sprintf("object-%d", m.nextID)
 	fileSystem, err := NewS3(m.ctx, name, config)
@@ -109,6 +163,7 @@ func (m *Manager) Close() error {
 		_ = fileSystem.Close()
 	}
 	clear(m.files)
+	clear(m.views)
 	return nil
 }
 

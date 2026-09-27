@@ -59,6 +59,7 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.StringP("cert", "t", "", "tls certificate")
 	flags.StringP("key", "k", "", "tls key")
 	flags.StringP("root", "r", "/", "S3 service root (/) or one bucket name")
+	flags.String("buckets", "", "comma-separated bucket catalog for the S3 service root")
 	flags.String("socket", "", "socket to listen to (cannot be used with address, port, cert nor key flags)")
 	flags.Uint32("socket-perm", 0666, "unix socket file permissions")
 	flags.StringP("baseurl", "b", "", "base url")
@@ -138,13 +139,14 @@ add at least one user with "package-r users add".`,
 		}
 		storageConfig := objectstorage.Load()
 		storageConfig.SetRoot(server.Root)
+		storageConfig.SetBuckets(server.Buckets)
 		checkErr(storageConfig.ValidateFilesystem())
 		checkErr(storageConfig.ValidateUserDir(applicationSettings.CreateUserDir))
 		if storageConfig.UsesAWSServiceRootWithoutRegion() {
 			log.Println("WARNING: AWS_REGION is not set; rclone will use us-east-1. Buckets in other regions cannot be opened from PACKAGE_R_ROOT=/. Set AWS_REGION or select one bucket with PACKAGE_R_ROOT.")
 		}
 
-		objectFileSystems := rclonefs.NewManager(context.Background(), server.Root)
+		objectFileSystems := rclonefs.NewManager(context.Background(), server.Root, server.Buckets)
 		defer func() { _ = objectFileSystems.Close() }()
 		_, err = objectFileSystems.FileSystem()
 		checkErr(err)
@@ -228,6 +230,10 @@ func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
 
 	if val, set := getParamB(flags, "root"); set {
 		server.Root = val
+	}
+
+	if val, set := getParamB(flags, "buckets"); set {
+		server.Buckets = val
 	}
 
 	if val, set := getParamB(flags, "baseurl"); set {

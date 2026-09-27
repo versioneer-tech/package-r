@@ -48,6 +48,7 @@ These values configure rclone VFS and presigned links.
 | `AWS_WEB_IDENTITY_TOKEN_FILE` | Empty | Injected for web identity | Path to the projected workload token. |
 | `AWS_ROLE_SESSION_NAME` | Empty | No | Optional web-identity role session name. |
 | `PACKAGE_R_ROOT` | `/` | No | S3 service root, or one bucket name. |
+| `PACKAGE_R_BUCKETS` | Empty | No | Comma-separated bucket catalog for the S3 service root. |
 | `AWS_ENDPOINT_URL` | Empty | For custom endpoints | S3-compatible API endpoint. An empty value selects AWS S3. |
 | `AWS_REGION` | Empty | Service dependent | S3 region. The credential provider can supply it. |
 | `XDG_CACHE_HOME` | Platform user cache directory | No | Parent directory for the rclone VFS and DuckDB caches. |
@@ -65,9 +66,11 @@ Startup fails when only one static key variable is set. Do not put projected
 tokens or static credentials in packageR configuration, logs, or the Bolt
 database.
 
-The service keeps one rclone VFS instance. User settings cannot change its
-endpoint, credentials, or root. The credential provider refreshes temporary
-credentials when the selected identity method supports refresh.
+The service keeps process-owned rclone VFS instances. An explicit bucket
+catalog uses one instance for each configured bucket. User settings cannot
+change the endpoint, credentials, root, or bucket catalog. The credential
+provider refreshes temporary credentials when the selected identity method
+supports refresh.
 
 Chunked and seek-based uploads use the rclone VFS write cache. Set
 `XDG_CACHE_HOME` to choose its parent directory. For example,
@@ -83,15 +86,29 @@ temporary volume is sufficient. A persistent volume avoids downloading it
 again after each restart. Catalog storage must support ranged `GET` requests
 and may receive `HEAD` requests.
 
-With `PACKAGE_R_ROOT=/`, the top-level entries are buckets. The credentials
-need permission to list buckets. On AWS, this is
-`s3:ListAllMyBuckets`. Opening and listing a bucket needs the corresponding
+With `PACKAGE_R_ROOT=/` and an empty `PACKAGE_R_BUCKETS`, the top-level entries
+come from S3 bucket discovery. The credentials need permission to list
+buckets. On AWS, this is `s3:ListAllMyBuckets`.
+
+Set `PACKAGE_R_BUCKETS` when the identity can use known buckets but cannot list
+all buckets:
+
+```text
+PACKAGE_R_ROOT=/
+PACKAGE_R_BUCKETS=data,archive
+```
+
+packageR then creates the top-level listing from this catalog and does not use
+S3 bucket discovery. Opening and listing a configured bucket still needs its
 bucket-list permission, such as AWS `s3:ListBucket`. Object actions need the
-matching provider permissions.
+matching provider permissions. Bucket names must be unique. packageR rejects
+a rename between buckets because each bucket has a separate backend.
 
 With `PACKAGE_R_ROOT=my-bucket`, `/` in packageR is the root of `my-bucket`.
 packageR does not need permission to list all buckets. It still needs
-`s3:ListBucket` and the required object permissions for `my-bucket`.
+`s3:ListBucket` and the required object permissions for `my-bucket`. Leave
+`PACKAGE_R_BUCKETS` empty in this mode. packageR rejects a bucket catalog with
+a direct bucket root because other catalog entries would not be reachable.
 
 Browser COG previews use presigned object URLs. Configure S3 CORS for the
 packageR and viewer origins. Allow `GET`, `HEAD`, and the `Range` request
@@ -176,13 +193,15 @@ to start when user-directory mode is enabled and `PACKAGE_R_ROOT=/`.
 packageR applies these access controls in order:
 
 1. The S3 credentials and their storage policy define the maximum access.
-2. `PACKAGE_R_ROOT` selects all visible buckets or one bucket.
-3. The user scope selects a subtree below that root. Paths cannot escape it.
-4. Hidden-file handling, global rules, and user rules filter normalized paths.
+2. `PACKAGE_R_ROOT` selects the service root or one direct bucket.
+3. `PACKAGE_R_BUCKETS` can replace service-root discovery with an explicit
+   bucket catalog.
+4. The user scope selects a subtree below that root. Paths cannot escape it.
+5. Hidden-file handling, global rules, and user rules filter normalized paths.
    Matching rules are evaluated in order, and the last matching rule wins.
-5. User-directory mode denies sibling homes and protects their shared parent
+6. User-directory mode denies sibling homes and protects their shared parent
    from recursive changes. This boundary cannot be overridden by a user rule.
-6. User permission flags control actions such as create, rename, modify, and
+7. User permission flags control actions such as create, rename, modify, and
    delete.
 
 ## Catalogs

@@ -2,6 +2,7 @@ package objectstorage
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -12,6 +13,10 @@ var (
 	ErrMissingCredentials = errors.New("set both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, or neither to use ambient AWS credentials")
 	// ErrInvalidRoot reports an PACKAGE_R_ROOT value that is not / or one bucket name.
 	ErrInvalidRoot = errors.New("PACKAGE_R_ROOT must be / or one S3 bucket name without /")
+	// ErrInvalidBuckets reports an invalid PACKAGE_R_BUCKETS value.
+	ErrInvalidBuckets = errors.New("PACKAGE_R_BUCKETS must be a comma-separated list of unique S3 bucket names")
+	// ErrBucketsNeedServiceRoot reports a bucket catalog used with a direct bucket root.
+	ErrBucketsNeedServiceRoot = errors.New("PACKAGE_R_BUCKETS can be set only when PACKAGE_R_ROOT=/")
 	// ErrUserDirNeedsBucket reports a generated user directory without one bucket.
 	ErrUserDirNeedsBucket = errors.New("user-directory mode requires PACKAGE_R_ROOT to name one S3 bucket; PACKAGE_R_ROOT=/ exposes the S3 service root")
 	// ErrInvalidObjectPath reports a path outside the user's storage scope.
@@ -26,6 +31,7 @@ type Config struct {
 	Endpoint        string
 	Region          string
 	Bucket          string
+	Buckets         string
 }
 
 // Load reads the process-owned S3 connection settings.
@@ -37,6 +43,7 @@ func Load() Config {
 		Endpoint:        os.Getenv("AWS_ENDPOINT_URL"),
 		Region:          os.Getenv("AWS_REGION"),
 		Bucket:          bucketFromRoot(os.Getenv("PACKAGE_R_ROOT")),
+		Buckets:         strings.TrimSpace(os.Getenv("PACKAGE_R_BUCKETS")),
 	}
 }
 
@@ -72,6 +79,20 @@ func (c Config) ValidateRoot() error {
 		strings.Contains(c.Bucket, "/") || strings.ContainsRune(c.Bucket, 0) {
 		return ErrInvalidRoot
 	}
+	if c.Bucket != "" && strings.TrimSpace(c.Buckets) != "" {
+		return ErrBucketsNeedServiceRoot
+	}
+	seen := make(map[string]struct{})
+	for _, bucket := range c.ConfiguredBuckets() {
+		if bucket == "" || bucket == "." || bucket == ".." ||
+			strings.Contains(bucket, "/") || strings.ContainsRune(bucket, 0) {
+			return fmt.Errorf("%w: %q", ErrInvalidBuckets, bucket)
+		}
+		if _, ok := seen[bucket]; ok {
+			return fmt.Errorf("%w: duplicate %q", ErrInvalidBuckets, bucket)
+		}
+		seen[bucket] = struct{}{}
+	}
 	return nil
 }
 
@@ -93,6 +114,23 @@ func (c *Config) SetRoot(value string) {
 	c.Bucket = bucketFromRoot(value)
 }
 
+// SetBuckets applies the configured service-root bucket catalog.
+func (c *Config) SetBuckets(value string) {
+	c.Buckets = strings.TrimSpace(value)
+}
+
+// ConfiguredBuckets returns the explicit service-root bucket catalog.
+func (c Config) ConfiguredBuckets() []string {
+	if strings.TrimSpace(c.Buckets) == "" {
+		return nil
+	}
+	values := strings.Split(c.Buckets, ",")
+	for index := range values {
+		values[index] = strings.TrimSpace(values[index])
+	}
+	return values
+}
+
 // ObjectPath maps a path in a user's view to its key below the storage root.
 func ObjectPath(userScope, name string) (string, error) {
 	if strings.ContainsRune(userScope, 0) || strings.ContainsRune(name, 0) {
@@ -111,5 +149,5 @@ func bucketFromRoot(value string) string {
 	if value == "" || value == "/" {
 		return ""
 	}
-	return value
+	return strings.TrimSuffix(value, "/")
 }

@@ -215,6 +215,7 @@ common_env=(
   "RCLONE_CONFIG=/dev/null"
   "PACKAGE_R_DATABASE=${tmp_dir}/package-r.db"
   "PACKAGE_R_ROOT=/"
+  "PACKAGE_R_BUCKETS=${BUCKET}"
   "PACKAGE_R_PORT=${package_r_port}"
   "AWS_ACCESS_KEY_ID=${ACCESS_KEY_ID}"
   "AWS_SECRET_ACCESS_KEY=${SECRET_ACCESS_KEY}"

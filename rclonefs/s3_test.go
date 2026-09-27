@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rclone/rclone/fs/config"
+	"github.com/spf13/afero"
 
 	"github.com/versioneer-tech/package-r/objectstorage"
 )
@@ -111,6 +112,7 @@ func TestManagerReusesConfigurationAndSeparatesRotation(t *testing.T) {
 		"AWS_ENDPOINT_URL",
 		"AWS_REGION",
 		"PACKAGE_R_ROOT",
+		"PACKAGE_R_BUCKETS",
 	} {
 		t.Setenv(key, "")
 	}
@@ -158,11 +160,7 @@ func TestManagerUsesConfiguredRootInsteadOfUserOrProcessRoot(t *testing.T) {
 	manager := NewManager(context.Background(), "configured-bucket")
 	t.Cleanup(func() { _ = manager.Close() })
 
-	fileSystem, err := manager.fileSystem()
-	if err != nil {
-		t.Fatal(err)
-	}
-	link, err := fileSystem.PublicLink(context.Background(), "/report.txt", time.Hour)
+	link, err := manager.PublicLink(context.Background(), "/report.txt", time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,5 +170,52 @@ func TestManagerUsesConfiguredRootInsteadOfUserOrProcessRoot(t *testing.T) {
 	}
 	if parsed.Path != "/configured-bucket/report.txt" {
 		t.Fatalf("unexpected public link path %q", parsed.Path)
+	}
+}
+
+func TestManagerBuildsConfiguredBucketCatalog(t *testing.T) {
+	for _, key := range []string{
+		"AWS_ACCESS_KEY_ID",
+		"AWS_SECRET_ACCESS_KEY",
+		"AWS_SESSION_TOKEN",
+		"AWS_ENDPOINT_URL",
+		"AWS_REGION",
+		"PACKAGE_R_ROOT",
+		"PACKAGE_R_BUCKETS",
+	} {
+		t.Setenv(key, "")
+	}
+	t.Setenv("AWS_ACCESS_KEY_ID", "access")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "secret")
+	t.Setenv("AWS_ENDPOINT_URL", "http://127.0.0.1:1")
+	t.Setenv("AWS_REGION", "us-east-1")
+
+	manager := NewManager(context.Background(), "/", "xyz-data,xyz-archive")
+	t.Cleanup(func() { _ = manager.Close() })
+	fileSystem, err := manager.FileSystem()
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries, err := afero.ReadDir(fileSystem, "/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 || entries[0].Name() != "xyz-archive" || entries[1].Name() != "xyz-data" {
+		t.Fatalf("unexpected bucket catalog: %#v", entries)
+	}
+
+	link, err := manager.PublicLink(context.Background(), "/xyz-archive/report.txt", time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := url.Parse(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parsed.Path != "/xyz-archive/report.txt" {
+		t.Fatalf("unexpected public link path %q", parsed.Path)
+	}
+	if _, err := manager.PublicLink(context.Background(), "/xyz-missing/report.txt", time.Hour); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected missing bucket error, got %v", err)
 	}
 }

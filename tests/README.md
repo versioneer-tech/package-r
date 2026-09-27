@@ -21,8 +21,9 @@ Use a unit test when you can check behavior at a package boundary.
 
 The integration harness is `tests/integration/run.bash`. It starts `rclone
 serve s3` and packageR on loopback addresses. packageR reads the test bucket
-with its embedded rclone VFS. The test uses `PACKAGE_R_ROOT=/` to include S3
-service-root navigation.
+with its embedded rclone VFS. The test uses `PACKAGE_R_ROOT=/` and an explicit
+`PACKAGE_R_BUCKETS` catalog to check service-root navigation without bucket
+discovery.
 
 The harness copies `tests/data` to a temporary bucket and does not change the
 source files. It checks:
