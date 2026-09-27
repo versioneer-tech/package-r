@@ -149,7 +149,7 @@
         v-else
         id="listing"
         ref="listing"
-        class="file-icons"
+        class="authenticated-listing file-icons"
         :class="authStore.user?.viewMode ?? ''"
       >
         <div>

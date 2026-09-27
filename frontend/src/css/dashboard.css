@@ -15,7 +15,7 @@ p code {
   background: var(--surfacePrimary);
   color: var(--textSecondary);
   border: 1px solid var(--borderPrimary);
-  border-radius: 6px;
+  border-radius: var(--surface-radius);
   box-shadow: 0 1px 3px var(--borderPrimary);
   overflow: auto;
 }
@@ -195,6 +195,7 @@ html[dir="rtl"] .card .card-title > *:first-child {
 
 .settings-content {
   width: 100%;
+  padding: 1rem;
 }
 
 .card .card-action.full .action i {

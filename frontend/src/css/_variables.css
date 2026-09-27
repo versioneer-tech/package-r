@@ -22,6 +22,7 @@
   --background: rgb(250, 250, 250);
   --surfacePrimary: rgb(255, 255, 255);
   --surfaceSecondary: rgb(230, 230, 230);
+  --surface-radius: 1rem;
   --divider: rgba(0, 0, 0, 0.05);
   --iconPrimary: var(--icon-blue);
   --iconSecondary: rgb(255, 255, 255);
