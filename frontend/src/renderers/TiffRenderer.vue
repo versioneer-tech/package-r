@@ -1,10 +1,8 @@
 <template>
-  <div v-if="!checked" style="text-align: center; padding: 2em">
-    Checking...
-  </div>
+  <div v-if="!checked" class="tiff-status">Checking...</div>
   <Errors v-else-if="!url || loadError" :errorCode="415" />
-  <div v-else style="padding: 1em">
-    <canvas ref="canvasEl" style="max-width: 100%; border: 1px solid #ccc" />
+  <div v-else class="tiff-preview">
+    <canvas ref="canvasEl" />
   </div>
 </template>
 
@@ -119,3 +117,19 @@ async function renderTiff() {
 
 onMounted(renderTiff);
 </script>
+
+<style scoped>
+.tiff-status {
+  padding: 2em;
+  text-align: center;
+}
+
+.tiff-preview {
+  padding: 1em;
+}
+
+.tiff-preview canvas {
+  max-width: 100%;
+  border: 1px solid #ccc;
+}
+</style>

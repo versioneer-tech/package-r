@@ -95,10 +95,6 @@ const assetMappings = (mappings?: CatalogAssetMapping[]) => {
 </script>
 
 <style scoped>
-.settings-content {
-  width: 100%;
-}
-
 table {
   border-collapse: collapse;
   width: 100%;

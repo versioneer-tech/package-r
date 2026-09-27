@@ -12,6 +12,24 @@ for (const viewport of [
     const auth = new AuthPage(page);
     await auth.goto();
     await page.evaluate(() => document.fonts.ready);
+    for (const selector of [".versioneer-logo", ".eox-logo"]) {
+      const maintainerLogo = page.locator(selector);
+      await expect(maintainerLogo).toBeVisible();
+      expect(
+        await maintainerLogo.evaluate(
+          (image: HTMLImageElement) => image.naturalWidth
+        )
+      ).toBeGreaterThan(0);
+    }
+    expect(
+      await page.locator("#login").evaluate((login) => {
+        return getComputedStyle(login).backgroundColor;
+      })
+    ).toBe(
+      await page.locator("body").evaluate((body) => {
+        return getComputedStyle(body).backgroundColor;
+      })
+    );
     const button = page.getByRole("button", { name: "Login", exact: true });
     const buttonBox = await button.boundingBox();
     const footerBox = await page.locator("#about").boundingBox();
@@ -38,6 +56,21 @@ test("login has a visible keyboard focus state", async ({ page }) => {
   await expect(button).toHaveCSS("outline-width", "2px");
   await page.keyboard.press("Enter");
   await expect(page.getByLabel("sample.txt", { exact: true })).toBeVisible();
+});
+
+test("default logo stays visible in dark mode", async ({ page }) => {
+  const auth = new AuthPage(page);
+  await auth.goto();
+  await page.evaluate(() => document.documentElement.classList.add("dark"));
+  await expect(page.locator("#login .logo-img")).toHaveCSS(
+    "filter",
+    "invert(1)"
+  );
+  await auth.loginAs();
+  await expect(page.locator("header .logo-img")).toHaveCSS(
+    "filter",
+    "invert(1)"
+  );
 });
 
 test("closes the latest overlay first", async ({ page }) => {

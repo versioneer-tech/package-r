@@ -8,13 +8,13 @@
       title="Home"
     />
     <Action
-      v-if="authStore.user"
+      v-if="showMenu && authStore.user"
       icon="settings"
       :label="t('settings.profileSettings')"
       @action="openProfileSettings"
     />
     <Action
-      v-if="authStore.user"
+      v-if="showMenu && authStore.user"
       icon="link"
       :label="t('settings.shareManagement')"
       @action="openShareManagement"

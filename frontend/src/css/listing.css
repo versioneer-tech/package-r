@@ -48,6 +48,7 @@ html[dir="rtl"] #listing {
 #listing .item .size,
 #listing .item .modified {
   font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
 }
 
 #listing .item .name {
@@ -202,16 +203,12 @@ html[dir="rtl"] #listing {
   line-height: 1.4;
 }
 
-#listing .item .size,
-#listing .item .modified {
-  font-variant-numeric: tabular-nums;
-}
-
 #listing.list .item .name {
   width: 50%;
 }
 
-#listing.list .item .size {
+#listing.list .item .size,
+#listing.list .item .modified {
   width: 25%;
 }
 

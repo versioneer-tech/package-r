@@ -1,5 +1,4 @@
 .button {
-  border: 0;
   padding: 0.5em 1em;
   border-radius: 4px;
   cursor: pointer;
@@ -22,10 +21,6 @@
 
 .button--red {
   background: var(--red);
-}
-
-.button--blue {
-  background: var(--blue);
 }
 
 .button--flat {

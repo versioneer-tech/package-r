@@ -130,14 +130,14 @@
           <span>{{ t("files.lonely") }}</span>
         </h2>
         <input
-          style="display: none"
+          hidden
           type="file"
           id="upload-input"
           @change="uploadInput($event)"
           multiple
         />
         <input
-          style="display: none"
+          hidden
           type="file"
           id="upload-folder-input"
           @change="uploadInput($event)"
@@ -234,14 +234,14 @@
         </div>
 
         <input
-          style="display: none"
+          hidden
           type="file"
           id="upload-input"
           @change="uploadInput($event)"
           multiple
         />
         <input
-          style="display: none"
+          hidden
           type="file"
           id="upload-folder-input"
           @change="uploadInput($event)"

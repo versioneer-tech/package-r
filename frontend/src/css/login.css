@@ -1,5 +1,5 @@
 #login {
-  background: var(--surfacePrimary);
+  background: var(--background);
   position: fixed;
   top: 0;
   left: 0;
@@ -14,7 +14,7 @@
   gap: 2rem;
 }
 
-#login img {
+#login .logo-img {
   width: 4rem;
   height: 4rem;
   margin: 0 auto;
@@ -23,7 +23,7 @@
   transition: transform 0.2s ease;
 }
 
-#login img:hover {
+#login .logo-img:hover {
   transform: scale(1.05);
 }
 
@@ -36,8 +36,17 @@
 #login form {
   flex: 0 0 auto;
   margin-block: auto;
-  max-width: 16em;
+  max-width: 19rem;
   width: 100%;
+  padding: 1.5rem;
+}
+
+#login form,
+#about {
+  border: 1px solid var(--borderPrimary);
+  border-radius: 1rem;
+  background: var(--surfacePrimary);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.07);
 }
 
 #login.recaptcha form {
@@ -67,34 +76,118 @@
 
 #about {
   flex: 0 0 auto;
-  width: 100%;
-  text-align: center;
-  font-size: 0.85rem;
-  line-height: 1.6;
-  color: var(--textPrimary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: min(100%, 34rem);
+  padding: 0.75rem 1rem;
 }
 
-#about p {
-  margin: 0;
+#about .about-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+#about .about-label {
+  color: var(--textPrimary);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#about .about-product {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--textSecondary);
+  white-space: nowrap;
+}
+
+#about .about-product strong {
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+#about .about-version {
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  background: var(--surfaceSecondary);
+  color: var(--textPrimary);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+#about .about-divider {
+  align-self: stretch;
+  width: 1px;
+  background: var(--borderPrimary);
+}
+
+#about .about-logos {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#about .logo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--borderPrimary);
+  border-radius: 0.6rem;
+  background: white;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+#about .logo-link:hover {
+  border-color: var(--borderSecondary);
+  box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 #about .logo {
-  display: inline-block;
-  vertical-align: middle;
-  margin: 0 0.3em;
-  height: auto;
+  display: block;
   width: auto;
-  max-width: 8em;
+  height: 1rem;
+  max-width: none;
+  margin: 0;
+  object-fit: contain;
 }
 
 #about .versioneer-logo {
-  max-height: 1.4em;
+  height: 1.4rem;
+  max-width: 6.6rem;
 }
 
 #about .eox-logo {
-  max-height: 1.1em;
+  max-width: 3.5rem;
 }
 
-#about a {
-  text-decoration: none;
+@media (max-width: 30rem) {
+  #about {
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 0.8rem;
+  }
+
+  #about .about-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  #about .about-divider {
+    width: 100%;
+    height: 1px;
+  }
 }
