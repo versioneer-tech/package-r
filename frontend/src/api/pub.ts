@@ -31,34 +31,44 @@ export async function fetch(url: string, password: string = "") {
   return data;
 }
 
-async function shareAction(url: string, method: ApiMethod, content?: any) {
+async function shareAction(
+  url: string,
+  method: ApiMethod,
+  password: string = "",
+  content?: any
+) {
   url = removePrefix(url);
 
   const opts: ApiOpts = {
     method,
+    headers: { "X-SHARE-PASSWORD": encodeURIComponent(password) },
   };
 
   if (content) {
     opts.body = content;
   }
 
-  const res = await fetchURL(`/api/public/share${url}`, opts);
+  const res = await fetchURL(`/api/public/share${url}`, opts, false);
 
   return res;
 }
 
-export async function checksum(url: string, algo: ChecksumAlg | string) {
-  const data = await shareAction(`${url}?checksum=${algo}`, "GET");
+export async function checksum(
+  url: string,
+  algo: ChecksumAlg | string,
+  password: string = ""
+) {
+  const data = await shareAction(`${url}?checksum=${algo}`, "GET", password);
   return (await data.json()).checksums[algo];
 }
 
-export async function presign(url: string) {
-  const data = await shareAction(`${url}?presign=true`, "GET");
+export async function presign(url: string, password: string = "") {
+  const data = await shareAction(`${url}?presign=true`, "GET", password);
   return (await data.json()).presignedURL;
 }
 
-export async function stacBrowserURL(url: string) {
-  const data = await shareAction(`${url}?preview=true`, "GET");
+export async function stacBrowserURL(url: string, password: string = "") {
+  const data = await shareAction(`${url}?preview=true`, "GET", password);
   return (await data.json()).stacBrowserURL;
 }
 

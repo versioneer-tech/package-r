@@ -1,8 +1,10 @@
 # Run packageR on Kubernetes
 
 The packageR container starts the application directly. Prepare its runtime
-database before the main container starts. An init container and an
-`emptyDir` volume make this setup explicit:
+database before the main container starts. The preferred packageR deployment
+model keeps runtime state ephemeral and treats shares like other
+configuration, with an init container creating them during the bootstrap
+phase. An init container and an `emptyDir` volume make this setup explicit:
 
 1. The init container creates a new database, users, and public shares.
 2. The main container reads the prepared database and starts packageR.
@@ -56,17 +58,8 @@ spec:
 
               /package-r config init \
                 --address=0.0.0.0 \
-                --port=8888 \
                 --root=my-bucket \
-                --stac-browser-url=https://browser.moregeo.it/external/ \
-                --auth.method=json \
-                --signup=false \
-                --create-user-dir=false \
-                --disable-exec=true \
-                --perm.create=false \
-                --perm.delete=false \
-                --perm.modify=false \
-                --perm.rename=false
+                --stac-browser-url=https://browser.moregeo.it/external/
 
               /package-r users add admin "$ADMIN_PASSWORD" \
                 --perm.create=true \

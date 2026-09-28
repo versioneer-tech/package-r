@@ -23,8 +23,13 @@ img {
   max-width: 100%;
 }
 
+.logo-img {
+  opacity: 0.8;
+}
+
 :root.dark .logo-img {
   filter: invert(1);
+  opacity: 0.87;
 }
 
 audio,

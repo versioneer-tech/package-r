@@ -210,6 +210,9 @@ build_backend_if_needed "$package_r_bin" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
 "$package_r_bin" shares add admin my-share /catalog-sample \
   --catalog-name=catalog.parquet \
   >>"$backend_log" 2>&1
+"$package_r_bin" shares add admin protected-share /catalog-sample/openaerialmap-assets \
+  --password=my-share-password \
+  >>"$backend_log" 2>&1
 
 "$package_r_bin" >>"$backend_log" 2>&1 &
 server_pid=$!

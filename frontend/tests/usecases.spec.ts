@@ -195,7 +195,10 @@ test.describe("packageR use-case UI", () => {
     await shareManagementButton.click();
     await expect(page).toHaveURL(/\/shares$/);
     const settings = page.locator("#settings-shares");
-    const pathLink = settings.getByRole("link", { name: "/catalog-sample" });
+    const pathLink = settings.getByRole("link", {
+      name: "/catalog-sample",
+      exact: true,
+    });
     await expect(pathLink).toHaveAttribute("href", /\/share\/my-share\/$/);
     await expect(settings).toContainText("my-bucket");
     await expect(settings).toContainText("/catalog-sample");
@@ -296,6 +299,27 @@ test.describe("packageR use-case UI", () => {
     await expect(infoBox).toHaveScreenshot(
       "my-share-presign.png",
       publicShareScreenshotOptions
+    );
+  });
+
+  test("creates a presigned URL for a password-protected share", async ({
+    page,
+  }) => {
+    await page.goto(`/share/protected-share/${itemId}/thumbnail.png`);
+    await page.getByPlaceholder("Password").fill("my-share-password");
+    await page.getByRole("button", { name: "Submit" }).click();
+
+    const infoBox = page.locator(".share__box__info");
+    await expect(infoBox).toContainText("thumbnail.png");
+
+    const presignedLink = infoBox
+      .locator("p", { hasText: "Presigned URL:" })
+      .getByRole("link");
+    await presignedLink.click();
+    await expectAndNormalizePresignedURL(
+      presignedLink,
+      `${sharedPrefix}/${thumbnailPath}`,
+      `https://object-storage.example/${sharedPrefix}/${thumbnailPath}`
     );
   });
 

@@ -370,7 +370,7 @@ const checksum = async (event: Event, algo: string) => {
   }
 
   try {
-    const hash = await pub_api.checksum(link, algo);
+    const hash = await pub_api.checksum(link, algo, password.value);
     (event.target as HTMLElement).textContent = hash;
   } catch (e) {
     if (e instanceof Error) {
@@ -393,7 +393,7 @@ const presign = async (event: Event) => {
     : route.path;
 
   try {
-    const value = await pub_api.presign(link || "");
+    const value = await pub_api.presign(link || "", password.value);
     presignedURL.value = value;
   } catch (e) {
     if (e instanceof Error) {
@@ -416,7 +416,7 @@ const showSTACBrowserURL = async (event: Event) => {
     : route.path;
 
   try {
-    const value = await pub_api.stacBrowserURL(link || "");
+    const value = await pub_api.stacBrowserURL(link || "", password.value);
     stacBrowserURL.value = value;
   } catch (e) {
     if (e instanceof Error) {

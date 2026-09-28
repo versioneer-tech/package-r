@@ -73,8 +73,11 @@ html[dir="rtl"] .card .card-title > *:first-child {
 }
 
 .card .card-content.full {
-  padding-bottom: 0;
   overflow: auto;
+}
+
+.card .card-content.full:has(table) {
+  padding-bottom: 0;
 }
 
 .card h2 {
