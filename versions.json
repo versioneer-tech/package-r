@@ -1,10 +1,15 @@
 [
   {
-    "version": "vnext.1.0.0",
-    "title": "vnext.1.0.0",
+    "version": "vnext.1.0.1",
+    "title": "vnext.1.0.1",
     "aliases": [
       "latest"
     ]
+  },
+  {
+    "version": "vnext.1.0.0",
+    "title": "vnext.1.0.0",
+    "aliases": []
   },
   {
     "version": "vnext.1.0.0-rc.3",
