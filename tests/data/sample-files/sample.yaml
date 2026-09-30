@@ -1,0 +1,9 @@
+name: packageR YAML fixture
+purpose: Exercise structured text previews
+formats:
+  - json
+  - markdown
+  - yaml
+preview:
+  readOnly: true
+  preserveFormatting: true

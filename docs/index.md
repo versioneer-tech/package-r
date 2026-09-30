@@ -8,6 +8,9 @@ The web interface also lets signed-in users browse and manage objects. A
 Parquet catalog inside a package can provide public [SpatioTemporal Asset
 Catalog (STAC)](https://stacspec.org/) JSON.
 
+packageR previews JSON, Markdown, PDF, common image formats, and cloud-native
+formats such as Cloud Optimized GeoTIFF (COG).
+
 packageR connects to object storage directly:
 
 ```text
@@ -22,7 +25,6 @@ Use packageR to:
 - upload, download, copy, move, rename, and delete objects
 - inspect metadata and calculate checksums
 - create time-limited object URLs
-- preview common files and Cloud Optimized GeoTIFFs (COGs)
 - publish a Parquet catalog as STAC JSON
 
 One storage identity is shared by all packageR sessions. Its storage policy

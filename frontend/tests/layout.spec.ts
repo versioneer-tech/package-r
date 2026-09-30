@@ -6,7 +6,7 @@ test("closes the latest overlay first", async ({ page }) => {
   const auth = new AuthPage(page);
   await auth.goto();
   await auth.loginAs();
-  await expect(page.getByLabel("sample.txt", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("sample-files", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("button", { name: "Info", exact: true }).click();
@@ -29,9 +29,9 @@ test("navigates with nested breadcrumbs", async ({ page }) => {
   const auth = new AuthPage(page);
   await auth.goto();
   await auth.loginAs();
-  await expect(page.getByLabel("sample.txt", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("sample-files", { exact: true })).toBeVisible();
   const folder = "67793f0b9478720001790586";
-  await page.goto(`/files/catalog-sample/openaerialmap-assets/${folder}/`);
+  await page.goto(`/files/openaerialmap-assets/${folder}/`);
   await expect(page.getByLabel("thumbnail.png", { exact: true })).toBeVisible();
   await page.locator(".breadcrumbs").getByTitle("openaerialmap-assets").click();
   await expect(page.getByLabel(folder, { exact: true })).toBeVisible();

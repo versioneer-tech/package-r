@@ -1,0 +1,3 @@
+This file is a packageR development fixture.
+
+Use it to test file listings, text previews, downloads, and object actions.

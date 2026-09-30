@@ -207,11 +207,17 @@ build_backend_if_needed "$package_r_bin" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
   --perm.modify=true \
   --perm.rename=true \
   >>"$backend_log" 2>&1
-"$package_r_bin" shares add admin my-share /catalog-sample \
-  --catalog-name=catalog.parquet \
+"$package_r_bin" shares add admin my-share / \
+  --catalog-name=openaerialmap-assets.parquet \
   >>"$backend_log" 2>&1
-"$package_r_bin" shares add admin protected-share /catalog-sample/openaerialmap-assets \
+"$package_r_bin" shares add admin protected-share /openaerialmap-assets \
   --password=my-share-password \
+  >>"$backend_log" 2>&1
+"$package_r_bin" shares add admin image-share /sample-files/sample.jpg \
+  >>"$backend_log" 2>&1
+"$package_r_bin" shares add admin text-share /sample-files/sample.txt \
+  >>"$backend_log" 2>&1
+"$package_r_bin" shares add admin json-share /sample-files/sample.json \
   >>"$backend_log" 2>&1
 
 "$package_r_bin" >>"$backend_log" 2>&1 &

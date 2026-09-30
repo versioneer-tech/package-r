@@ -173,8 +173,8 @@ run_development_environment() {
       >/dev/null
   fi
   PACKAGE_R_DATABASE="$database" "$package_r_bin" shares add \
-    admin my-share /catalog-sample \
-    --catalog-name=catalog.parquet \
+    admin my-share / \
+    --catalog-name=openaerialmap-assets.parquet \
     >/dev/null
 
   printf '[local-dev] ready\n'

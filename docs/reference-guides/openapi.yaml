@@ -549,7 +549,7 @@ components:
       description: Object path below the authenticated user's scope.
       schema:
         type: string
-      example: catalog-sample/catalog.parquet
+      example: openaerialmap-assets.parquet
     PublicPath:
       name: path
       in: path

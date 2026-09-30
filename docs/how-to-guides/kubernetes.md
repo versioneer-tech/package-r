@@ -67,9 +67,9 @@ spec:
                 --perm.modify=true \
                 --perm.rename=true
 
-              /package-r shares add admin public /catalog-sample \
+              /package-r shares add admin public / \
                 --password="$SHARE_PASSWORD" \
-                --catalog-name=catalog.parquet \
+                --catalog-name=openaerialmap-assets.parquet \
                 --asset-mappings='[{"from":"s3://data/","to":"."}]'
 
               mv "$work_database" "$database"

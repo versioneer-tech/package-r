@@ -97,6 +97,19 @@
             </a>
           </code>
         </p>
+        <p v-if="canShowSTACBrowser">
+          <strong>STAC Browser URL: </strong>
+          <code>
+            <a
+              :href="stacBrowserLink || 'javascript:void(0)'"
+              @click="showSTACBrowserURL"
+              @keypress.enter="showSTACBrowserURL"
+              tabindex="7"
+            >
+              {{ stacBrowserLink || $t("prompts.show") }}
+            </a>
+          </code>
+        </p>
       </template>
     </div>
 
@@ -118,10 +131,12 @@
 <script>
 import { mapActions, mapState } from "pinia";
 import { useFileStore } from "@/stores/file";
+import { useBrowserStore } from "@/stores/browser";
 import { useLayoutStore } from "@/stores/layout";
 import { filesize } from "@/utils";
 import dayjs from "dayjs";
-import { files as api } from "@/api";
+import { browser as api } from "@/api";
+import { stacBrowserURL as configuredSTACBrowserURL } from "@/utils/constants";
 
 export default {
   name: "info",
@@ -129,6 +144,7 @@ export default {
   data() {
     return {
       presignedURL: null,
+      stacBrowserLink: null,
     };
   },
   computed: {
@@ -138,6 +154,10 @@ export default {
       "selectedCount",
       "isListing",
     ]),
+    ...mapState(useBrowserStore, ["readOnly"]),
+    canShowSTACBrowser: function () {
+      return this.readOnly && configuredSTACBrowserURL !== "";
+    },
     humanSize: function () {
       if (this.selectedCount === 0 || !this.isListing) {
         return filesize(this.req.size);
@@ -232,6 +252,23 @@ export default {
       try {
         const value = await api.presign(link);
         this.presignedURL = value;
+      } catch (e) {
+        this.$showError(e);
+      }
+    },
+    async showSTACBrowserURL(event) {
+      if (typeof this.stacBrowserLink === "string") {
+        return;
+      }
+
+      event.preventDefault();
+
+      const link = this.selectedCount
+        ? this.req.items[this.selected[0]].url
+        : this.$route.path;
+
+      try {
+        this.stacBrowserLink = await api.stacBrowserURL(link);
       } catch (e) {
         this.$showError(e);
       }

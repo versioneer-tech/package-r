@@ -64,6 +64,41 @@ func TestPublicShareBypassesGeneratedUserDirBaseRules(t *testing.T) {
 	}
 }
 
+func TestPublicShareReturnsImmutableTextContent(t *testing.T) {
+	root, store, user := newPresignTestStorage(t)
+	writePresignTestFile(t, root, "files/data.json")
+	if err := store.Share.Save(&share.Link{
+		Hash:   "my-share",
+		Path:   "/files",
+		UserID: user.ID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{Root: root})
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/share/my-share/data.json", http.NoBody)
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+	var file struct {
+		Type    string `json:"type"`
+		Content string `json:"content"`
+	}
+	if err := json.NewDecoder(recorder.Body).Decode(&file); err != nil {
+		t.Fatal(err)
+	}
+	if file.Type != "textImmutable" {
+		t.Fatalf("expected immutable text type, got %q", file.Type)
+	}
+	if file.Content != "data" {
+		t.Fatalf("expected shared file content, got %q", file.Content)
+	}
+}
+
 func TestPublicSharePresignPathUsesSharedFilesystemPath(t *testing.T) {
 	cf := &catalogedFile{
 		SharePath: "/bucket/public",

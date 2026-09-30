@@ -44,7 +44,7 @@
     "internal": "Something really went wrong.",
     "notFound": "This location can't be reached.",
     "connection": "The server can't be reached.",
-    "unsupportedMediaType": "Not possible."
+    "unsupportedMediaType": "Preview is not supported for this file type."
   },
   "files": {
     "files": "Files",
@@ -52,6 +52,7 @@
     "home": "Home",
     "lastModified": "Last modified",
     "loading": "Loading...",
+    "previewTransfer": "Downloaded {downloaded} of {total}",
     "lonely": "It feels lonely here...",
     "multipleSelectionEnabled": "Multiple selection enabled",
     "name": "Name",

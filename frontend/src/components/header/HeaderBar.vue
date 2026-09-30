@@ -14,7 +14,7 @@
       @action="openProfileSettings"
     />
     <Action
-      v-if="showMenu && authStore.user"
+      v-if="showMenu && authStore.user && hasShares"
       icon="link"
       :label="t('settings.shareManagement')"
       @action="openShareManagement"
@@ -55,14 +55,15 @@
 import { useLayoutStore } from "@/stores/layout";
 import { useAuthStore } from "@/stores/auth";
 import { logoURL } from "@/utils/constants";
+import { settings as api } from "@/api";
 
 import Action from "@/components/header/Action.vue";
-import { computed, useSlots } from "vue";
+import { computed, onMounted, ref, useSlots } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import * as auth from "@/utils/auth";
 
-defineProps<{
+const props = defineProps<{
   showLogo?: boolean;
   showMenu?: boolean;
 }>();
@@ -71,10 +72,21 @@ const authStore = useAuthStore();
 const layoutStore = useLayoutStore();
 const router = useRouter();
 const slots = useSlots();
+const hasShares = ref(false);
 
 const { t } = useI18n();
 
 const ifActionsSlot = computed(() => (slots.actions ? true : false));
+
+onMounted(async () => {
+  if (!props.showMenu || !authStore.user) return;
+
+  try {
+    hasShares.value = (await api.getShares()).length > 0;
+  } catch {
+    hasShares.value = false;
+  }
+});
 
 const openProfileSettings = () => {
   layoutStore.closeHovers();

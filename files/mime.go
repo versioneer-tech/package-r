@@ -598,6 +598,8 @@ var types = map[string]string{
 	".mpd":       "application/dash+xml",
 	".webp":      "image/webp",
 	".epub":      "application/epub+zip",
+	".yaml":      "application/yaml",
+	".yml":       "application/yaml",
 }
 
 //nolint:gochecknoinits

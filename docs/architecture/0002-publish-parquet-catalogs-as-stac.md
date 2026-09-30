@@ -48,8 +48,8 @@ An explicit mapping is part of one share. Set it when you add the share. The
 `--asset-mappings` value is a JSON array:
 
 ```bash
-./package-r shares add admin my-share /catalog-sample \
-  --catalog-name=catalog.parquet \
+./package-r shares add admin my-share / \
+  --catalog-name=openaerialmap-assets.parquet \
   --asset-mappings='[{"from":"s3://data/","to":"."}]'
 ```
 

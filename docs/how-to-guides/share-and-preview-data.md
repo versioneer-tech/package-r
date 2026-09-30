@@ -52,13 +52,13 @@ write them to logs.
 
 ## Use a direct object URL
 
-For an authenticated or public file, select **Show** next to **Presigned URL**.
-packageR creates a direct S3 GET URL, so the file does not pass through
-packageR.
+Authenticated files and public shares use the same browser interface. Public
+shares are read-only and do not show upload, change, delete, download, or
+directory archive actions.
 
-On a public file page, select **Open in browser** to open the object through a
-presigned redirect. The public page has no download or directory archive
-action. A recipient can still save an object after the browser opens it.
+Open a supported file to preview it through a presigned URL. Select **Info**,
+then select **Show** next to **Presigned URL** to display the direct S3 GET
+URL. The file does not pass through packageR.
 
 ![Public file links](../imgs/screenshots/my-share-presign.png)
 
@@ -96,8 +96,8 @@ Set the relative catalog path when you add the share. If an asset URI does not
 match the storage path, add an asset mapping to that share:
 
 ```bash
-./package-r shares add admin my-share /catalog-sample \
-  --catalog-name=catalogs/items.parquet \
+./package-r shares add admin my-share / \
+  --catalog-name=openaerialmap-assets.parquet \
   --asset-mappings='[{"from":"s3://data/","to":"."}]'
 ```
 

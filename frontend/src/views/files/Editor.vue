@@ -1,11 +1,16 @@
 <template>
   <div id="editor-container" @wheel.prevent.stop>
     <header-bar>
-      <action icon="close" :label="t('buttons.close')" @action="close()" />
+      <action
+        v-if="canClose"
+        icon="close"
+        :label="t('buttons.close')"
+        @action="close()"
+      />
       <title>{{ fileStore.req?.name ?? "" }}</title>
 
       <action
-        v-if="authStore.user?.perm.modify"
+        v-if="canModify"
         id="save-button"
         icon="save"
         :label="t('buttons.save')"
@@ -20,7 +25,7 @@
       />
     </header-bar>
 
-    <Breadcrumbs base="/files" noLink />
+    <Breadcrumbs :base="browserStore.basePath" noLink />
 
     <!-- preview container -->
     <div
@@ -46,9 +51,17 @@ import HeaderBar from "@/components/header/HeaderBar.vue";
 import Action from "@/components/header/Action.vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import { useAuthStore } from "@/stores/auth";
+import { useBrowserStore } from "@/stores/browser";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
-import { inject, onBeforeUnmount, onMounted, ref, watchEffect } from "vue";
+import {
+  computed,
+  inject,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watchEffect,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { getTheme } from "@/utils/theme";
@@ -59,6 +72,7 @@ const $showError = inject<IToastError>("$showError")!;
 
 const fileStore = useFileStore();
 const authStore = useAuthStore();
+const browserStore = useBrowserStore();
 const layoutStore = useLayoutStore();
 
 const { t } = useI18n();
@@ -70,6 +84,12 @@ const editor = ref<Ace.Editor | null>(null);
 
 const isPreview = ref(false);
 const previewContent = ref("");
+const canModify = !browserStore.readOnly && !!authStore.user?.perm.modify;
+const canClose = computed(
+  () =>
+    !browserStore.readOnly ||
+    route.path.replace(/\/$/, "") !== browserStore.basePath
+);
 const isMarkdownFile =
   fileStore.req?.name.endsWith(".md") ||
   fileStore.req?.name.endsWith(".markdown");
@@ -109,7 +129,7 @@ onMounted(() => {
   editor.value = ace.edit("editor", {
     value: fileContent,
     showPrintMargin: false,
-    readOnly: fileStore.req?.type === "textImmutable",
+    readOnly: browserStore.readOnly || fileStore.req?.type === "textImmutable",
     theme: "ace/theme/chrome",
     mode: modelist.getModeForPath(fileStore.req!.name).mode,
     wrap: true,
@@ -145,6 +165,7 @@ const keyEvent = (event: KeyboardEvent) => {
   }
 
   event.preventDefault();
+  if (!canModify) return;
   save();
 };
 
@@ -156,6 +177,8 @@ const handleScroll = (event: WheelEvent) => {
 };
 
 const save = async () => {
+  if (!canModify) return;
+
   const button = "save";
   buttons.loading("save");
 
@@ -169,6 +192,8 @@ const save = async () => {
   }
 };
 const close = () => {
+  if (!canClose.value) return;
+
   if (!editor.value?.session.getUndoManager().isClean()) {
     layoutStore.showHover("discardEditorChanges");
     return;

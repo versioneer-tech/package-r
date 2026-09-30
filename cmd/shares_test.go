@@ -12,9 +12,9 @@ func TestWriteSharesIncludesShareConfiguration(t *testing.T) {
 	var output bytes.Buffer
 	links := []*share.Link{{
 		Hash:         "my-share",
-		Path:         "/catalog-sample",
+		Path:         "/",
 		UserID:       1,
-		CatalogURL:   "/catalog-sample/catalog.parquet",
+		CatalogURL:   "/openaerialmap-assets.parquet",
 		PasswordHash: "secret-hash",
 		Token:        "secret-token",
 		Description:  "Example data",
@@ -36,7 +36,7 @@ func TestWriteSharesIncludesShareConfiguration(t *testing.T) {
 		"Description",
 		"yes",
 		"Example data",
-		"/catalog-sample/catalog.parquet",
+		"/openaerialmap-assets.parquet",
 		`[{"from":"s3://data/","to":"."}]`,
 	} {
 		if !strings.Contains(value, expected) {

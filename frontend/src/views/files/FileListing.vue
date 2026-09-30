@@ -1,17 +1,17 @@
 <template>
   <div>
-    <header-bar showMenu showLogo>
+    <header-bar :show-menu="!browserStore.readOnly" showLogo>
       <title />
       <template #actions>
         <template v-if="!isMobile">
           <action
-            v-if="authStore?.user?.perm.create"
+            v-if="permissions.create"
             icon="create_new_folder"
             :label="t('sidebar.newFolder')"
             @action="layoutStore.showHover('newDir')"
           />
           <action
-            v-if="authStore?.user?.perm.create"
+            v-if="permissions.create"
             icon="note_add"
             :label="t('sidebar.newFile')"
             @action="layoutStore.showHover('newFile')"
@@ -150,7 +150,7 @@
         id="listing"
         ref="listing"
         class="authenticated-listing file-icons"
-        :class="authStore.user?.viewMode ?? ''"
+        :class="viewMode"
       >
         <div>
           <div class="item header">
@@ -212,6 +212,7 @@
             v-bind:type="item.type"
             v-bind:size="item.size"
             v-bind:path="item.path"
+            :read-only="browserStore.readOnly"
           >
           </item>
         </div>
@@ -229,6 +230,7 @@
             v-bind:type="item.type"
             v-bind:size="item.size"
             v-bind:path="item.path"
+            :read-only="browserStore.readOnly"
           >
           </item>
         </div>
@@ -269,6 +271,7 @@
 
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
+import { EMPTY_PERMISSIONS, useBrowserStore } from "@/stores/browser";
 import { useClipboardStore } from "@/stores/clipboard";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
@@ -306,6 +309,7 @@ const $showError = inject<IToastError>("$showError")!;
 
 const clipboardStore = useClipboardStore();
 const authStore = useAuthStore();
+const browserStore = useBrowserStore();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
 
@@ -316,6 +320,18 @@ const route = useRoute();
 const { t } = useI18n();
 
 const listing = ref<HTMLElement | null>(null);
+
+const permissions = computed(() =>
+  browserStore.readOnly
+    ? EMPTY_PERMISSIONS
+    : (authStore.user?.perm ?? EMPTY_PERMISSIONS)
+);
+
+const viewMode = computed(() =>
+  browserStore.readOnly
+    ? browserStore.viewMode
+    : (authStore.user?.viewMode ?? "list")
+);
 
 const nameSorted = computed(() =>
   fileStore.req ? fileStore.req.sorting.by === "name" : false
@@ -388,20 +404,18 @@ const viewIcon = computed(() => {
     mosaic: "grid_view",
     "mosaic gallery": "view_list",
   };
-  return authStore.user === null
-    ? icons["list"]
-    : icons[authStore.user.viewMode];
+  return icons[viewMode.value];
 });
 
 const headerButtons = computed(() => {
   return {
-    upload: authStore.user?.perm.create,
-    download: authStore.user?.perm.download,
-    shell: authStore.user?.perm.execute && enableExec,
-    delete: fileStore.selectedCount > 0 && authStore.user?.perm.delete,
-    rename: fileStore.selectedCount === 1 && authStore.user?.perm.rename,
-    move: fileStore.selectedCount > 0 && authStore.user?.perm.rename,
-    copy: fileStore.selectedCount > 0 && authStore.user?.perm.create,
+    upload: permissions.value.create,
+    download: permissions.value.download,
+    shell: permissions.value.execute && enableExec,
+    delete: fileStore.selectedCount > 0 && permissions.value.delete,
+    rename: fileStore.selectedCount === 1 && permissions.value.rename,
+    move: fileStore.selectedCount > 0 && permissions.value.rename,
+    copy: fileStore.selectedCount > 0 && permissions.value.create,
   };
 });
 
@@ -447,7 +461,7 @@ onMounted(() => {
   window.addEventListener("scroll", scrollEvent);
   window.addEventListener("resize", windowsResize);
 
-  if (!authStore.user?.perm.create) return;
+  if (!permissions.value.create) return;
   document.addEventListener("dragover", preventDefault);
   document.addEventListener("dragenter", dragEnter);
   document.addEventListener("dragleave", dragLeave);
@@ -460,7 +474,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("scroll", scrollEvent);
   window.removeEventListener("resize", windowsResize);
 
-  if (authStore.user && !authStore.user?.perm.create) return;
+  if (!permissions.value.create) return;
   document.removeEventListener("dragover", preventDefault);
   document.removeEventListener("dragenter", dragEnter);
   document.removeEventListener("dragleave", dragLeave);
@@ -481,14 +495,14 @@ const keyEvent = (event: KeyboardEvent) => {
   }
 
   if (event.key === "Delete") {
-    if (!authStore.user?.perm.delete || fileStore.selectedCount == 0) return;
+    if (!permissions.value.delete || fileStore.selectedCount == 0) return;
 
     // Show delete prompt.
     layoutStore.showHover("delete");
   }
 
   if (event.key === "F2") {
-    if (!authStore.user?.perm.rename || fileStore.selectedCount !== 1) return;
+    if (!permissions.value.rename || fileStore.selectedCount !== 1) return;
 
     // Show rename prompt.
     layoutStore.showHover("rename");
@@ -532,8 +546,8 @@ const copyCut = (event: Event | KeyboardEvent): void => {
   if ((event.target as HTMLElement).tagName?.toLowerCase() === "input") return;
 
   const key = (event as KeyboardEvent).key;
-  if (key === "c" && !authStore.user?.perm.create) return;
-  if (key === "x" && !authStore.user?.perm.rename) return;
+  if (key === "c" && !permissions.value.create) return;
+  if (key === "x" && !permissions.value.rename) return;
 
   if (fileStore.req === null) return;
 
@@ -562,8 +576,8 @@ const paste = (event: Event) => {
 
   const allowed =
     clipboardStore.key === "x"
-      ? authStore.user?.perm.rename
-      : authStore.user?.perm.create;
+      ? permissions.value.rename
+      : permissions.value.create;
   if (!allowed) return;
 
   // TODO router location should it be
@@ -813,8 +827,10 @@ const sort = (by: string) => {
   if (!fileStore.req) return;
 
   fileStore.req.sorting = { by, asc };
-  authStore.updateUser({ sorting: { by, asc } });
-  settingsApi.updateProfile({ sorting: { by, asc } }).catch($showError);
+  if (!browserStore.readOnly) {
+    authStore.updateUser({ sorting: { by, asc } });
+    settingsApi.updateProfile({ sorting: { by, asc } }).catch($showError);
+  }
   const direction = asc ? 1 : -1;
   fileStore.req.items.sort((left, right) => {
     if (left.isDir !== right.isDir) return left.isDir ? -1 : 1;
@@ -887,9 +903,15 @@ const switchView = () => {
   };
 
   const data = {
-    viewMode: (modes[authStore.user?.viewMode ?? "list"] ||
-      "list") as ViewModeType,
+    viewMode: (modes[viewMode.value] || "list") as ViewModeType,
   };
+
+  if (browserStore.readOnly) {
+    browserStore.viewMode = data.viewMode;
+    setItemWeight();
+    fillWindow();
+    return;
+  }
 
   authStore.updateUser(data);
   settingsApi.updateProfile(data).catch($showError);

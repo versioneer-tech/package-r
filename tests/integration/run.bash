@@ -12,7 +12,6 @@ readonly SECRET_ACCESS_KEY=my-secret-key
 readonly BUCKET=my-bucket
 readonly SHARE_NAME=my-share
 readonly SHARE_PASSWORD=my-password
-readonly SHARED_PREFIX=catalog-sample
 readonly ITEM_ID=67793f0b9478720001790586
 readonly CURL_CONNECT_TIMEOUT_SECONDS=2
 readonly CURL_MAX_TIME_SECONDS=30
@@ -246,9 +245,9 @@ env -i "${common_env[@]}" "${tmp_dir}/package-r" users add admin my-password \
   --perm.rename=true \
   >>"${tmp_dir}/init.log" 2>&1
 env -i "${common_env[@]}" "${tmp_dir}/package-r" shares add \
-  admin "${SHARE_NAME}" "/${BUCKET}/${SHARED_PREFIX}" \
+  admin "${SHARE_NAME}" "/${BUCKET}" \
   --password="${SHARE_PASSWORD}" \
-  --catalog-name=catalog.parquet \
+  --catalog-name=openaerialmap-assets.parquet \
   >>"${tmp_dir}/init.log" 2>&1
 
 log "Starting packageR on ${package_r_url}"
@@ -261,8 +260,8 @@ wait_for_http "${package_r_url}/health" "packageR" "${tmp_dir}/package-r.log" "$
 token="$(curl_test -fsS -X POST -H 'X-Username: admin' "${package_r_url}/api/login")"
 auth_header="X-Auth: ${token}"
 share_password_header="X-SHARE-PASSWORD: ${SHARE_PASSWORD}"
-thumbnail="${FIXTURE_DIR}/${SHARED_PREFIX}/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
-resource_path="/${BUCKET}/${SHARED_PREFIX}/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
+thumbnail="${FIXTURE_DIR}/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
+resource_path="/${BUCKET}/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
 public_path="openaerialmap-assets/${ITEM_ID}/thumbnail.png"
 
 log "Checking that user and settings management APIs are unavailable"
@@ -275,7 +274,7 @@ for api_path in users settings; do
   fi
 done
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/shares" |
-  python3 -c 'import json, sys; shares = json.load(sys.stdin); assert len(shares) == 1; share = shares[0]; assert share["hash"] == sys.argv[1]; assert share["url"] == "/share/" + sys.argv[1] + "/"; assert share["source"] == "/"; assert share["path"] == "/my-bucket/catalog-sample"; assert share["catalog"] == "/my-bucket/catalog-sample/catalog.parquet"; assert share["passwordProtected"] is True; assert "passwordHash" not in share and "token" not in share' "${SHARE_NAME}"
+  python3 -c 'import json, sys; shares = json.load(sys.stdin); assert len(shares) == 1; share = shares[0]; assert share["hash"] == sys.argv[1]; assert share["url"] == "/share/" + sys.argv[1] + "/"; assert share["source"] == "/"; assert share["path"] == "/my-bucket"; assert share["catalog"] == "/my-bucket/openaerialmap-assets.parquet"; assert share["passwordProtected"] is True; assert "passwordHash" not in share and "token" not in share' "${SHARE_NAME}"
 share_management_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
   -H "${auth_header}" "${package_r_url}/api/shares")"
 if [[ "${share_management_status}" != "404" ]]; then
@@ -294,9 +293,7 @@ log "Checking VFS service-root browsing"
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/" |
   python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert "my-bucket" in names'
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/${BUCKET}/" |
-  python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert {"catalog-sample", "sample.jpg", "sample.json", "sample.pdf", "sample.txt"} <= names'
-curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/${BUCKET}/${SHARED_PREFIX}/" |
-  python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert {"catalog.parquet", "openaerialmap-assets"} <= names'
+  python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert {"openaerialmap-assets.parquet", "openaerialmap-assets", "sample-files"} <= names'
 log "Checking VFS create, copy, rename, read, and delete"
 printf 'packageR rclone integration\n' >"${tmp_dir}/payload.txt"
 curl_test -fsS -X POST -H "${auth_header}" \

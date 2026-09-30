@@ -17,6 +17,9 @@ The Go service also provides a web interface for object storage. It can browse
 objects and create time-limited download URLs. Production does not need a
 separate rclone service.
 
+packageR previews JSON, Markdown, PDF, common image formats, and cloud-native
+formats such as Cloud Optimized GeoTIFF (COG).
+
 packageR provides:
 
 - public, browser-accessible packages for configured object prefixes, with no
@@ -24,7 +27,6 @@ packageR provides:
 - directory navigation and common object operations
 - uploads, downloads, and access rules
 - presigned GET URLs for authenticated files and public shares
-- TIFF and Cloud Optimized GeoTIFF (COG) previews
 - STAC-compatible Parquet catalogs exposed as public STAC JSON
 
 All sessions use one S3 identity. Its storage policy sets the maximum access.
@@ -46,7 +48,10 @@ tar -xzf package-r.tar.gz
 ```
 
 Create the initial user with explicit permissions and add a public share. This
-example publishes the `catalog-sample` prefix from the `data` bucket:
+example publishes the `data` bucket root:
+
+The OpenAerialMap sample images are licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 ```bash
 ./package-r config init
@@ -55,9 +60,9 @@ example publishes the `catalog-sample` prefix from the `data` bucket:
   --perm.rename=true \
   --perm.modify=true \
   --perm.delete=true
-./package-r shares add admin my-share /data/catalog-sample \
+./package-r shares add admin my-share /data \
   --description="Open aerial imagery sample" \
-  --catalog-name=catalog.parquet
+  --catalog-name=openaerialmap-assets.parquet
 
 AWS_ACCESS_KEY_ID=my-access-key \
 AWS_SECRET_ACCESS_KEY=my-secret-key \
@@ -91,10 +96,10 @@ Open **Run and Debug** and start **run packageR**. The launch configuration:
 
 1. Starts local S3 on `127.0.0.1:19100`.
 2. Builds the development backend.
-3. Bootstraps `.vscode/package-r.db` and shares `/catalog-sample` as
-   `my-share`.
-   This directory contains the test catalog and its assets. The bucket root
-   contains image, JSON, PDF, and text fixtures for manual checks.
+3. Bootstraps `.vscode/package-r.db` and shares `/` as `my-share`.
+   The bucket root contains the test catalog and its assets. The
+   `sample-files` directory contains HTML, JavaScript, JPEG, JSON, Markdown,
+   PDF, PNG, Python, TIFF, text, and YAML fixtures for manual checks.
 4. Starts packageR on `127.0.0.1:8888` under the Go debugger.
 5. Opens `http://localhost:8888` when the server is ready.
 

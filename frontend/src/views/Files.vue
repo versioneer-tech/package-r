@@ -1,15 +1,15 @@
 <template>
   <div>
     <header-bar
-      v-if="
-        error || fileStore.req?.type === null || fileStore.req?.type == 'tiff'
-      "
-      showMenu
+      v-if="error || fileStore.req?.type === null"
+      :show-menu="!browserStore.readOnly"
       showLogo
     />
 
-    <breadcrumbs base="/files" />
-    <errors v-if="error" :errorCode="error.status" />
+    <breadcrumbs :base="browserStore.basePath" />
+    <slot v-if="error" name="error" :error="error">
+      <errors :errorCode="error.status" />
+    </slot>
 
     <component
       v-else-if="currentView"
@@ -41,13 +41,13 @@ import {
   ref,
   watch,
 } from "vue";
-import { files as api } from "@/api";
+import { browser as api } from "@/api";
 import { storeToRefs } from "pinia";
+import { useBrowserStore } from "@/stores/browser";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 import { useUploadStore } from "@/stores/upload";
 
-import TiffRenderer from "@/renderers/TiffRenderer.vue";
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import Errors from "@/views/Errors.vue";
@@ -59,10 +59,27 @@ import { name } from "../utils/constants";
 
 const Editor = defineAsyncComponent(() => import("@/views/files/Editor.vue"));
 const Preview = defineAsyncComponent(() => import("@/views/files/Preview.vue"));
+const TextViewer = defineAsyncComponent(
+  () => import("@/views/files/TextViewer.vue")
+);
 
 const layoutStore = useLayoutStore();
+const browserStore = useBrowserStore();
 const fileStore = useFileStore();
 const uploadStore = useUploadStore();
+
+const props = withDefaults(
+  defineProps<{
+    source?: "authenticated" | "share";
+    password?: string;
+    requestKey?: number;
+  }>(),
+  {
+    source: "authenticated",
+    password: "",
+    requestKey: 0,
+  }
+);
 
 const { reload } = storeToRefs(fileStore);
 const { error: uploadError } = storeToRefs(uploadStore);
@@ -77,6 +94,22 @@ const clean = (path: string) => {
 
 const error = ref<StatusError | null>(null);
 
+const shareHash = () => {
+  const path = route.params.path;
+  if (Array.isArray(path)) return path[0] ?? "";
+  return path ?? "";
+};
+
+const configureBrowser = () => {
+  if (props.source === "share") {
+    browserStore.useShareSource(shareHash(), props.password);
+    return;
+  }
+  browserStore.useAuthenticatedSource();
+};
+
+configureBrowser();
+
 const currentView = computed(() => {
   const req = fileStore.req;
 
@@ -89,20 +122,17 @@ const currentView = computed(() => {
   }
 
   if (req.type === "text" || req.type === "textImmutable") {
-    return Editor;
+    return browserStore.readOnly ? TextViewer : Editor;
   }
 
   if (
     req.type === "pdf" ||
     req.type === "image" ||
     req.type === "audio" ||
-    req.type === "video"
+    req.type === "video" ||
+    req.type === "tiff"
   ) {
     return Preview;
-  }
-
-  if (req.type === "tiff") {
-    return TiffRenderer;
   }
 
   return null;
@@ -132,9 +162,13 @@ onUnmounted(() => {
     layoutStore.toggleShell();
   }
   fileStore.updateRequest(null);
+  if (props.source === "share") {
+    browserStore.useAuthenticatedSource();
+  }
 });
 
 watch(route, (to, from) => {
+  configureBrowser();
   if (from.path.endsWith("/")) {
     window.sessionStorage.setItem(
       "listFrozen",
@@ -148,6 +182,13 @@ watch(route, (to, from) => {
 watch(reload, (newValue) => {
   newValue && fetchData();
 });
+watch(
+  () => props.requestKey,
+  () => {
+    configureBrowser();
+    fetchData();
+  }
+);
 watch(
   uploadError,
   (newValue) => {
@@ -176,15 +217,21 @@ const fetchData = async () => {
   if (url === "") url = "/";
   if (url[0] !== "/") url = "/" + url;
   try {
-    if (!url.endsWith("/")) {
+    if (props.source === "share" || !url.endsWith("/")) {
       url += url.includes("?") ? "&presign" : "?presign";
     }
     const res = await api.fetch(url);
 
     const requestedPath = route.params.path;
-    const expectedPath = Array.isArray(requestedPath)
-      ? requestedPath.join("/")
-      : (requestedPath ?? "");
+    let requestedParts = Array.isArray(requestedPath)
+      ? requestedPath
+      : requestedPath
+        ? [requestedPath]
+        : [];
+    if (props.source === "share") {
+      requestedParts = requestedParts.slice(1);
+    }
+    const expectedPath = requestedParts.join("/");
     if (clean(res.path) !== clean(`/${expectedPath}`)) {
       throw new Error("Data Mismatch!");
     }

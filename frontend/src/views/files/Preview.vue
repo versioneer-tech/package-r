@@ -6,8 +6,13 @@
     @mousemove="toggleNavigation"
     @touchstart="toggleNavigation"
   >
-    <header-bar v-if="isPdf || showNav">
-      <action icon="close" :label="$t('buttons.close')" @action="close()" />
+    <header-bar v-if="isPdf || isTiff || showNav">
+      <action
+        v-if="canClose"
+        icon="close"
+        :label="$t('buttons.close')"
+        @action="close()"
+      />
       <title>{{ name }}</title>
       <action
         :disabled="layoutStore.loading"
@@ -19,14 +24,14 @@
       <template #actions>
         <action
           :disabled="layoutStore.loading"
-          v-if="authStore.user?.perm.rename"
+          v-if="permissions.rename"
           icon="mode_edit"
           :label="$t('buttons.rename')"
           show="rename"
         />
         <action
           :disabled="layoutStore.loading"
-          v-if="authStore.user?.perm.delete"
+          v-if="permissions.delete"
           icon="delete"
           :label="$t('buttons.delete')"
           @action="deleteFile"
@@ -34,7 +39,7 @@
         />
         <action
           :disabled="layoutStore.loading"
-          v-if="authStore.user?.perm.download"
+          v-if="permissions.download"
           icon="file_download"
           :label="$t('buttons.download')"
           @action="download"
@@ -58,6 +63,10 @@
     <template v-else>
       <div class="preview">
         <ExtendedImage v-if="fileStore.req?.type == 'image'" :src="raw" />
+        <TiffRenderer
+          v-else-if="fileStore.req?.type === 'tiff'"
+          :url="fileStore.req?.presignedURL"
+        />
         <audio
           v-else-if="fileStore.req?.type == 'audio'"
           ref="player"
@@ -127,21 +136,23 @@
 
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
+import { EMPTY_PERMISSIONS, useBrowserStore } from "@/stores/browser";
 import { useFileStore } from "@/stores/file";
 import { useLayoutStore } from "@/stores/layout";
 
-import { files as api } from "@/api";
+import { browser as api } from "@/api";
 import { resizePreview } from "@/utils/constants";
 import url from "@/utils/url";
 import { throttle } from "lodash-es";
 import HeaderBar from "@/components/header/HeaderBar.vue";
 import Action from "@/components/header/Action.vue";
 import ExtendedImage from "@/components/files/ExtendedImage.vue";
+import TiffRenderer from "@/renderers/TiffRenderer.vue";
 import VideoPlayer from "@/components/files/VideoPlayer.vue";
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-const mediaTypes: ResourceType[] = ["image", "video", "audio", "blob"];
+const mediaTypes: ResourceType[] = ["image", "tiff", "video", "audio", "blob"];
 
 const previousLink = ref<string>("");
 const nextLink = ref<string>("");
@@ -157,6 +168,7 @@ const player = ref<HTMLVideoElement | HTMLAudioElement | null>(null);
 const $showError = inject<IToastError>("$showError")!;
 
 const authStore = useAuthStore();
+const browserStore = useBrowserStore();
 const fileStore = useFileStore();
 const layoutStore = useLayoutStore();
 
@@ -166,6 +178,18 @@ const router = useRouter();
 const hasPrevious = computed(() => previousLink.value !== "");
 
 const hasNext = computed(() => nextLink.value !== "");
+
+const canClose = computed(
+  () =>
+    !browserStore.readOnly ||
+    route.path.replace(/\/$/, "") !== browserStore.basePath
+);
+
+const permissions = computed(() =>
+  browserStore.readOnly
+    ? EMPTY_PERMISSIONS
+    : (authStore.user?.perm ?? EMPTY_PERMISSIONS)
+);
 
 const downloadUrl = computed(() =>
   fileStore.req ? api.getDownloadURL(fileStore.req, true) : ""
@@ -180,6 +204,7 @@ const raw = computed(() => {
 });
 
 const isPdf = computed(() => fileStore.req?.extension.toLowerCase() == ".pdf");
+const isTiff = computed(() => fileStore.req?.type === "tiff");
 
 const isResizeEnabled = computed(() => resizePreview);
 
@@ -309,6 +334,8 @@ const toggleNavigation = throttle(function () {
 }, 500);
 
 const close = () => {
+  if (!canClose.value) return;
+
   fileStore.updateRequest(null);
 
   const uri = url.removeLastDir(route.path) + "/";

@@ -1,6 +1,7 @@
 import { fetchURL, removePrefix, createURL } from "./utils";
 
 export async function fetch(url: string, password: string = "") {
+  const browserURL = removePrefix(url.split("?")[0]);
   url = removePrefix(url);
 
   const res = await fetchURL(
@@ -12,7 +13,7 @@ export async function fetch(url: string, password: string = "") {
   );
 
   const data = (await res.json()) as Resource;
-  data.url = `/share${url}`;
+  data.url = `/share${browserURL}`;
 
   if (data.isDir) {
     if (!data.url.endsWith("/")) data.url += "/";

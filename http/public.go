@@ -73,12 +73,14 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		d.user.Fs = afero.NewBasePathFs(d.user.Fs, basePath)
 
 		file, err = files.NewFileInfo(&files.FileOptions{
-			Fs:      d.user.Fs,
-			Path:    filePath,
-			Modify:  d.user.Perm.Modify,
-			Expand:  true,
-			Checker: d,
-			Token:   link.Token,
+			Fs:         d.user.Fs,
+			Path:       filePath,
+			Modify:     false,
+			Expand:     true,
+			ReadHeader: d.server.TypeDetectionByHeader,
+			Checker:    d,
+			Token:      link.Token,
+			Content:    true,
 		})
 		if err != nil {
 			return errToStatus(err), err

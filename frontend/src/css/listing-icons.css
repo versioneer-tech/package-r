@@ -82,15 +82,13 @@
 .file-icons [data-ext=".html"] i::before,
 .file-icons [data-ext=".java"] i::before,
 .file-icons [data-ext=".js"] i::before,
-.file-icons [data-ext=".json"] i::before,
 .file-icons [data-ext=".kt"] i::before,
 .file-icons [data-ext=".php"] i::before,
 .file-icons [data-ext=".py"] i::before,
 .file-icons [data-ext=".rb"] i::before,
 .file-icons [data-ext=".rs"] i::before,
 .file-icons [data-ext=".vue"] i::before,
-.file-icons [data-ext=".xml"] i::before,
-.file-icons [data-ext=".yml"] i::before {
+.file-icons [data-ext=".xml"] i::before {
   content: "code";
 }
 
@@ -194,7 +192,6 @@
 
 .file-icons [data-ext=".css"] i,
 .file-icons [data-ext=".js"] i,
-.file-icons [data-ext=".json"] i,
 .file-icons [data-ext=".zip"] i {
   color: var(--icon-yellow);
 }
