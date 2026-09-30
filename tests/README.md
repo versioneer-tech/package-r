@@ -5,7 +5,7 @@ type checks, documentation builds, and release builds are separate checks.
 
 ## Sentinel-2 fixture
 
-The catalog, integration, and browser tests use a generated fixture that is
+The integration and browser tests use a generated fixture that is
 excluded from Git. Before you run these tests, generate it with:
 
 ```bash
@@ -59,7 +59,8 @@ source files. It checks:
 - runtime share creation is unavailable
 - public catalogs load through the VFS with the GeoJSON media type
 - the live catalog endpoint passes STAC 1.1 validation
-- rewritten catalog asset URLs return the expected object
+- catalog Collection and Item metadata and links are correct
+- explicit catalog asset mappings return the expected object
 - Prometheus metrics expose HTTP, authentication, upload, presign, rclone, and
   VFS values without object paths
 - generated users can read and write their own home

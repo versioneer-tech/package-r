@@ -15,6 +15,7 @@ readonly SHARE_PASSWORD=my-password
 readonly DATASET=vienna-s2l2a-26
 readonly ITEM_ID=S2B_T33UXP_20260218T100524_L2A
 readonly CATALOG_PATH="${DATASET}/${DATASET}.parquet"
+readonly ASSET_MAPPINGS="[{\"from\":\"${ITEM_ID}/\",\"to\":\"mapped-assets/${ITEM_ID}\"}]"
 readonly CURL_CONNECT_TIMEOUT_SECONDS=2
 readonly CURL_MAX_TIME_SECONDS=30
 
@@ -207,6 +208,9 @@ fi
 tmp_dir="$(mktemp -d)"
 mkdir -p "${tmp_dir}/home" "${tmp_dir}/rclone/${BUCKET}"
 cp -R "${FIXTURE_DIR}/." "${tmp_dir}/rclone/${BUCKET}/"
+mkdir -p "${tmp_dir}/rclone/${BUCKET}/${DATASET}/mapped-assets/${ITEM_ID}"
+cp "${FIXTURE_DIR}/${DATASET}/${ITEM_ID}/overview.tif" \
+  "${tmp_dir}/rclone/${BUCKET}/${DATASET}/mapped-assets/${ITEM_ID}/overview.tif"
 
 start_rclone
 
@@ -262,6 +266,7 @@ env -i "${common_env[@]}" "${tmp_dir}/package-r" shares add \
   admin "${SHARE_NAME}" "/${BUCKET}/${DATASET}" \
   --password="${SHARE_PASSWORD}" \
   --catalog-name="${DATASET}.parquet" \
+  --asset-mappings="${ASSET_MAPPINGS}" \
   >>"${tmp_dir}/init.log" 2>&1
 
 log "Starting packageR on ${package_r_url}"
@@ -449,11 +454,15 @@ stac-check "${catalog_url}" \
 item_url="$(python3 -c '
 import json, sys
 value = json.load(open(sys.argv[1], encoding="utf-8"))
-assert value["type"] == "Collection"
+assert value["type"] == "Collection" and value["id"] == sys.argv[2]
+assert value["stac_version"] == "1.1.0" and value["extent"]
+assert len(value["links"]) == 4
+self_links = [link for link in value["links"] if link["rel"] == "self"]
+assert len(self_links) == 1 and self_links[0]["href"] == sys.argv[4]
 items = [link for link in value["links"] if link["rel"] == "item"]
 assert len(items) == 3
-print(next(link["href"] for link in items if link.get("title") == sys.argv[2]))
-' "${tmp_dir}/catalog.json" "${ITEM_ID}")"
+print(next(link["href"] for link in items if link.get("title") == sys.argv[3]))
+' "${tmp_dir}/catalog.json" "${SHARE_NAME}" "${ITEM_ID}" "${catalog_url}")"
 item_content_type="$(curl_test -fsS -H "${share_password_header}" \
   --write-out '%{content_type}' \
   "${item_url}" \
@@ -467,10 +476,23 @@ catalog_asset_url="$(python3 -c '
 import json, sys
 value = json.load(open(sys.argv[1], encoding="utf-8"))
 assert value["type"] == "Feature" and value["id"] == sys.argv[2]
+properties = value["properties"]
+assert properties["datetime"] and properties["collection"] == "sentinel-2-c1-l2a"
+assert "collection" not in value
+assert len(value["links"]) == 1 and value["links"][0]["href"] == sys.argv[3]
+share_url = sys.argv[4] + "/api/public/share/" + sys.argv[5] + "/"
+mapped_item = "mapped-assets/" + sys.argv[2] + "/"
+assert value["assets"]["overview"]["href"] == share_url + mapped_item + "overview.tif?presign&followRedirect"
+assert value["assets"]["rgb"]["href"] == share_url + mapped_item + "rgb.tif?presign&followRedirect"
+assert value["assets"]["vienna_boundary"]["href"] == share_url + "vienna-boundary.geojson?presign&followRedirect"
 print(value["assets"]["overview"]["href"])
-' "${tmp_dir}/item.json" "${ITEM_ID}")"
+' "${tmp_dir}/item.json" "${ITEM_ID}" "${item_url}" "${package_r_url}" "${SHARE_NAME}")"
 fetch_and_compare "${catalog_asset_url}" "${overview}" "${tmp_dir}/catalog-overview.tif" \
   -H "${share_password_header}"
+
+mapped_item_url="${catalog_url}/mapped-assets/${ITEM_ID}/overview.tif"
+curl_test -fsS -H "${share_password_header}" "${mapped_item_url}" |
+  python3 -c 'import json, sys; value = json.load(sys.stdin); assert value["type"] == "Feature" and value["id"] == sys.argv[1]' "${ITEM_ID}"
 
 log "Checking Prometheus metrics"
 curl_test -fsS "${package_r_url}/metrics" >"${tmp_dir}/metrics.txt"
