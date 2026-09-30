@@ -52,3 +52,5 @@ dist/
 /frontend/playwright-report/
 /frontend/playwright/.cache/
 *-snapshots
+
+/tests/data/vienna-s2l2a-26/

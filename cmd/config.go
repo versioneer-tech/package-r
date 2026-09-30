@@ -196,6 +196,7 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 	fmt.Fprintf(w, "\tRoot:\t%s\n", ser.Root)
 	fmt.Fprintf(w, "\tSocket:\t%s\n", ser.Socket)
 	fmt.Fprintf(w, "\tAddress:\t%s\n", ser.Address)
+	fmt.Fprintf(w, "\tCORS allowed origins:\t%s\n", ser.CORSAllowedOrigins)
 	fmt.Fprintf(w, "\tTLS Cert:\t%s\n", ser.TLSCert)
 	fmt.Fprintf(w, "\tTLS Key:\t%s\n", ser.TLSKey)
 	fmt.Fprintln(w, "\nDefaults:")

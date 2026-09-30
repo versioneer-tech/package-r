@@ -59,7 +59,7 @@ spec:
               /package-r config init \
                 --address=0.0.0.0 \
                 --root=my-bucket \
-                --stac-browser-url=https://browser.moregeo.it/external/
+                --stac-browser-url=https://stac-browser.example/external/
 
               /package-r users add admin "$ADMIN_PASSWORD" \
                 --perm.create=true \
@@ -99,6 +99,8 @@ spec:
               value: "8888"
             - name: PACKAGE_R_ROOT
               value: my-bucket
+            - name: PACKAGE_R_CORS_ALLOWED_ORIGINS
+              value: https://viewer.example.org
             - name: XDG_CACHE_HOME
               value: /cache
             - name: AWS_REGION
@@ -161,3 +163,8 @@ when catalog asset URLs do not match paths in that share.
 Change the bucket, paths, authentication, permissions, and share definitions
 in the init-container command. Do not add bootstrap logic to the main
 container. See [Configuration](configuration.md) for the available settings.
+
+An Ingress normally forwards packageR CORS response headers unchanged. Route
+`OPTIONS` requests to packageR, and configure CORS in only one layer to avoid
+duplicate or conflicting headers. CORS for presigned object-storage URLs must
+still be configured on the object-storage service.

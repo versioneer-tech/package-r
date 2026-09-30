@@ -51,6 +51,7 @@ type Server struct {
 	EnableExec            bool   `json:"enableExec"`
 	TypeDetectionByHeader bool   `json:"typeDetectionByHeader"`
 	TokenExpirationTime   string `json:"tokenExpirationTime"`
+	CORSAllowedOrigins    string `json:"corsAllowedOrigins"`
 }
 
 // Clean cleans any variables that might need cleaning.

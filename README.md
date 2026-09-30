@@ -96,12 +96,15 @@ Open **Run and Debug** and start **run packageR**. The launch configuration:
 
 1. Starts local S3 on `127.0.0.1:19100`.
 2. Builds the development backend.
-3. Bootstraps `.vscode/package-r.db` and shares `/` as `my-share`.
-   The bucket root contains the test catalog and its assets. The
-   `sample-files` directory contains HTML, JavaScript, JPEG, JSON, Markdown,
-   PDF, PNG, Python, TIFF, text, and YAML fixtures for manual checks.
+3. Bootstraps `.vscode/package-r.db` and shares `/vienna-s2l2a-26` as
+   `vienna-s2l2a-26`. The share contains the generated Sentinel-2 catalog and
+   its assets.
 4. Starts packageR on `127.0.0.1:8888` under the Go debugger.
 5. Opens `http://localhost:8888` when the server is ready.
+
+The VS Code launch configuration allows cross-origin requests from all origins
+for local development. Production CORS remains disabled unless it is configured
+explicitly.
 
 Stop the debug session to stop its local S3 server. Rclone output is in
 `.vscode/local-s3.log`, and cache data is below `.vscode/cache`.
@@ -124,6 +127,9 @@ Run the Go unit tests and local integration tests:
 make test-unit
 make test-integration
 ```
+
+The catalog tests require the generated Sentinel-2 fixture. See
+[tests/README.md](tests/README.md#sentinel-2-fixture) for the download command.
 
 The integration harness starts `rclone serve s3` on a loopback address. It
 copies `tests/data` into a temporary test bucket and does not need cloud

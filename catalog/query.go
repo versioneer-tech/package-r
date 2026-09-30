@@ -10,6 +10,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 )
 
 const defaultSTACVersion = "1.1.0"
@@ -314,10 +315,179 @@ func itemSelfHref(entry map[string]interface{}, assetsURL, catalogEndpoint strin
 			relativePath = before
 		}
 		if relativePath != "" {
-			return strings.TrimRight(catalogEndpoint, "/") + "/" + relativePath
+			itemPath := path.Dir(relativePath)
+			if itemPath == "." {
+				itemPath = relativePath
+			} else {
+				itemPath += "/"
+			}
+			return strings.TrimRight(catalogEndpoint, "/") + "/" + itemPath
 		}
 	}
 	return ""
+}
+
+// CollectionFromItems creates a static STAC Collection that links to the Items
+// returned by a catalog query.
+func CollectionFromItems(id, selfHref string, result map[string]interface{}) map[string]interface{} {
+	items := collectionItems(result)
+	links := []map[string]interface{}{
+		{
+			"rel":  "self",
+			"href": selfHref,
+			"type": "application/json",
+		},
+	}
+
+	for _, item := range items {
+		itemID, _ := item["id"].(string)
+		for _, link := range itemLinks(item) {
+			if link["rel"] != "self" || link["href"] == "" {
+				continue
+			}
+			links = append(links, map[string]interface{}{
+				"rel":   "item",
+				"href":  link["href"],
+				"type":  "application/geo+json",
+				"title": itemID,
+			})
+			break
+		}
+	}
+
+	spatial, temporal := collectionExtent(items)
+	return map[string]interface{}{
+		"type":         "Collection",
+		"stac_version": collectionSTACVersion(result, items),
+		"id":           id,
+		"title":        id,
+		"description":  "STAC catalog for the " + id + " public share.",
+		"license":      "various",
+		"extent": map[string]interface{}{
+			"spatial":  map[string]interface{}{"bbox": [][]float64{spatial}},
+			"temporal": map[string]interface{}{"interval": [][]interface{}{{temporal[0], temporal[1]}}},
+		},
+		"links": links,
+	}
+}
+
+func collectionItems(result map[string]interface{}) []map[string]interface{} {
+	if result["type"] == "Feature" {
+		return []map[string]interface{}{result}
+	}
+	items, _ := result["features"].([]map[string]interface{})
+	if items != nil {
+		return items
+	}
+	rawItems, _ := result["features"].([]interface{})
+	items = make([]map[string]interface{}, 0, len(rawItems))
+	for _, raw := range rawItems {
+		if item, ok := raw.(map[string]interface{}); ok {
+			items = append(items, item)
+		}
+	}
+	return items
+}
+
+func itemLinks(item map[string]interface{}) []map[string]interface{} {
+	links, _ := item["links"].([]map[string]interface{})
+	if links != nil {
+		return links
+	}
+	rawLinks, _ := item["links"].([]interface{})
+	links = make([]map[string]interface{}, 0, len(rawLinks))
+	for _, raw := range rawLinks {
+		if link, ok := raw.(map[string]interface{}); ok {
+			links = append(links, link)
+		}
+	}
+	return links
+}
+
+func collectionSTACVersion(result map[string]interface{}, items []map[string]interface{}) string {
+	if version, ok := result["stac_version"].(string); ok && version != "" {
+		return version
+	}
+	for _, item := range items {
+		if version, ok := item["stac_version"].(string); ok && version != "" {
+			return version
+		}
+	}
+	return defaultSTACVersion
+}
+
+func collectionExtent(items []map[string]interface{}) ([]float64, []interface{}) {
+	spatial := []float64{-180, -90, 180, 90}
+	var minTime, maxTime time.Time
+	hasSpatial := false
+
+	for _, item := range items {
+		if bbox, ok := numericBBox(item["bbox"]); ok {
+			if !hasSpatial {
+				spatial = bbox
+				hasSpatial = true
+			} else {
+				spatial[0] = min(spatial[0], bbox[0])
+				spatial[1] = min(spatial[1], bbox[1])
+				spatial[2] = max(spatial[2], bbox[2])
+				spatial[3] = max(spatial[3], bbox[3])
+			}
+		}
+
+		properties, _ := item["properties"].(map[string]interface{})
+		for _, key := range []string{"datetime", "start_datetime", "end_datetime"} {
+			parsed, ok := catalogTime(properties[key])
+			if !ok {
+				continue
+			}
+			if minTime.IsZero() || parsed.Before(minTime) {
+				minTime = parsed
+			}
+			if maxTime.IsZero() || parsed.After(maxTime) {
+				maxTime = parsed
+			}
+		}
+	}
+
+	temporal := []interface{}{nil, nil}
+	if !minTime.IsZero() {
+		temporal[0] = minTime.Format(time.RFC3339Nano)
+	}
+	if !maxTime.IsZero() {
+		temporal[1] = maxTime.Format(time.RFC3339Nano)
+	}
+	return spatial, temporal
+}
+
+func catalogTime(value interface{}) (time.Time, bool) {
+	switch typed := value.(type) {
+	case time.Time:
+		return typed, true
+	case string:
+		parsed, err := time.Parse(time.RFC3339Nano, typed)
+		return parsed, err == nil
+	default:
+		return time.Time{}, false
+	}
+}
+
+func numericBBox(value interface{}) ([]float64, bool) {
+	if bbox, ok := value.([]float64); ok && len(bbox) == 4 {
+		return append([]float64(nil), bbox...), true
+	}
+	raw, ok := value.([]interface{})
+	if !ok || len(raw) != 4 {
+		return nil, false
+	}
+	bbox := make([]float64, 4)
+	for index, coordinate := range raw {
+		number, ok := coordinate.(float64)
+		if !ok {
+			return nil, false
+		}
+		bbox[index] = number
+	}
+	return bbox, true
 }
 
 //nolint:gocyclo

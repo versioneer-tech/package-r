@@ -78,5 +78,5 @@ func NewHandler(
 	public.PathPrefix("/share").Handler(wrap(publicShareHandler, "/api/public/share/")).Methods("GET", "HEAD")
 	public.PathPrefix("/catalog").Handler(wrap(catalogHandler, "/api/public/catalog/")).Methods("GET", "HEAD")
 
-	return stripPrefix(server.BaseURL, r), nil
+	return corsMiddleware(server.CORSAllowedOrigins, stripPrefix(server.BaseURL, r)), nil
 }

@@ -1,10 +1,80 @@
 package catalog
 
 import (
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestCollectionFromItems(t *testing.T) {
+	item := map[string]interface{}{
+		"type":         "Feature",
+		"stac_version": "1.1.0",
+		"id":           "item-one",
+		"bbox":         []interface{}{16.1, 48.1, 16.6, 48.4},
+		"properties":   map[string]interface{}{"datetime": "2026-05-19T10:00:22Z"},
+		"links": []map[string]interface{}{{
+			"rel": "self", "href": "https://package.example/catalog/share/item-one/",
+		}},
+	}
+	collection := CollectionFromItems(
+		"share",
+		"https://package.example/catalog/share",
+		map[string]interface{}{
+			"type":         "FeatureCollection",
+			"stac_version": "1.1.0",
+			"features":     []map[string]interface{}{item},
+		},
+	)
+
+	encoded, err := json.Marshal(collection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded struct {
+		Type   string `json:"type"`
+		ID     string `json:"id"`
+		Extent struct {
+			Spatial struct {
+				BBox [][]float64 `json:"bbox"`
+			} `json:"spatial"`
+			Temporal struct {
+				Interval [][]interface{} `json:"interval"`
+			} `json:"temporal"`
+		} `json:"extent"`
+		Links []map[string]interface{} `json:"links"`
+	}
+	if err := json.Unmarshal(encoded, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded.Type != "Collection" || decoded.ID != "share" {
+		t.Fatalf("unexpected STAC Collection: %s", encoded)
+	}
+	if !reflect.DeepEqual(decoded.Extent.Spatial.BBox, [][]float64{{16.1, 48.1, 16.6, 48.4}}) {
+		t.Fatalf("unexpected spatial extent: %#v", decoded.Extent.Spatial.BBox)
+	}
+	if len(decoded.Links) != 2 || decoded.Links[1]["rel"] != "item" {
+		t.Fatalf("expected self and item links, got %#v", decoded.Links)
+	}
+}
+
+func TestCollectionFromItemsAcceptsDatabaseTimes(t *testing.T) {
+	collection := CollectionFromItems("share", "https://package.example/catalog/share", map[string]interface{}{
+		"type": "Feature",
+		"id":   "item-one",
+		"properties": map[string]interface{}{
+			"datetime": time.Date(2026, time.February, 18, 10, 7, 11, 0, time.UTC),
+		},
+	})
+	extent := collection["extent"].(map[string]interface{})
+	temporal := extent["temporal"].(map[string]interface{})["interval"].([][]interface{})
+	want := "2026-02-18T10:07:11Z"
+	if temporal[0][0] != want || temporal[0][1] != want {
+		t.Fatalf("expected temporal extent %q, got %#v", want, temporal)
+	}
+}
 
 func TestRedactCatalogURL(t *testing.T) {
 	const signedURL = "https://objects.example.invalid/catalog.parquet?signature=my-secret"

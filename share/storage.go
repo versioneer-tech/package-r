@@ -13,7 +13,6 @@ type StorageBackend interface {
 	GetPermanent(path string, id uint) (*Link, error)
 	Save(s *Link) error
 	Update(s *Link) error
-	Delete(hash string) error
 }
 
 // Storage is a storage.
@@ -37,9 +36,6 @@ func (s *Storage) All() ([]*Link, error) {
 	active := links[:0]
 	for _, link := range links {
 		if link.Expire != 0 && link.Expire <= time.Now().Unix() {
-			if err := s.Delete(link.Hash); err != nil {
-				return nil, err
-			}
 			continue
 		}
 		active = append(active, link)
@@ -56,9 +52,6 @@ func (s *Storage) GetByHash(hash string) (*Link, error) {
 	}
 
 	if link.Expire != 0 && link.Expire <= time.Now().Unix() {
-		if err := s.Delete(link.Hash); err != nil {
-			return nil, err
-		}
 		return nil, errors.ErrNotExist
 	}
 
@@ -78,9 +71,4 @@ func (s *Storage) Save(l *Link) error {
 // Update wraps a StorageBackend.Update
 func (s *Storage) Update(l *Link) error {
 	return s.back.Update(l)
-}
-
-// Delete wraps a StorageBackend.Delete
-func (s *Storage) Delete(hash string) error {
-	return s.back.Delete(hash)
 }

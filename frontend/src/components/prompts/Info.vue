@@ -83,6 +83,19 @@
         </p>
       </template>
 
+      <p v-if="canShowSTACBrowser">
+        <strong>STAC Browser URL: </strong>
+        <code>
+          <a
+            :href="stacBrowserLink || 'javascript:void(0)'"
+            @click="showSTACBrowserURL"
+            @keypress.enter="showSTACBrowserURL"
+            tabindex="6"
+          >
+            {{ stacBrowserLink || $t("prompts.show") }}
+          </a>
+        </code>
+      </p>
       <template v-if="!dir">
         <p>
           <strong>Presigned URL: </strong>
@@ -91,22 +104,9 @@
               :href="presignedURL || 'javascript:void(0)'"
               @click="presign"
               @keypress.enter="presign"
-              tabindex="6"
-            >
-              {{ presignedURL || $t("prompts.show") }}
-            </a>
-          </code>
-        </p>
-        <p v-if="canShowSTACBrowser">
-          <strong>STAC Browser URL: </strong>
-          <code>
-            <a
-              :href="stacBrowserLink || 'javascript:void(0)'"
-              @click="showSTACBrowserURL"
-              @keypress.enter="showSTACBrowserURL"
               tabindex="7"
             >
-              {{ stacBrowserLink || $t("prompts.show") }}
+              {{ presignedURL || $t("prompts.show") }}
             </a>
           </code>
         </p>
@@ -156,7 +156,11 @@ export default {
     ]),
     ...mapState(useBrowserStore, ["readOnly"]),
     canShowSTACBrowser: function () {
-      return this.readOnly && configuredSTACBrowserURL !== "";
+      return (
+        this.readOnly &&
+        this.selectedCount < 2 &&
+        configuredSTACBrowserURL !== ""
+      );
     },
     humanSize: function () {
       if (this.selectedCount === 0 || !this.isListing) {

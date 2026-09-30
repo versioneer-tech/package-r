@@ -43,6 +43,27 @@ func TestConfigInitStoresBucketCatalog(t *testing.T) {
 	}
 }
 
+func TestConfigInitStoresCORSAllowedOrigins(t *testing.T) {
+	dbPath, configPath, rootPath := newConfigTestDB(t)
+
+	runPackageRCommand(
+		t,
+		"--config", configPath,
+		"--database", dbPath,
+		"config", "init",
+		"--root", rootPath,
+		"--cors-allowed-origins=https://viewer.example,https://portal.example",
+	)
+
+	server, err := openTestStorage(t, dbPath).Settings.GetServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if server.CORSAllowedOrigins != "https://viewer.example,https://portal.example" {
+		t.Fatalf("unexpected CORS allowed origins %q", server.CORSAllowedOrigins)
+	}
+}
+
 func TestConfigInitStoresSTACBrowserURL(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 
@@ -52,14 +73,14 @@ func TestConfigInitStoresSTACBrowserURL(t *testing.T) {
 		"--database", dbPath,
 		"config", "init",
 		"--root", rootPath,
-		"--stac-browser-url=https://browser.moregeo.it/external/",
+		"--stac-browser-url=http://localhost:8080/external/",
 	)
 
 	configured, err := openTestStorage(t, dbPath).Settings.Get()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if configured.STACBrowserURL != "https://browser.moregeo.it/external/" {
+	if configured.STACBrowserURL != "http://localhost:8080/external/" {
 		t.Fatalf("unexpected STAC Browser URL: %q", configured.STACBrowserURL)
 	}
 }
@@ -78,6 +99,7 @@ func TestConfigSetCanEnableServerProcessing(t *testing.T) {
 		"--disable-exec=true",
 		"--disable-type-detection-by-header=false",
 		"--token-expiration-time=30m",
+		"--cors-allowed-origins=https://viewer.example",
 	)
 
 	server, err := openTestStorage(t, dbPath).Settings.GetServer()
@@ -89,5 +111,8 @@ func TestConfigSetCanEnableServerProcessing(t *testing.T) {
 	}
 	if server.TokenExpirationTime != "30m" {
 		t.Fatalf("expected token expiration 30m, got %q", server.TokenExpirationTime)
+	}
+	if server.CORSAllowedOrigins != "https://viewer.example" {
+		t.Fatalf("unexpected CORS allowed origins %q", server.CORSAllowedOrigins)
 	}
 }

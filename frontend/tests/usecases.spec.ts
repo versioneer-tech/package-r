@@ -1,13 +1,15 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { AuthPage } from "./fixtures/auth";
 
-const itemId = "67793f0b9478720001790586";
-const publicShare = "my-share";
+const dataset = "vienna-s2l2a-26";
+const itemId = "S2B_T33UXP_20260218T100524_L2A";
+const publicShare = dataset;
+const publicSampleShare = "sample-share";
 const backendBaseURL = `http://127.0.0.1:${process.env.PACKAGE_R_PORT || "8888"}`;
 const screenshotBackendBaseURL = "http://127.0.0.1:8888";
-const thumbnailPath = `openaerialmap-assets/${itemId}/thumbnail.png`;
-const publicShareThumbnailPath = `/share/${publicShare}/${thumbnailPath}`;
-const stacBrowserBaseURL = "https://browser.moregeo.it/external/";
+const overviewPath = `${dataset}/${itemId}/overview.tif`;
+const publicShareOverviewPath = `/share/${publicShare}/${itemId}/overview.tif`;
+const stacBrowserBaseURL = "http://localhost:8080/external/";
 const screenshotOptions = { animations: "disabled", caret: "hide" } as const;
 const publicShareScreenshotOptions = {
   ...screenshotOptions,
@@ -85,14 +87,37 @@ async function expectImageLoaded(image: Locator) {
   await expect(image).toBeVisible({ timeout: 10_000 });
 }
 
-async function openPublicShareThumbnail(page: Page) {
-  await page.goto(publicShareThumbnailPath);
-  await expectImageLoaded(page.locator("#previewer img.image-ex-img"));
+async function expectTiffRendered(canvas: Locator) {
+  await expect(canvas).toBeVisible({ timeout: 30_000 });
+  await expect
+    .poll(
+      () =>
+        canvas.evaluate((element) => {
+          if (!(element instanceof HTMLCanvasElement) || element.width === 0) {
+            return false;
+          }
+          const pixel = element.getContext("2d")?.getImageData(0, 0, 1, 1).data;
+          return Boolean(
+            pixel &&
+              (pixel[0] !== 245 ||
+                pixel[1] !== 245 ||
+                pixel[2] !== 245 ||
+                pixel[3] !== 255)
+          );
+        }),
+      { timeout: 30_000 }
+    )
+    .toBe(true);
+}
+
+async function openPublicShareOverview(page: Page) {
+  await page.goto(publicShareOverviewPath);
+  await expectTiffRendered(page.locator("#previewer .tiff-preview canvas"));
   await page.getByRole("button", { name: "Info", exact: true }).click();
   const infoBox = page.locator(".card.floating").filter({
     has: page.getByRole("heading", { name: "File information" }),
   });
-  await expect(infoBox).toContainText("thumbnail.png");
+  await expect(infoBox).toContainText("overview.tif");
   return infoBox;
 }
 
@@ -130,12 +155,8 @@ test.describe("packageR use-case UI", () => {
 
     await page.goto("/files/");
 
-    for (const name of [
-      "openaerialmap-assets",
-      "openaerialmap-assets.parquet",
-      "sample-files",
-    ]) {
-      await expect(page.getByLabel(name)).toBeVisible();
+    for (const name of [dataset, "sample-files"]) {
+      await expect(page.getByLabel(name, { exact: true })).toBeVisible();
     }
 
     await page.getByLabel("sample-files").dblclick();
@@ -152,7 +173,7 @@ test.describe("packageR use-case UI", () => {
       "sample.txt",
       "sample.yaml",
     ]) {
-      await expect(page.getByLabel(name)).toBeVisible();
+      await expect(page.getByLabel(name, { exact: true })).toBeVisible();
     }
   });
 
@@ -244,8 +265,7 @@ test.describe("packageR use-case UI", () => {
 
     await page.goto("/files/");
 
-    await expect(page.getByLabel("openaerialmap-assets")).toBeVisible();
-    await expect(page.getByLabel("openaerialmap-assets.parquet")).toBeVisible();
+    await expect(page.getByLabel(dataset)).toBeVisible();
     await normalizeRelativeTimes(page);
     await expect(page.locator("#listing").first()).toHaveScreenshot(
       "authenticated-public-listing.png",
@@ -296,15 +316,20 @@ test.describe("packageR use-case UI", () => {
     await expect(page).toHaveURL(/\/shares$/);
     const settings = page.locator("#settings-shares");
     const pathLink = settings.getByRole("link", {
-      name: "/",
+      name: `/${dataset}`,
       exact: true,
     });
-    await expect(pathLink).toHaveAttribute("href", /\/share\/my-share\/$/);
-    await expect(settings).toContainText("my-bucket");
-    await expect(settings).toContainText("/openaerialmap-assets.parquet");
+    await expect(pathLink).toHaveAttribute(
+      "href",
+      new RegExp(`/share/${publicShare}/$`)
+    );
+    await expect(settings).toContainText(publicShare);
+    await expect(settings).toContainText(
+      `/${dataset}/${dataset}.parquet`
+    );
     await expect(settings).toContainText("No");
     for (const heading of [
-      "Source",
+      "Name",
       "Path",
       "Share Duration",
       "Description",
@@ -344,10 +369,10 @@ test.describe("packageR use-case UI", () => {
     await prepareStableScreenshot(page);
     await loginAsInitialUser(page);
 
-    await page.goto(`/files/${thumbnailPath}`);
+    await page.goto(`/files/${overviewPath}`);
 
     const preview = page.locator("#previewer .preview");
-    await expectImageLoaded(preview.locator("img.image-ex-img"));
+    await expectTiffRendered(preview.locator(".tiff-preview canvas"));
     await expect(
       page.getByRole("button", { name: "Profile Settings", exact: true })
     ).toHaveCount(0);
@@ -365,8 +390,7 @@ test.describe("packageR use-case UI", () => {
 
     await page.goto(`/share/${publicShare}/`);
 
-    await expect(page.getByText("openaerialmap-assets")).toBeVisible();
-    await expect(page.getByText("openaerialmap-assets.parquet")).toBeVisible();
+    await expect(page.getByLabel(itemId)).toBeVisible();
     for (const action of [
       "New folder",
       "New file",
@@ -387,15 +411,13 @@ test.describe("packageR use-case UI", () => {
     }
     await normalizeRelativeTimes(page);
     await expect(page.locator("#listing").first()).toHaveScreenshot(
-      "my-share-directory.png",
+      "vienna-s2l2a-26-directory.png",
       publicShareScreenshotOptions
     );
 
-    await page.getByLabel("openaerialmap-assets").dblclick();
-    await expect(page).toHaveURL(
-      new RegExp(`/share/${publicShare}/openaerialmap-assets/$`)
-    );
-    await expect(page.getByLabel(itemId)).toBeVisible();
+    await page.getByLabel(itemId).dblclick();
+    await expect(page).toHaveURL(new RegExp(`/share/${publicShare}/${itemId}/$`));
+    await expect(page.getByLabel("rgb.tif")).toBeVisible();
   });
 
   test("previews a public file and creates a presigned URL", async ({
@@ -403,7 +425,7 @@ test.describe("packageR use-case UI", () => {
   }) => {
     await prepareStableScreenshot(page);
 
-    const infoBox = await openPublicShareThumbnail(page);
+    const infoBox = await openPublicShareOverview(page);
     const md5Link = infoBox.locator("p", { hasText: "MD5:" }).locator("a");
     await md5Link.click();
     await expect(md5Link).toHaveText(/^[a-f0-9]{32}$/);
@@ -421,12 +443,12 @@ test.describe("packageR use-case UI", () => {
     await presignedLink.click();
     await expectAndNormalizePresignedURL(
       presignedLink,
-      thumbnailPath,
-      `https://object-storage.example/${thumbnailPath}`
+      overviewPath,
+      `https://object-storage.example/${overviewPath}`
     );
     await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
-      "my-share-presign.png",
+      "vienna-s2l2a-26-presign.png",
       publicShareScreenshotOptions
     );
   });
@@ -434,7 +456,7 @@ test.describe("packageR use-case UI", () => {
   test("creates a presigned URL for a password-protected share", async ({
     page,
   }) => {
-    await page.goto(`/share/protected-share/${itemId}/thumbnail.png`);
+    await page.goto("/share/protected-share/overview.tif");
     await page.getByPlaceholder("Password").fill("wrong-password");
     await page.getByRole("button", { name: "Submit" }).click();
     await expect(page.getByText("Wrong credentials")).toBeVisible();
@@ -442,12 +464,12 @@ test.describe("packageR use-case UI", () => {
     await page.getByPlaceholder("Password").fill("my-share-password");
     await page.getByRole("button", { name: "Submit" }).click();
 
-    await expectImageLoaded(page.locator("#previewer img.image-ex-img"));
+    await expectTiffRendered(page.locator("#previewer .tiff-preview canvas"));
     await page.getByRole("button", { name: "Info", exact: true }).click();
     const infoBox = page.locator(".card.floating").filter({
       has: page.getByRole("heading", { name: "File information" }),
     });
-    await expect(infoBox).toContainText("thumbnail.png");
+    await expect(infoBox).toContainText("overview.tif");
 
     const presignedLink = infoBox
       .locator("p", { hasText: "Presigned URL:" })
@@ -455,8 +477,8 @@ test.describe("packageR use-case UI", () => {
     await presignedLink.click();
     await expectAndNormalizePresignedURL(
       presignedLink,
-      thumbnailPath,
-      `https://object-storage.example/${thumbnailPath}`
+      overviewPath,
+      `https://object-storage.example/${overviewPath}`
     );
   });
 
@@ -464,7 +486,7 @@ test.describe("packageR use-case UI", () => {
     page,
   }) => {
     await page.goto(`/share/${publicShare}/`);
-    await expect(page.getByText("openaerialmap-assets.parquet")).toBeVisible();
+    await expect(page.getByLabel(itemId)).toBeVisible();
 
     const response = await page.request.post("/api/login", {
       data: { username: "admin", password: "my-password", recaptcha: "" },
@@ -484,7 +506,7 @@ test.describe("packageR use-case UI", () => {
     await loginAsInitialUser(page);
     await page.goto(`/share/${publicShare}/`);
 
-    await expect(page.getByLabel("openaerialmap-assets.parquet")).toBeVisible();
+    await expect(page.getByLabel(itemId)).toBeVisible();
     for (const action of [
       "New folder",
       "New file",
@@ -562,7 +584,7 @@ test.describe("packageR use-case UI", () => {
   });
 
   test("renders Markdown in an anonymous share", async ({ page }) => {
-    await page.goto(`/share/${publicShare}/sample-files/sample.md`);
+    await page.goto(`/share/${publicSampleShare}/sample.md`);
 
     const viewer = page.getByTestId("markdown-viewer");
     await expect(
@@ -580,7 +602,7 @@ test.describe("packageR use-case UI", () => {
   });
 
   test("opens YAML as structured read-only text", async ({ page }) => {
-    await page.goto(`/share/${publicShare}/sample-files/sample.yaml`);
+    await page.goto(`/share/${publicSampleShare}/sample.yaml`);
 
     const viewer = page.getByTestId("text-viewer");
     await expect(viewer).toContainText("name: packageR YAML fixture");
@@ -591,17 +613,35 @@ test.describe("packageR use-case UI", () => {
     ).toHaveCount(0);
   });
 
+  test("opens XML as structured read-only text", async ({ page }) => {
+    await page.goto(`/share/${publicShare}/${itemId}/product_metadata.xml`);
+
+    const viewer = page.getByTestId("text-viewer");
+    await expect(viewer).toContainText("<n1:Level-2A_User_Product");
+    await expect(viewer).toContainText(
+      "<PROCESSING_LEVEL>Level-2A</PROCESSING_LEVEL>"
+    );
+    await expect(page.locator(".ace_editor")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Save", exact: true })
+    ).toHaveCount(0);
+  });
+
   test("shows public share STAC Browser URL", async ({ page }) => {
     await prepareStableScreenshot(page);
 
-    const infoBox = await openPublicShareThumbnail(page);
+    const infoBox = await openPublicShareOverview(page);
+    const urlLabels = await infoBox.locator("p strong").allTextContents();
+    expect(urlLabels.indexOf("STAC Browser URL: ")).toBeLessThan(
+      urlLabels.indexOf("Presigned URL: ")
+    );
     await infoBox
       .locator("p", { hasText: "STAC Browser URL:" })
       .getByRole("link", { name: "Show" })
       .click();
     await expect(infoBox).toContainText(stacBrowserBaseURL);
     await expect(infoBox).toContainText(
-      `/api/public/catalog/${publicShare}/${thumbnailPath}`
+      `/api/public/catalog/${publicShare}/${itemId}/`
     );
     await infoBox
       .locator("p", { hasText: "STAC Browser URL:" })
@@ -623,8 +663,39 @@ test.describe("packageR use-case UI", () => {
       });
     await normalizeRelativeTimes(page);
     await expect(infoBox).toHaveScreenshot(
-      "my-share-preview-url.png",
+      "vienna-s2l2a-26-preview-url.png",
       publicShareScreenshotOptions
+    );
+  });
+
+  test("shows STAC Browser URLs for the share and Item directories", async ({
+    page,
+  }) => {
+    await page.goto(`/share/${publicShare}/`);
+    await page.getByRole("button", { name: "Info", exact: true }).click();
+    let infoBox = page.locator(".card.floating").filter({
+      has: page.getByRole("heading", { name: "File information" }),
+    });
+    await infoBox
+      .locator("p", { hasText: "STAC Browser URL:" })
+      .getByRole("link", { name: "Show" })
+      .click();
+    await expect(infoBox).toContainText(
+      `/api/public/catalog/${publicShare}`
+    );
+    await page.getByRole("button", { name: "OK", exact: true }).click();
+
+    await page.goto(`/share/${publicShare}/${itemId}/`);
+    await page.getByRole("button", { name: "Info", exact: true }).click();
+    infoBox = page.locator(".card.floating").filter({
+      has: page.getByRole("heading", { name: "File information" }),
+    });
+    await infoBox
+      .locator("p", { hasText: "STAC Browser URL:" })
+      .getByRole("link", { name: "Show" })
+      .click();
+    await expect(infoBox).toContainText(
+      `/api/public/catalog/${publicShare}/${itemId}/`
     );
   });
 
@@ -634,15 +705,15 @@ test.describe("packageR use-case UI", () => {
     await prepareStableScreenshot(page);
     await loginAsInitialUser(page);
 
-    await page.goto(`/files/openaerialmap-assets/${itemId}/`);
-    await expect(page.getByLabel("thumbnail.png")).toBeVisible();
-    await page.getByLabel("thumbnail.png").click();
-    await expect(page.getByLabel("thumbnail.png")).toHaveAttribute(
+    await page.goto(`/files/${dataset}/${itemId}/`);
+    await expect(page.getByLabel("overview.tif")).toBeVisible();
+    await page.getByLabel("overview.tif").click();
+    await expect(page.getByLabel("overview.tif")).toHaveAttribute(
       "aria-selected",
       "true"
     );
 
-    await page.getByLabel("Info").click();
+    await page.getByRole("button", { name: "Info", exact: true }).click();
     const modal = page.locator(".card.floating").filter({
       has: page.getByRole("heading", { name: "File information" }),
     });
@@ -654,8 +725,8 @@ test.describe("packageR use-case UI", () => {
     await presignedLink.click();
     await expectAndNormalizePresignedURL(
       presignedLink,
-      thumbnailPath,
-      `${screenshotBackendBaseURL}/api/raw/${thumbnailPath}`
+      overviewPath,
+      `${screenshotBackendBaseURL}/api/raw/${overviewPath}`
     );
     await normalizeRelativeTimes(page);
     await expect(modal).toHaveScreenshot(

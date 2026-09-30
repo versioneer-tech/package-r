@@ -57,6 +57,7 @@ change these settings later. User options become defaults for new users.`,
 			EnableExec:            false,
 			TypeDetectionByHeader: !mustGetBool(flags, "disable-type-detection-by-header"),
 			TokenExpirationTime:   mustGetString(flags, "token-expiration-time"),
+			CORSAllowedOrigins:    mustGetString(flags, "cors-allowed-origins"),
 		}
 
 		err := d.store.Settings.Save(s)

@@ -31,6 +31,18 @@ username/password authentication is the default.
 | `PACKAGE_R_LOG` | `stdout` | Log output. |
 | `PACKAGE_R_BASEURL` | Empty | URL path prefix. |
 | `PACKAGE_R_TOKEN_EXPIRATION_TIME` | `2h` | User session lifetime. |
+| `PACKAGE_R_CORS_ALLOWED_ORIGINS` | Empty | Comma-separated browser origins allowed to make cross-origin requests. Use `*` to allow every origin. |
+
+Cross-origin access is disabled by default. Origins must include the scheme
+and, when applicable, the port. For example:
+
+```text
+PACKAGE_R_CORS_ALLOWED_ORIGINS=https://viewer.example.org,https://portal.example.org
+```
+
+packageR handles browser preflight requests and allows the methods and headers
+used by its API. It does not enable credentialed cookie requests. Configure
+CORS separately on object storage when browsers open presigned URLs directly.
 
 With empty AWS values, packageR uses the ambient AWS credential chain and AWS
 S3. Storage requests fail if that chain does not provide usable credentials.
@@ -214,7 +226,7 @@ Set the optional STAC Browser URL when you prepare the database:
 
 ```bash
 ./package-r config set \
-  --stac-browser-url=https://browser.moregeo.it/external/
+  --stac-browser-url=http://localhost:8080/external/
 ```
 
 The default is empty. packageR does not add a STAC Browser link unless you set

@@ -73,6 +73,12 @@ var catalogHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d
 		return http.StatusInternalServerError, err
 	}
 
+	if cf.File.IsDir && path.Clean(cf.File.Path) == "/" {
+		rootEndpoint := localRequestURL(r, d.server.BaseURL, "/api/public/catalog/"+parts[0])
+		result = catalog.CollectionFromItems(parts[0], rootEndpoint, result)
+		return renderJSONWithContentType(w, result, "application/json; charset=utf-8")
+	}
+
 	return renderJSONWithContentType(w, result, "application/geo+json; charset=utf-8")
 })
 

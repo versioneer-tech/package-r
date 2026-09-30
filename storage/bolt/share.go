@@ -59,11 +59,3 @@ func (s shareBackend) Update(l *share.Link) error {
 	}
 	return err
 }
-
-func (s shareBackend) Delete(hash string) error {
-	err := s.db.DeleteStruct(&share.Link{Hash: hash})
-	if errors.Is(err, storm.ErrNotFound) {
-		return nil
-	}
-	return err
-}

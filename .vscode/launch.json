@@ -1,5 +1,12 @@
 {
   "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "run packageR with STAC Browser",
+      "configurations": ["run packageR", "run local STAC Browser"],
+      "stopAll": true
+    }
+  ],
   "configurations": [
     {
       "name": "run packageR",
@@ -22,6 +29,7 @@
         "PACKAGE_R_ADDRESS": "127.0.0.1",
         "PACKAGE_R_PORT": "8888",
         "PACKAGE_R_ROOT": "data",
+        "PACKAGE_R_CORS_ALLOWED_ORIGINS": "*",
         "AWS_ACCESS_KEY_ID": "my-access-key",
         "AWS_SECRET_ACCESS_KEY": "my-secret-key",
         "AWS_ENDPOINT_URL": "http://127.0.0.1:19100",
@@ -29,6 +37,13 @@
         "RCLONE_CONFIG": "/dev/null",
         "XDG_CACHE_HOME": "${workspaceFolder}/.vscode/cache"
       }
+    },
+    {
+      "name": "run local STAC Browser",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm --prefix ${env:HOME}/stac-browser start",
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

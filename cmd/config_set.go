@@ -55,6 +55,8 @@ you want to change. Other options will remain unchanged.`,
 				ser.TypeDetectionByHeader = !mustGetBool(flags, flag.Name)
 			case "token-expiration-time":
 				ser.TokenExpirationTime = mustGetString(flags, flag.Name)
+			case "cors-allowed-origins":
+				ser.CORSAllowedOrigins = mustGetString(flags, flag.Name)
 			case "signup":
 				set.Signup = mustGetBool(flags, flag.Name)
 			case "auth.method":

@@ -10,9 +10,11 @@ RCLONE_BIN="${RCLONE_BIN:-rclone}"
 readonly ACCESS_KEY_ID=my-access-key
 readonly SECRET_ACCESS_KEY=my-secret-key
 readonly BUCKET=my-bucket
-readonly SHARE_NAME=my-share
+readonly SHARE_NAME=vienna-s2l2a-26
 readonly SHARE_PASSWORD=my-password
-readonly ITEM_ID=67793f0b9478720001790586
+readonly DATASET=vienna-s2l2a-26
+readonly ITEM_ID=S2B_T33UXP_20260218T100524_L2A
+readonly CATALOG_PATH="${DATASET}/${DATASET}.parquet"
 readonly CURL_CONNECT_TIMEOUT_SECONDS=2
 readonly CURL_MAX_TIME_SECONDS=30
 
@@ -190,6 +192,18 @@ done
 require_command "${RCLONE_BIN}"
 require_compatible_rclone
 
+if [[ ! -f "${FIXTURE_DIR}/${CATALOG_PATH}" || \
+  ! -f "${FIXTURE_DIR}/${DATASET}/${ITEM_ID}/rgb.tif" || \
+  ! -f "${FIXTURE_DIR}/${DATASET}/vienna-boundary.geojson" ]]; then
+  printf '%s\n' \
+    'Sentinel-2 test data is not materialized.' \
+    'Run scripts/download_sentinel2.py before running the integration tests.' \
+    'It downloads about 200 MB of Vienna data from February, May, and August 2026 from the' \
+    'Earth Search Sentinel-2 Collection 1 Level-2A catalog:' \
+    'https://earth-search.aws.element84.com/v1' >&2
+  exit 1
+fi
+
 tmp_dir="$(mktemp -d)"
 mkdir -p "${tmp_dir}/home" "${tmp_dir}/rclone/${BUCKET}"
 cp -R "${FIXTURE_DIR}/." "${tmp_dir}/rclone/${BUCKET}/"
@@ -245,9 +259,9 @@ env -i "${common_env[@]}" "${tmp_dir}/package-r" users add admin my-password \
   --perm.rename=true \
   >>"${tmp_dir}/init.log" 2>&1
 env -i "${common_env[@]}" "${tmp_dir}/package-r" shares add \
-  admin "${SHARE_NAME}" "/${BUCKET}" \
+  admin "${SHARE_NAME}" "/${BUCKET}/${DATASET}" \
   --password="${SHARE_PASSWORD}" \
-  --catalog-name=openaerialmap-assets.parquet \
+  --catalog-name="${DATASET}.parquet" \
   >>"${tmp_dir}/init.log" 2>&1
 
 log "Starting packageR on ${package_r_url}"
@@ -260,9 +274,9 @@ wait_for_http "${package_r_url}/health" "packageR" "${tmp_dir}/package-r.log" "$
 token="$(curl_test -fsS -X POST -H 'X-Username: admin' "${package_r_url}/api/login")"
 auth_header="X-Auth: ${token}"
 share_password_header="X-SHARE-PASSWORD: ${SHARE_PASSWORD}"
-thumbnail="${FIXTURE_DIR}/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
-resource_path="/${BUCKET}/openaerialmap-assets/${ITEM_ID}/thumbnail.png"
-public_path="openaerialmap-assets/${ITEM_ID}/thumbnail.png"
+overview="${FIXTURE_DIR}/${DATASET}/${ITEM_ID}/overview.tif"
+resource_path="/${BUCKET}/${DATASET}/${ITEM_ID}/overview.tif"
+public_path="${ITEM_ID}/overview.tif"
 
 log "Checking that user and settings management APIs are unavailable"
 for api_path in users settings; do
@@ -274,7 +288,7 @@ for api_path in users settings; do
   fi
 done
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/shares" |
-  python3 -c 'import json, sys; shares = json.load(sys.stdin); assert len(shares) == 1; share = shares[0]; assert share["hash"] == sys.argv[1]; assert share["url"] == "/share/" + sys.argv[1] + "/"; assert share["source"] == "/"; assert share["path"] == "/my-bucket"; assert share["catalog"] == "/my-bucket/openaerialmap-assets.parquet"; assert share["passwordProtected"] is True; assert "passwordHash" not in share and "token" not in share' "${SHARE_NAME}"
+  python3 -c 'import json, sys; shares = json.load(sys.stdin); assert len(shares) == 1; share = shares[0]; assert share["hash"] == sys.argv[1]; assert share["url"] == "/share/" + sys.argv[1] + "/"; assert share["source"] == "/"; assert share["path"] == "/my-bucket/vienna-s2l2a-26"; assert share["catalog"] == "/my-bucket/vienna-s2l2a-26/vienna-s2l2a-26.parquet"; assert share["passwordProtected"] is True; assert "passwordHash" not in share and "token" not in share' "${SHARE_NAME}"
 share_management_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
   -H "${auth_header}" "${package_r_url}/api/shares")"
 if [[ "${share_management_status}" != "404" ]]; then
@@ -293,7 +307,7 @@ log "Checking VFS service-root browsing"
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/" |
   python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert "my-bucket" in names'
 curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/${BUCKET}/" |
-  python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert {"openaerialmap-assets.parquet", "openaerialmap-assets", "sample-files"} <= names'
+  python3 -c 'import json, sys; names = {item["name"] for item in json.load(sys.stdin)["items"]}; assert {"vienna-s2l2a-26", "sample-files"} <= names'
 log "Checking VFS create, copy, rename, read, and delete"
 printf 'packageR rclone integration\n' >"${tmp_dir}/payload.txt"
 curl_test -fsS -X POST -H "${auth_header}" \
@@ -392,7 +406,7 @@ authenticated_url="$(
     "${package_r_url}/api/resources${resource_path}?presign=true" |
     json_field presignedURL
 )"
-fetch_and_compare "${authenticated_url}" "${thumbnail}" "${tmp_dir}/authenticated-thumbnail.png"
+fetch_and_compare "${authenticated_url}" "${overview}" "${tmp_dir}/authenticated-overview.tif"
 if grep -F "[DOWNLOAD]" "${tmp_dir}/package-r.log" >/dev/null; then
   printf 'Presigned object-storage access produced a proxy download audit record.\n' >&2
   exit 1
@@ -406,7 +420,7 @@ public_url="$(
     "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}?presign=true" |
     json_field presignedURL
 )"
-fetch_and_compare "${public_url}" "${thumbnail}" "${tmp_dir}/share-thumbnail.png"
+fetch_and_compare "${public_url}" "${overview}" "${tmp_dir}/share-overview.tif"
 share_token="$(
 	curl_test -fsS -H "${share_password_header}" \
     "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}" |
@@ -418,8 +432,8 @@ redirect_status="$(curl_test -sS -o /dev/null -w '%{http_code}' \
 [[ "${redirect_status}" == "307" ]]
 fetch_and_compare \
   "${package_r_url}/api/public/share/${SHARE_NAME}/${public_path}?presign=true&follow=true&token=${share_token}" \
-  "${thumbnail}" \
-  "${tmp_dir}/share-redirect-thumbnail.png"
+  "${overview}" \
+  "${tmp_dir}/share-redirect-overview.tif"
 
 log "Checking public catalog access"
 catalog_url="${package_r_url}/api/public/catalog/${SHARE_NAME}"
@@ -427,25 +441,35 @@ catalog_content_type="$(curl_test -fsS -H "${share_password_header}" \
   --write-out '%{content_type}' \
   "${catalog_url}" \
   --output "${tmp_dir}/catalog.json")"
-[[ "${catalog_content_type}" == application/geo+json* ]]
+[[ "${catalog_content_type}" == application/json* ]]
 stac-check "${catalog_url}" \
-  --item-collection \
+  --links \
+  --no-assets-urls \
+  --header X-SHARE-PASSWORD "${SHARE_PASSWORD}"
+item_url="$(python3 -c '
+import json, sys
+value = json.load(open(sys.argv[1], encoding="utf-8"))
+assert value["type"] == "Collection"
+items = [link for link in value["links"] if link["rel"] == "item"]
+assert len(items) == 3
+print(next(link["href"] for link in items if link.get("title") == sys.argv[2]))
+' "${tmp_dir}/catalog.json" "${ITEM_ID}")"
+item_content_type="$(curl_test -fsS -H "${share_password_header}" \
+  --write-out '%{content_type}' \
+  "${item_url}" \
+  --output "${tmp_dir}/item.json")"
+[[ "${item_content_type}" == application/geo+json* ]]
+stac-check "${item_url}" \
   --links \
   --no-assets-urls \
   --header X-SHARE-PASSWORD "${SHARE_PASSWORD}"
 catalog_asset_url="$(python3 -c '
 import json, sys
 value = json.load(open(sys.argv[1], encoding="utf-8"))
-assert value["type"] == "FeatureCollection" and value["features"]
-for feature in value["features"]:
-    asset = feature.get("assets", {}).get("thumbnail")
-    if asset:
-        print(asset["href"])
-        break
-else:
-    raise AssertionError("catalog has no thumbnail asset")
-' "${tmp_dir}/catalog.json")"
-fetch_and_compare "${catalog_asset_url}" "${thumbnail}" "${tmp_dir}/catalog-thumbnail.png" \
+assert value["type"] == "Feature" and value["id"] == sys.argv[2]
+print(value["assets"]["overview"]["href"])
+' "${tmp_dir}/item.json" "${ITEM_ID}")"
+fetch_and_compare "${catalog_asset_url}" "${overview}" "${tmp_dir}/catalog-overview.tif" \
   -H "${share_password_header}"
 
 log "Checking Prometheus metrics"

@@ -127,7 +127,7 @@ func TestPublicShareSTACBrowserURLUsesRequestSchemeAndBaseURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	set.STACBrowserURL = "https://browser.moregeo.it/external/"
+	set.STACBrowserURL = "http://localhost:8080/external/"
 	if err := store.Settings.Save(set); err != nil {
 		t.Fatal(err)
 	}
@@ -155,9 +155,58 @@ func TestPublicShareSTACBrowserURLUsesRequestSchemeAndBaseURL(t *testing.T) {
 	if err := json.NewDecoder(result.Body).Decode(&file); err != nil {
 		t.Fatal(err)
 	}
-	want := "https://browser.moregeo.it/external/http://127.0.0.1:8888/package-r/api/public/catalog/my-share/data.txt"
+	want := "http://localhost:8080/external/http://127.0.0.1:8888/package-r/api/public/catalog/my-share/"
 	if file.STACBrowserURL != want {
 		t.Fatalf("expected STAC Browser URL %q, got %q", want, file.STACBrowserURL)
+	}
+}
+
+func TestPublicShareDirectoriesReturnSTACBrowserURLs(t *testing.T) {
+	root, store, user := newPresignTestStorage(t)
+	writePresignTestFile(t, root, "files/item/data.txt")
+	if err := store.Share.Save(&share.Link{
+		Hash:       "my-share",
+		Path:       "/files",
+		UserID:     user.ID,
+		CatalogURL: "catalog.parquet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	set, err := store.Settings.Get()
+	if err != nil {
+		t.Fatal(err)
+	}
+	set.STACBrowserURL = "http://localhost:8080/external/"
+	if err := store.Settings.Save(set); err != nil {
+		t.Fatal(err)
+	}
+
+	handler := handle(publicShareHandler, "/api/public/share/", store, &settings.Server{
+		Root:    root,
+		BaseURL: "/package-r",
+	})
+	tests := map[string]string{
+		"http://127.0.0.1:8888/api/public/share/my-share?preview=true":       "http://localhost:8080/external/http://127.0.0.1:8888/package-r/api/public/catalog/my-share",
+		"http://127.0.0.1:8888/api/public/share/my-share/item/?preview=true": "http://localhost:8080/external/http://127.0.0.1:8888/package-r/api/public/catalog/my-share/item/",
+	}
+
+	for requestURL, want := range tests {
+		t.Run(requestURL, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, requestURL, http.NoBody))
+			if recorder.Code != http.StatusOK {
+				t.Fatalf("expected status 200, got %d", recorder.Code)
+			}
+			var file struct {
+				STACBrowserURL string `json:"stacBrowserURL"`
+			}
+			if err := json.NewDecoder(recorder.Body).Decode(&file); err != nil {
+				t.Fatal(err)
+			}
+			if file.STACBrowserURL != want {
+				t.Fatalf("expected STAC Browser URL %q, got %q", want, file.STACBrowserURL)
+			}
+		})
 	}
 }
 
@@ -171,7 +220,7 @@ func TestPublicShareDoesNotReturnSTACBrowserURLWithoutCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	set.STACBrowserURL = "https://browser.moregeo.it/external/"
+	set.STACBrowserURL = "http://localhost:8080/external/"
 	if err := store.Settings.Save(set); err != nil {
 		t.Fatal(err)
 	}

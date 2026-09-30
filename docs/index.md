@@ -41,4 +41,4 @@ path rules, and action permissions. See
   [Kubernetes](how-to-guides/kubernetes.md)
 - **API clients:** [HTTP API](reference-guides/http-api.md)
 
-![packageR public share directory](imgs/screenshots/my-share-directory.png)
+![packageR public share directory](imgs/screenshots/vienna-s2l2a-26-directory.png)

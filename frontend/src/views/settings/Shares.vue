@@ -14,7 +14,7 @@
           <table v-else>
             <thead>
               <tr>
-                <th>{{ t("settings.source") }}</th>
+                <th>{{ t("files.name") }}</th>
                 <th>{{ t("settings.path") }}</th>
                 <th>{{ t("settings.shareDuration") }}</th>
                 <th>{{ t("settings.shareDescription") }}</th>
@@ -25,7 +25,7 @@
             </thead>
             <tbody>
               <tr v-for="share in shares" :key="share.hash">
-                <td>{{ share.source }}</td>
+                <td>{{ share.hash }}</td>
                 <td>
                   <a
                     class="share-path"

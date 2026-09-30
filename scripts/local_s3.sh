@@ -82,6 +82,7 @@ run_development_environment() {
   local package_r_bin="$repo_root/package-r"
   local root="${PACKAGE_R_ROOT:-data}"
   local pid=""
+  local stac_browser_url
   local status
 
   for command_name in "$rclone_bin" curl make node pnpm; do
@@ -90,6 +91,19 @@ run_development_environment() {
       return 1
     fi
   done
+
+  sentinel_fixture="$repo_root/tests/data/vienna-s2l2a-26"
+  if [ ! -f "$sentinel_fixture/vienna-s2l2a-26.parquet" ] || \
+    [ ! -f "$sentinel_fixture/S2B_T33UXP_20260218T100524_L2A/rgb.tif" ] || \
+    [ ! -f "$sentinel_fixture/vienna-boundary.geojson" ]; then
+    printf '%s\n' \
+      'Sentinel-2 test data is not materialized.' \
+      'Run scripts/download_sentinel2.py before starting the development setup.' \
+      'It downloads about 150 MB of Vienna data from February, May, and August 2026 from the' \
+      'Earth Search Sentinel-2 Collection 1 Level-2A:' \
+      'https://earth-search.aws.element84.com/v1/collections/sentinel-2-c1-l2a' >&2
+    return 1
+  fi
 
   mkdir -p "$state_dir"
   printf '[local-dev] preparing\n'
@@ -125,6 +139,8 @@ run_development_environment() {
     printf '[local-s3] serving %s at %s\n' "$serve_root" "$endpoint"
   fi
 
+  stac_browser_url="${PACKAGE_R_STAC_BROWSER_URL:-http://localhost:8080/external/}"
+
   pnpm --dir "$repo_root/frontend" install --frozen-lockfile
   make -C "$repo_root" build-backend-dev
 
@@ -133,6 +149,7 @@ run_development_environment() {
       --address=127.0.0.1 \
       --port=8888 \
       --root="$root" \
+      --stac-browser-url="$stac_browser_url" \
       --auth.method=json \
       --signup=false \
       --create-user-dir=false \
@@ -146,6 +163,7 @@ run_development_environment() {
       --address=127.0.0.1 \
       --port=8888 \
       --root="$root" \
+      --stac-browser-url="$stac_browser_url" \
       --auth.method=json \
       --signup=false \
       --create-user-dir=false \
@@ -156,25 +174,15 @@ run_development_environment() {
       >/dev/null
   fi
 
-  if PACKAGE_R_DATABASE="$database" "$package_r_bin" users find admin >/dev/null 2>&1; then
-    PACKAGE_R_DATABASE="$database" "$package_r_bin" users update admin \
-      --password=my-password \
-      --perm.create=true \
-      --perm.delete=true \
-      --perm.modify=true \
-      --perm.rename=true \
-      >/dev/null
-  else
-    PACKAGE_R_DATABASE="$database" "$package_r_bin" users add admin my-password \
-      --perm.create=true \
-      --perm.delete=true \
-      --perm.modify=true \
-      --perm.rename=true \
-      >/dev/null
-  fi
+  PACKAGE_R_DATABASE="$database" "$package_r_bin" users add admin my-password \
+    --perm.create=true \
+    --perm.delete=true \
+    --perm.modify=true \
+    --perm.rename=true \
+    >/dev/null
   PACKAGE_R_DATABASE="$database" "$package_r_bin" shares add \
-    admin my-share / \
-    --catalog-name=openaerialmap-assets.parquet \
+    admin vienna-s2l2a-26 /vienna-s2l2a-26 \
+    --catalog-name=vienna-s2l2a-26.parquet \
     >/dev/null
 
   printf '[local-dev] ready\n'

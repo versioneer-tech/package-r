@@ -65,6 +65,7 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.StringP("baseurl", "b", "", "base url")
 	flags.String("cache-dir", "", "file cache directory (disabled if empty)")
 	flags.String("token-expiration-time", "2h", "user session timeout")
+	flags.String("cors-allowed-origins", "", "comma-separated origins allowed to make cross-origin requests")
 	flags.Int("img-processors", 4, "image processors count")
 	flags.Bool("disable-thumbnails", true, "disable image thumbnails")
 	flags.Bool("disable-preview-resize", true, "disable resize of image previews")
@@ -299,6 +300,10 @@ func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
 
 	if val, set := getParamB(flags, "token-expiration-time"); set {
 		server.TokenExpirationTime = val
+	}
+
+	if val, set := getParamB(flags, "cors-allowed-origins"); set {
+		server.CORSAllowedOrigins = val
 	}
 
 	return server

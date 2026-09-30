@@ -171,6 +171,19 @@ cd "$repo_root"
 require_command python3
 require_command "$rclone_bin"
 require_compatible_rclone
+
+sentinel_fixture="$repo_root/tests/data/vienna-s2l2a-26"
+if [ ! -f "$sentinel_fixture/vienna-s2l2a-26.parquet" ] || \
+  [ ! -f "$sentinel_fixture/S2B_T33UXP_20260218T100524_L2A/rgb.tif" ] || \
+  [ ! -f "$sentinel_fixture/vienna-boundary.geojson" ]; then
+  printf '%s\n' \
+    'Sentinel-2 test data is not materialized.' \
+      'Run scripts/download_sentinel2.py before starting the development setup.' \
+      'It downloads about 150 MB of Vienna data from February, May, and August 2026 from the' \
+      'Earth Search Sentinel-2 Collection 1 Level-2A:' \
+      'https://earth-search.aws.element84.com/v1/collections/sentinel-2-c1-l2a' >&2
+  exit 1
+fi
 start_rclone
 
 export PACKAGE_R_ROOT="${PACKAGE_R_ROOT:-$bucket_name}"
@@ -192,7 +205,7 @@ build_backend_if_needed "$package_r_bin" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
   --address="$PACKAGE_R_ADDRESS" \
   --port="$PACKAGE_R_PORT" \
   --root="$PACKAGE_R_ROOT" \
-  --stac-browser-url=https://browser.moregeo.it/external/ \
+  --stac-browser-url=http://localhost:8080/external/ \
   --auth.method=json \
   --signup=false \
   --create-user-dir=false \
@@ -207,11 +220,14 @@ build_backend_if_needed "$package_r_bin" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
   --perm.modify=true \
   --perm.rename=true \
   >>"$backend_log" 2>&1
-"$package_r_bin" shares add admin my-share / \
-  --catalog-name=openaerialmap-assets.parquet \
+"$package_r_bin" shares add admin vienna-s2l2a-26 /vienna-s2l2a-26 \
+  --catalog-name=vienna-s2l2a-26.parquet \
   >>"$backend_log" 2>&1
-"$package_r_bin" shares add admin protected-share /openaerialmap-assets \
+"$package_r_bin" shares add admin protected-share \
+  /vienna-s2l2a-26/S2B_T33UXP_20260218T100524_L2A \
   --password=my-share-password \
+  >>"$backend_log" 2>&1
+"$package_r_bin" shares add admin sample-share /sample-files \
   >>"$backend_log" 2>&1
 "$package_r_bin" shares add admin image-share /sample-files/sample.jpg \
   >>"$backend_log" 2>&1

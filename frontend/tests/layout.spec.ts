@@ -30,9 +30,12 @@ test("navigates with nested breadcrumbs", async ({ page }) => {
   await auth.goto();
   await auth.loginAs();
   await expect(page.getByLabel("sample-files", { exact: true })).toBeVisible();
-  const folder = "67793f0b9478720001790586";
-  await page.goto(`/files/openaerialmap-assets/${folder}/`);
-  await expect(page.getByLabel("thumbnail.png", { exact: true })).toBeVisible();
-  await page.locator(".breadcrumbs").getByTitle("openaerialmap-assets").click();
+  const folder = "S2B_T33UXP_20260218T100524_L2A";
+  await page.goto(`/files/vienna-s2l2a-26/${folder}/`);
+  await expect(page.getByLabel("overview.tif", { exact: true })).toBeVisible();
+  await page
+    .locator(".breadcrumbs")
+    .getByTitle("vienna-s2l2a-26")
+    .click();
   await expect(page.getByLabel(folder, { exact: true })).toBeVisible();
 });

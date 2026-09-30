@@ -3,6 +3,24 @@
 packageR has Go unit tests, API integration tests, and browser tests. Lint,
 type checks, documentation builds, and release builds are separate checks.
 
+## Sentinel-2 fixture
+
+The catalog, integration, and browser tests use a generated fixture that is
+excluded from Git. Before you run these tests, generate it with:
+
+```bash
+uv run \
+  --with pystac-client --with pystac --with requests \
+  --with stac-geoparquet --with pyarrow --with geopandas --with rasterio \
+  python scripts/download_sentinel2.py
+```
+
+This command downloads approximately 150 MB of data clipped to Vienna. It
+selects scenes from February, May, and August 2026 in the Earth Search
+Sentinel-2 Collection 1 Level-2A catalog. It also downloads Vienna district
+boundaries from City of Vienna Open Government Data and dissolves them into a
+single city boundary.
+
 ## Unit tests
 
 Go unit tests are next to the packages that they test. They use temporary
@@ -65,6 +83,20 @@ presigned URLs, or several API operations.
 Browser tests use Playwright and Chromium. They start rclone, packageR, and
 Vite on loopback addresses. They cover login, personal settings, the read-only
 share list, public shares, previews, and other user workflows.
+
+To test opening generated STAC Browser links on localhost, make an existing
+[STAC Browser](https://github.com/radiantearth/stac-browser) checkout available,
+for example at `~/stac-browser`.
+
+```bash
+pnpm --prefix ~/stac-browser install
+pnpm --prefix ~/stac-browser start
+```
+
+The server listens on `http://localhost:8080`. Configure packageR with
+`http://localhost:8080/external/` as its STAC Browser URL. This local server is
+required for a manual end-to-end preview test because an HTTPS page cannot read
+the HTTP packageR endpoint on localhost.
 
 Install the Chromium runtime once, then run the suite:
 

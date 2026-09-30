@@ -22,14 +22,27 @@ import (
 	"github.com/versioneer-tech/package-r/users"
 )
 
-const openAerialMapID = "67793f0b9478720001790586"
+const sentinelItemID = "S2B_T33UXP_20260218T100524_L2A"
 
 //nolint:gocyclo
 func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	repoRoot := testRepoRoot(t)
 	root := t.TempDir()
-	catalogData, err := os.ReadFile(filepath.Join(repoRoot, "tests", "data", "openaerialmap-assets.parquet"))
+	fixturePath := filepath.Join(repoRoot, "tests", "data", "vienna-s2l2a-26")
+	for _, required := range []string{
+		"vienna-s2l2a-26.parquet",
+		"vienna-boundary.geojson",
+		filepath.Join(sentinelItemID, "rgb.tif"),
+	} {
+		if _, err := os.Stat(filepath.Join(fixturePath, required)); err != nil {
+			t.Fatal("Sentinel-2 test data is not materialized. Run scripts/download_sentinel2.py; it downloads about 200 MB of Vienna data from February, May, and August 2026 from the Earth Search Sentinel-2 Collection 1 Level-2A catalog: https://earth-search.aws.element84.com/v1")
+		}
+	}
+	catalogData, err := os.ReadFile(filepath.Join(fixturePath, "vienna-s2l2a-26.parquet"))
 	if err != nil {
+		if os.IsNotExist(err) {
+			t.Fatal("Sentinel-2 test data is not materialized. Run scripts/download_sentinel2.py; it downloads about 200 MB of Vienna data from February, May, and August 2026 from the Earth Search Sentinel-2 Collection 1 Level-2A catalog: https://earth-search.aws.element84.com/v1")
+		}
 		t.Fatal(err)
 	}
 	memoryFS := afero.NewMemMapFs()
@@ -51,15 +64,15 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 		http.ServeContent(w, r, "catalog.parquet", time.Time{}, bytes.NewReader(catalogData))
 	}))
 	t.Cleanup(catalogServer.Close)
-	thumbnailPath := filepath.Join("openaerialmap-assets", openAerialMapID, "thumbnail.png")
-	thumbnailData, err := os.ReadFile(filepath.Join(repoRoot, "tests", "data", thumbnailPath))
+	overviewPath := filepath.Join(sentinelItemID, "overview.tif")
+	overviewData, err := os.ReadFile(filepath.Join(fixturePath, overviewPath))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := memoryFS.MkdirAll(filepath.Join("/public", filepath.Dir(thumbnailPath)), 0o755); err != nil {
+	if err := memoryFS.MkdirAll(filepath.Join("/public", filepath.Dir(overviewPath)), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := afero.WriteFile(memoryFS, filepath.Join("/public", thumbnailPath), thumbnailData, 0o600); err != nil {
+	if err := afero.WriteFile(memoryFS, filepath.Join("/public", overviewPath), overviewData, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -87,7 +100,7 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	}
 	store.Users = catalogUsers
 	link := &share.Link{
-		Hash:       "my-share",
+		Hash:       "vienna-s2l2a-26",
 		Path:       "/public",
 		UserID:     1,
 		CatalogURL: "/public/catalog.parquet",
@@ -103,21 +116,23 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 
 	collection := callCatalog[struct {
 		Type        string                   `json:"type"`
+		ID          string                   `json:"id"`
 		STACVersion string                   `json:"stac_version"`
+		Extent      map[string]interface{}   `json:"extent"`
 		Links       []map[string]interface{} `json:"links"`
-		Features    []map[string]interface{} `json:"features"`
-	}](t, handler, "/api/public/catalog/my-share")
-	if collection.Type != "FeatureCollection" || len(collection.Features) != 3 {
-		t.Fatalf("expected STAC FeatureCollection with 3 features, got %#v", collection)
+	}](t, handler, "/api/public/catalog/vienna-s2l2a-26")
+	if collection.Type != "Collection" || collection.ID != "vienna-s2l2a-26" {
+		t.Fatalf("expected STAC Collection root, got %#v", collection)
 	}
 	if collection.STACVersion != "1.1.0" {
 		t.Fatalf("expected STAC version 1.1.0, got %q", collection.STACVersion)
 	}
-	if collection.Links == nil {
-		t.Fatal("expected STAC FeatureCollection links")
+	if collection.Extent == nil || len(collection.Links) != 4 {
+		t.Fatalf("expected Collection extent and three Item links, got %#v", collection)
 	}
 
-	feature := findFeature(t, collection.Features, openAerialMapID)
+	feature := callCatalog[map[string]interface{}](t, handler,
+		"/api/public/catalog/vienna-s2l2a-26/"+sentinelItemID+"/")
 	if feature["type"] != "Feature" {
 		t.Fatalf("expected STAC Feature, got %#v", feature)
 	}
@@ -128,30 +143,44 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	if _, exists := feature["collection"]; exists {
 		t.Fatalf("expected collection without a link to move into properties, got %#v", feature)
 	}
-	if properties["collection"] != "openaerialmap" {
+	if properties["collection"] != "sentinel-2-c1-l2a" {
 		t.Fatalf("expected source collection metadata in properties, got %#v", properties["collection"])
 	}
 	if links, ok := feature["links"].([]interface{}); !ok || len(links) != 1 {
 		t.Fatalf("expected STAC item links, got %#v", feature["links"])
 	}
 
-	expectedThumbnail := "http://localhost:8888/package-r/api/public/share/my-share/openaerialmap-assets/" +
-		openAerialMapID + "/thumbnail.png?presign&followRedirect"
-	if href := stacAssetHref(t, feature, "thumbnail"); href != expectedThumbnail {
+	expectedOverview := "http://localhost:8888/package-r/api/public/share/vienna-s2l2a-26/" +
+		sentinelItemID + "/overview.tif?presign&followRedirect"
+	if href := stacAssetHref(t, feature, "overview"); href != expectedOverview {
 		t.Fatalf("unexpected rewritten asset href: %q", href)
 	}
+	expectedRGB := "http://localhost:8888/package-r/api/public/share/vienna-s2l2a-26/" +
+		sentinelItemID + "/rgb.tif?presign&followRedirect"
+	if href := stacAssetHref(t, feature, "rgb"); href != expectedRGB {
+		t.Fatalf("unexpected rewritten RGB asset href: %q", href)
+	}
+	expectedBoundary := "http://localhost:8888/package-r/api/public/share/vienna-s2l2a-26/" +
+		"vienna-boundary.geojson?presign&followRedirect"
+	if href := stacAssetHref(t, feature, "vienna_boundary"); href != expectedBoundary {
+		t.Fatalf("unexpected rewritten boundary asset href: %q", href)
+	}
 
-	item := callCatalog[map[string]interface{}](t, handler, "/api/public/catalog/my-share/openaerialmap-assets/"+
-		openAerialMapID+"/thumbnail.png")
-	if item["id"] != openAerialMapID {
-		t.Fatalf("expected STAC item %q, got %#v", openAerialMapID, item)
+	item := callCatalog[map[string]interface{}](t, handler, "/api/public/catalog/vienna-s2l2a-26/"+
+		sentinelItemID+"/overview.tif")
+	if item["id"] != sentinelItemID {
+		t.Fatalf("expected STAC item %q, got %#v", sentinelItemID, item)
 	}
 	links := feature["links"].([]interface{})
 	selfLink := links[0].(map[string]interface{})
-	expectedSelfHref := "http://localhost:8888/package-r/api/public/catalog/my-share/openaerialmap-assets/" +
-		openAerialMapID + "/metadata.json"
+	expectedSelfHref := "http://localhost:8888/package-r/api/public/catalog/vienna-s2l2a-26/" +
+		sentinelItemID + "/"
 	if selfLink["href"] != expectedSelfHref {
 		t.Fatalf("expected resolvable STAC self link %q, got %#v", expectedSelfHref, selfLink)
+	}
+
+	if collection.Links[0]["href"] != "http://localhost:8888/package-r/api/public/catalog/vienna-s2l2a-26" {
+		t.Fatalf("unexpected Collection self link: %#v", collection.Links[0])
 	}
 
 	if catalogUsers.publicLinkName != "/public/catalog.parquet" {
@@ -165,19 +194,24 @@ func TestPublicCatalogEndpointReturnsSTACFromFixtureParquet(t *testing.T) {
 	}
 
 	link.AssetMappings = []share.CatalogAssetMapping{{
-		From: "openaerialmap-assets/",
-		To:   "mapped-assets",
+		From: sentinelItemID + "/",
+		To:   "mapped-assets/" + sentinelItemID,
 	}}
 	if err := store.Share.Update(link); err != nil {
 		t.Fatal(err)
 	}
-	mappedCollection := callCatalog[struct {
-		Features []map[string]interface{} `json:"features"`
-	}](t, handler, "/api/public/catalog/my-share")
-	mappedFeature := findFeature(t, mappedCollection.Features, openAerialMapID)
-	expectedMappedThumbnail := "http://localhost:8888/package-r/api/public/share/my-share/mapped-assets/" +
-		openAerialMapID + "/thumbnail.png?presign&followRedirect"
-	if href := stacAssetHref(t, mappedFeature, "thumbnail"); href != expectedMappedThumbnail {
+	mappedOverviewPath := filepath.Join("/public/mapped-assets", sentinelItemID, "overview.tif")
+	if err := memoryFS.MkdirAll(filepath.Dir(mappedOverviewPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := afero.WriteFile(memoryFS, mappedOverviewPath, overviewData, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	mappedFeature := callCatalog[map[string]interface{}](t, handler,
+		"/api/public/catalog/vienna-s2l2a-26/mapped-assets/"+sentinelItemID)
+	expectedMappedOverview := "http://localhost:8888/package-r/api/public/share/vienna-s2l2a-26/mapped-assets/" +
+		sentinelItemID + "/overview.tif?presign&followRedirect"
+	if href := stacAssetHref(t, mappedFeature, "overview"); href != expectedMappedOverview {
 		t.Fatalf("share asset mapping was not applied: %q", href)
 	}
 }
@@ -376,18 +410,6 @@ func callCatalog[T any](t *testing.T, handler http.Handler, path string) T {
 		t.Fatal(err)
 	}
 	return response
-}
-
-func findFeature(t *testing.T, features []map[string]interface{}, id string) map[string]interface{} {
-	t.Helper()
-
-	for _, feature := range features {
-		if feature["id"] == id {
-			return feature
-		}
-	}
-	t.Fatalf("feature %q not found in %#v", id, features)
-	return nil
 }
 
 func stacAssetHref(t *testing.T, feature map[string]interface{}, assetKey string) string {

@@ -114,6 +114,16 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 	cf := d.raw.(*catalogedFile)
 	file := cf.File
 
+	if cf.CatalogURL != "" && d.settings.STACBrowserURL != "" && requestQueryEnabled(r, "preview") {
+		previewPath := catalogPreviewTarget(r.URL.Path, file.IsDir)
+		catalogURL := localRequestURL(
+			r,
+			d.server.BaseURL,
+			"/api/public/catalog/"+previewPath,
+		)
+		file.STACBrowserURL = d.settings.STACBrowserURL + catalogURL
+	}
+
 	if file.IsDir {
 		file.Sorting = files.Sorting{By: "name", Asc: false}
 		file.ApplySort()
@@ -158,27 +168,19 @@ var publicShareHandler = withHashFile(func(w http.ResponseWriter, r *http.Reques
 		return status, nil
 	}
 
-	if cf.CatalogURL != "" && d.settings.STACBrowserURL != "" {
-		preview, ok := r.URL.Query()["preview"]
-		if ok && !strings.EqualFold(preview[0], "false") {
-			err := file.STACBrowser()
-			if errors.Is(err, appErrors.ErrInvalidOption) {
-				return http.StatusBadRequest, nil
-			} else if err != nil {
-				return http.StatusInternalServerError, err
-			}
-
-			catalogURL := localRequestURL(
-				r,
-				d.server.BaseURL,
-				"/api/public/catalog/"+strings.TrimPrefix(r.URL.Path, "/"),
-			)
-			file.STACBrowserURL = d.settings.STACBrowserURL + catalogURL
-		}
-	}
-
 	return renderJSON(w, r, file)
 })
+
+func catalogPreviewTarget(requestPath string, isDir bool) string {
+	clean := strings.TrimPrefix(path.Clean("/"+requestPath), "/")
+	if isDir {
+		if !strings.Contains(clean, "/") {
+			return clean
+		}
+		return strings.TrimRight(clean, "/") + "/"
+	}
+	return strings.TrimRight(path.Dir(clean), "/") + "/"
+}
 
 func publicSharePresignPath(cf *catalogedFile) string {
 	return slashClean(path.Join(cf.SharePath, cf.File.Path))

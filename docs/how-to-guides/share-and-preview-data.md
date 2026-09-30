@@ -35,7 +35,7 @@ A hard-to-guess name can reduce accidental discovery, but it is not an access
 control. Add a share password when recipients must authenticate before they
 open the package.
 
-![Public share directory](../imgs/screenshots/my-share-directory.png)
+![Public share directory](../imgs/screenshots/vienna-s2l2a-26-directory.png)
 
 ## Protect a package with a share password
 
@@ -60,7 +60,7 @@ Open a supported file to preview it through a presigned URL. Select **Info**,
 then select **Show** next to **Presigned URL** to display the direct S3 GET
 URL. The file does not pass through packageR.
 
-![Public file links](../imgs/screenshots/my-share-presign.png)
+![Public file links](../imgs/screenshots/vienna-s2l2a-26-presign.png)
 
 The API can also return a `307 Temporary Redirect` to the direct URL. See the
 [HTTP API](../reference-guides/http-api.md#public-shares).
@@ -82,6 +82,13 @@ If the viewer does not load, check:
 
 ## Publish a STAC-compatible Parquet catalog
 
+The `vienna-s2l2a-26` example contains three Sentinel-2 Collection 1 Level-2A
+scenes from [Earth Search by Element 84](https://earth-search.aws.element84.com/v1/).
+The preparation script downloads the source COG ranges for February, May, and
+August 2026, clips them to Vienna, builds an RGB COG for each date, and writes
+the assets and metadata to one STAC catalog in Parquet format. This catalog also
+follows the [STAC GeoParquet specification](https://github.com/radiantearth/stac-geoparquet-spec/blob/main/stac-geoparquet-spec.md).
+
 Place the Parquet catalog inside the shared directory. Each row needs `id`,
 STAC time data, and an `assets` JSON object with `href` values. The
 [HTTP API](../reference-guides/http-api.md#public-catalogs) lists all supported
@@ -96,8 +103,8 @@ Set the relative catalog path when you add the share. If an asset URI does not
 match the storage path, add an asset mapping to that share:
 
 ```bash
-./package-r shares add admin my-share / \
-  --catalog-name=openaerialmap-assets.parquet \
+./package-r shares add admin vienna-s2l2a-26 /vienna-s2l2a-26 \
+  --catalog-name=vienna-s2l2a-26.parquet \
   --asset-mappings='[{"from":"s3://data/","to":"."}]'
 ```
 
@@ -108,29 +115,65 @@ share. Most catalogs do not need an asset mapping.
 
 If `--catalog-name` is empty or omitted, the share has no catalog endpoint.
 
-For a share named `my-share`, request the full catalog:
+For the Vienna share, request the STAC Collection:
 
 ```text
-/api/public/catalog/my-share
+/api/public/catalog/vienna-s2l2a-26
 ```
 
 Add a path below the share to select matching catalog entries:
 
 ```text
-/api/public/catalog/my-share/path/to/package
+/api/public/catalog/vienna-s2l2a-26/S2B_T33UXP_20260218T100524_L2A/
 ```
 
-The response is a STAC `Feature` or `FeatureCollection`. Internal asset links
-become public package URLs.
+The root response is a STAC `Collection` that links to each matching Item. A
+path below the share returns a STAC `Feature` or `FeatureCollection`. Internal
+asset links become public package URLs.
 
-Use the absolute endpoint URL in a STAC Browser. Set the browser's
-external-catalog URL when you prepare the database to show a **STAC Browser
-URL** for the package path:
+packageR serves this endpoint dynamically. It uses DuckDB to query the Parquet
+catalog and renders the matching rows as STAC JSON when a client requests
+`/api/public/catalog`.
+
+Use the absolute endpoint URL in a STAC Browser. Set the public browser's
+external-catalog URL when you prepare the database:
 
 ```bash
 ./package-r config set \
-  --stac-browser-url=https://browser.moregeo.it/external/
+  --stac-browser-url=http://localhost:8080/external/
 ```
+
+Also allow the browser origin to read the public catalog endpoint:
+
+```text
+PACKAGE_R_CORS_ALLOWED_ORIGINS=http://localhost:8080
+```
+
+Serve packageR through HTTPS when you use an HTTPS STAC Browser. Web browsers
+block an HTTPS page from reading an HTTP catalog, including a catalog on
+`localhost`. For local development, make an existing STAC Browser checkout
+available at `~/stac-browser`. This path can be a symbolic link. Install its
+dependencies once:
+
+```bash
+pnpm --prefix ~/stac-browser install
+```
+
+Start it with `pnpm --prefix ~/stac-browser start` and configure packageR with
+`http://localhost:8080/external/`. The repository's VS Code compound launch
+starts this local checkout together with packageR.
+
+Open the public share and select **Info** to get the Collection preview link.
+Open an acquisition directory and select **Info** to get its Item preview link.
+For a file, the link appears above the presigned object URL. In each case,
+select **Show** next to **STAC Browser URL**.
+
+![STAC Browser preview URL](../imgs/screenshots/vienna-s2l2a-26-preview-url.png)
+
+Open the link to inspect the Item, its Vienna footprint, metadata, and assets in
+the configured STAC Browser.
+
+![Vienna Sentinel-2 Item in STAC Browser](../imgs/screenshots/vienna-s2l2a-26-stac-browser.png)
 
 See the [HTTP API](../reference-guides/http-api.md#public-catalogs) for the
 response contract and limits.
