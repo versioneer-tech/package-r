@@ -1,2 +1,10 @@
-# STAC endpoint conformance test.
+# STAC fixture generation and endpoint conformance test.
+geopandas
+numpy
+pyarrow
+pystac
+pystac-client
+rasterio
+requests
+stac-geoparquet
 stac-check==1.13.0
