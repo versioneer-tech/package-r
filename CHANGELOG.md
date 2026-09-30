@@ -15,6 +15,16 @@ now-deprecated File Browser project is no longer maintained.
 Existing capabilities, including package sharing and dynamic STAC APIs, remain.
 See the [documentation](docs/index.md) for details.
 
+## vnext.1.0.2 - 2026-09-30
+
+- unify browsing capabilities for both authenticated and public (via sharing) cases
+
+- allow cors configuration
+
+- rework test-suite, esp. around STAC capabilities together with stac-browser
+
+- cleanup (mime types, unused methods...)
+
 ## vnext.1.0.1 - 2026-09-28
 
 - fix broken presign link in case of password protected share
