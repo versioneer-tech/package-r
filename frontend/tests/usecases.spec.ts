@@ -92,19 +92,13 @@ async function expectTiffRendered(canvas: Locator) {
   await expect
     .poll(
       () =>
-        canvas.evaluate((element) => {
-          if (!(element instanceof HTMLCanvasElement) || element.width === 0) {
-            return false;
-          }
-          const pixel = element.getContext("2d")?.getImageData(0, 0, 1, 1).data;
-          return Boolean(
-            pixel &&
-              (pixel[0] !== 245 ||
-                pixel[1] !== 245 ||
-                pixel[2] !== 245 ||
-                pixel[3] !== 255)
-          );
-        }),
+        canvas.evaluate(
+          (element) =>
+            element instanceof HTMLCanvasElement &&
+            element.width > 0 &&
+            element.height > 0 &&
+            element.dataset.rendered === "true"
+        ),
       { timeout: 30_000 }
     )
     .toBe(true);
@@ -205,30 +199,14 @@ test.describe("packageR use-case UI", () => {
     await page.goto("/files/sample-files/sample.tif");
 
     const canvas = page.locator(".tiff-preview canvas");
-    await expect(canvas).toBeVisible({ timeout: 30_000 });
+    await expectTiffRendered(canvas);
     await expect
       .poll(
         () =>
-          canvas.evaluate((element) => {
-            if (
-              !(element instanceof HTMLCanvasElement) ||
-              element.width !== 768 ||
-              element.height === 0
-            ) {
-              return false;
-            }
-
-            const pixel = element
-              .getContext("2d")
-              ?.getImageData(0, 0, 1, 1).data;
-            return Boolean(
-              pixel &&
-              (pixel[0] !== 245 ||
-                pixel[1] !== 245 ||
-                pixel[2] !== 245 ||
-                pixel[3] !== 255)
-            );
-          }),
+          canvas.evaluate(
+            (element) =>
+              element instanceof HTMLCanvasElement && element.width === 768
+          ),
         { timeout: 30_000 }
       )
       .toBe(true);

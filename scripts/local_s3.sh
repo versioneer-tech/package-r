@@ -139,7 +139,7 @@ run_development_environment() {
     printf '[local-s3] serving %s at %s\n' "$serve_root" "$endpoint"
   fi
 
-  stac_browser_url="${PACKAGE_R_STAC_BROWSER_URL:-http://localhost:8080/external/}"
+  stac_browser_url="${PACKAGE_R_STAC_BROWSER_URL:-}"
 
   pnpm --dir "$repo_root/frontend" install --frozen-lockfile
   make -C "$repo_root" build-backend-dev

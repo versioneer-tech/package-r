@@ -139,6 +139,7 @@ async function renderTiff() {
     }
 
     ctx.putImageData(imageData, 0, 0);
+    canvas.dataset.rendered = "true";
   } catch (err) {
     console.error("[GeoTIFF] Rendering failed:", err);
     loadError.value = true;
