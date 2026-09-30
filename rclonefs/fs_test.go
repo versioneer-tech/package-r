@@ -117,7 +117,7 @@ func TestAferoAdapterMutationsAndErrors(t *testing.T) {
 func newMemoryFS(t *testing.T) *rclonefs.FS {
 	t.Helper()
 	name := "my-" + strconv.FormatUint(remoteID.Add(1), 10)
-	remote, err := memory.NewFs(context.Background(), name, "", configmap.Simple{})
+	remote, err := memory.NewFs(context.Background(), name, name, configmap.Simple{})
 	if err != nil {
 		t.Fatal(err)
 	}
