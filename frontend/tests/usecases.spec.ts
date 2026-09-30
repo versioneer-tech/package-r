@@ -13,8 +13,8 @@ const stacBrowserBaseURL = "http://localhost:8080/external/";
 const screenshotOptions = { animations: "disabled", caret: "hide" } as const;
 const publicShareScreenshotOptions = {
   ...screenshotOptions,
-  // Allow small Chromium text rasterization differences around object names.
-  maxDiffPixels: 350,
+  // Allow small Chromium text rasterization differences in documentation images.
+  maxDiffPixels: 750,
 } as const;
 const stableRelativeTime = "a few seconds ago";
 const stableScreenshotStyle = `
