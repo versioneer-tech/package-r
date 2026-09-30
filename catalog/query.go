@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"path"
 	"sort"
 	"strings"
 	"time"
+
+	appLogging "github.com/versioneer-tech/package-r/logging"
 )
 
 const defaultSTACVersion = "1.1.0"
@@ -491,7 +492,18 @@ func numericBBox(value interface{}) ([]float64, bool) {
 }
 
 //nolint:gocyclo
-func QueryCatalogParquet(ctx context.Context, options QueryOptions) (map[string]interface{}, error) {
+func QueryCatalogParquet(ctx context.Context, options QueryOptions) (result map[string]interface{}, err error) {
+	started := time.Now()
+	defer func() {
+		elapsed := time.Since(started)
+		appLogging.Timedf(
+			elapsed,
+			"duckdb catalog-query request-path=%q duration=%s error=%v",
+			options.RequestPath,
+			elapsed,
+			err,
+		)
+	}()
 	relativePrefix := relativeAssetPrefix(options.SharePath, options.RequestPath)
 
 	// Asset layouts vary between supported catalog schemas, so the query reads
@@ -502,19 +514,31 @@ FROM read_parquet(?)
 `
 	args := []interface{}{options.CatalogURL}
 
-	log.Println("Querying Parquet catalog")
-
 	conn, err := GetDuckDBConn(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 
+	queryStarted := time.Now()
 	rows, err := conn.QueryContext(ctx, query, args...)
+	queryElapsed := time.Since(queryStarted)
 	if err != nil {
 		message := redactCatalogURL(err.Error(), options.CatalogURL)
-		return nil, errors.New("query failed: " + message)
+		queryErr := errors.New("query failed: " + message)
+		appLogging.Timedf(
+			queryElapsed,
+			"duckdb execute-query duration=%s error=%v",
+			queryElapsed,
+			queryErr,
+		)
+		return nil, queryErr
 	}
+	appLogging.Timedf(
+		queryElapsed,
+		"duckdb execute-query duration=%s error=<nil>",
+		queryElapsed,
+	)
 	defer rows.Close()
 
 	cols, err := rows.Columns()
@@ -635,7 +659,7 @@ FROM read_parquet(?)
 		return nil, fmt.Errorf("row iteration error: %w", err)
 	}
 
-	log.Printf("Total STAC features: %d", len(results))
+	appLogging.Debugf("duckdb catalog-query features=%d", len(results))
 
 	if len(results) == 1 {
 		return results[0], nil

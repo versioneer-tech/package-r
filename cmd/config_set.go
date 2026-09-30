@@ -45,6 +45,8 @@ you want to change. Other options will remain unchanged.`,
 				ser.Port = mustGetString(flags, flag.Name)
 			case "log":
 				ser.Log = mustGetString(flags, flag.Name)
+			case "log-level":
+				ser.LogLevel = mustGetString(flags, flag.Name)
 			case "disable-thumbnails":
 				ser.EnableThumbnails = !mustGetBool(flags, flag.Name)
 			case "disable-preview-resize":

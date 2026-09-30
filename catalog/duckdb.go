@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -12,6 +11,8 @@ import (
 	"time"
 
 	"github.com/duckdb/duckdb-go/v2"
+
+	appLogging "github.com/versioneer-tech/package-r/logging"
 )
 
 var (
@@ -22,7 +23,17 @@ var (
 
 func InitDuckDB() {
 	dbOnce.Do(func() {
-		log.Println("Initializing global DuckDB connection")
+		started := time.Now()
+		defer func() {
+			elapsed := time.Since(started)
+			appLogging.Timedf(
+				elapsed,
+				"duckdb initialize duration=%s error=%v",
+				elapsed,
+				dbErr,
+			)
+		}()
+		appLogging.Debugf("duckdb initialize")
 		cacheDir, err := os.UserCacheDir()
 		if err != nil {
 			dbErr = fmt.Errorf("resolve DuckDB extension cache: %w", err)
@@ -53,18 +64,31 @@ func loadHTTPFS(database *sql.DB) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	if _, err := database.ExecContext(ctx, "LOAD httpfs"); err == nil {
+	if err := execDuckDB(ctx, database, "load-httpfs", "LOAD httpfs"); err == nil {
 		return nil
 	}
 
-	log.Println("Installing DuckDB httpfs extension")
-	if _, err := database.ExecContext(ctx, "INSTALL httpfs"); err != nil {
+	if err := execDuckDB(ctx, database, "install-httpfs", "INSTALL httpfs"); err != nil {
 		return fmt.Errorf("install DuckDB httpfs extension: %w", err)
 	}
-	if _, err := database.ExecContext(ctx, "LOAD httpfs"); err != nil {
+	if err := execDuckDB(ctx, database, "load-httpfs", "LOAD httpfs"); err != nil {
 		return fmt.Errorf("load DuckDB httpfs extension: %w", err)
 	}
 	return nil
+}
+
+func execDuckDB(ctx context.Context, database *sql.DB, operation, query string) error {
+	started := time.Now()
+	_, err := database.ExecContext(ctx, query)
+	elapsed := time.Since(started)
+	appLogging.Timedf(
+		elapsed,
+		"duckdb operation=%s duration=%s error=%v",
+		operation,
+		elapsed,
+		err,
+	)
+	return err
 }
 
 func GetDuckDBConn(ctx context.Context) (*sql.Conn, error) {
@@ -77,14 +101,36 @@ func GetDuckDBConn(ctx context.Context) (*sql.Conn, error) {
 
 	ctxPing, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 	defer cancel()
+	started := time.Now()
 	if err := db.PingContext(ctxPing); err != nil {
-		log.Println("Reinitializing DuckDB due to ping failure:", err)
+		elapsed := time.Since(started)
+		appLogging.Timedf(
+			elapsed,
+			"duckdb ping duration=%s error=%v",
+			elapsed,
+			err,
+		)
+		appLogging.Noticef("duckdb reinitialize after ping failure error=%v", err)
 		db = nil
 		dbOnce = sync.Once{}
 		return nil, fmt.Errorf("duckdb ping failed: %w", err)
 	}
+	elapsed := time.Since(started)
+	appLogging.Timedf(
+		elapsed,
+		"duckdb ping duration=%s error=<nil>",
+		elapsed,
+	)
 
+	started = time.Now()
 	conn, err := db.Conn(ctx)
+	elapsed = time.Since(started)
+	appLogging.Timedf(
+		elapsed,
+		"duckdb acquire-connection duration=%s error=%v",
+		elapsed,
+		err,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get connection from DuckDB: %w", err)
 	}

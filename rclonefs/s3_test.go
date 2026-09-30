@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	rclone "github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config"
 	"github.com/spf13/afero"
 
@@ -26,6 +27,16 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	_ = os.RemoveAll(cacheDir)
 	os.Exit(code)
+}
+
+func TestRcloneContextUsesServerModificationTime(t *testing.T) {
+	ctx, err := newRcloneContext(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rclone.GetConfig(ctx).UseServerModTime {
+		t.Fatal("expected rclone to use the modification time from S3 listings")
+	}
 }
 
 func TestNewS3UsesProgrammaticConfiguration(t *testing.T) {

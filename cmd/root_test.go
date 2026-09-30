@@ -47,3 +47,35 @@ func TestGetParamUsesCORSOriginsEnvironmentValue(t *testing.T) {
 		t.Fatalf("unexpected CORS allowed origins %q", value)
 	}
 }
+
+func TestGetParamUsesPackageLogLevelEnvironmentValue(t *testing.T) {
+	v.Reset()
+	t.Cleanup(v.Reset)
+	if err := v.BindEnv("log-level", "PACKAGE_R_LOG_LEVEL"); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PACKAGE_R_LOG_LEVEL", "DEBUG")
+
+	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	flags.String("log-level", "", "")
+
+	value, set := getParamB(flags, "log-level")
+	if !set {
+		t.Fatal("expected environment value to be set")
+	}
+	if value != "DEBUG" {
+		t.Fatalf("unexpected log level %q", value)
+	}
+}
+
+func TestRcloneLogLevelEnvironmentTakesPrecedence(t *testing.T) {
+	set := func(string) (string, bool) { return "DEBUG", true }
+	if err := configureRcloneLogLevel("INVALID", set); err != nil {
+		t.Fatalf("rclone environment override was not preserved: %v", err)
+	}
+
+	unset := func(string) (string, bool) { return "", false }
+	if err := configureRcloneLogLevel("INVALID", unset); err == nil {
+		t.Fatal("expected package log level validation when rclone environment override is absent")
+	}
+}

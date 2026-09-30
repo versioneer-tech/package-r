@@ -191,6 +191,7 @@ func printSettings(ser *settings.Server, set *settings.Settings, auther auth.Aut
 	fmt.Fprintf(w, "\tTheme:\t%s\n", set.Branding.Theme)
 	fmt.Fprintln(w, "\nServer:")
 	fmt.Fprintf(w, "\tLog:\t%s\n", ser.Log)
+	fmt.Fprintf(w, "\tLog level:\t%s\n", ser.LogLevel)
 	fmt.Fprintf(w, "\tPort:\t%s\n", ser.Port)
 	fmt.Fprintf(w, "\tBase URL:\t%s\n", ser.BaseURL)
 	fmt.Fprintf(w, "\tRoot:\t%s\n", ser.Root)

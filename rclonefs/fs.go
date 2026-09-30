@@ -19,6 +19,8 @@ import (
 	"github.com/rclone/rclone/vfs"
 	"github.com/rclone/rclone/vfs/vfscommon"
 	"github.com/spf13/afero"
+
+	appLogging "github.com/versioneer-tech/package-r/logging"
 )
 
 // FS is an afero filesystem backed by an rclone VFS.
@@ -117,7 +119,16 @@ func (f *FS) PublicLink(ctx context.Context, name string, expire time.Duration) 
 	if publicLink == nil {
 		return "", fmt.Errorf("%s does not support public links", f.vfs.Fs())
 	}
-	return publicLink(ctx, name, rclone.Duration(expire), false)
+	started := time.Now()
+	link, err := publicLink(ctx, name, rclone.Duration(expire), false)
+	appLogging.Infof(
+		"rclone presign path=%q lifetime=%s duration=%s error=%v",
+		name,
+		expire,
+		time.Since(started),
+		err,
+	)
+	return link, err
 }
 
 func (f *FS) Create(name string) (afero.File, error) {
@@ -126,7 +137,8 @@ func (f *FS) Create(name string) (afero.File, error) {
 		return nil, err
 	}
 	handle, err := f.vfs.Create(name)
-	return wrapHandle(name, handle, err)
+	appLogging.Infof("rclone create path=%q error=%v", name, err)
+	return wrapHandle(name, handle, err, true)
 }
 
 func (f *FS) Mkdir(name string, perm os.FileMode) error {
@@ -134,7 +146,10 @@ func (f *FS) Mkdir(name string, perm os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	return f.vfs.Mkdir(name, perm)
+	started := time.Now()
+	err = f.vfs.Mkdir(name, perm)
+	logChange("mkdir", name, time.Since(started), err)
+	return err
 }
 
 func (f *FS) MkdirAll(name string, perm os.FileMode) error {
@@ -142,7 +157,10 @@ func (f *FS) MkdirAll(name string, perm os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	return f.vfs.MkdirAll(name, perm)
+	started := time.Now()
+	err = f.vfs.MkdirAll(name, perm)
+	logChange("mkdir-all", name, time.Since(started), err)
+	return err
 }
 
 func (f *FS) Open(name string) (afero.File, error) {
@@ -150,8 +168,10 @@ func (f *FS) Open(name string) (afero.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	started := time.Now()
 	handle, err := f.vfs.Open(name)
-	return wrapHandle(name, handle, err)
+	logGet("open", name, time.Since(started), err)
+	return wrapHandle(name, handle, err, false)
 }
 
 func (f *FS) OpenFile(name string, flag int, perm os.FileMode) (afero.File, error) {
@@ -159,8 +179,22 @@ func (f *FS) OpenFile(name string, flag int, perm os.FileMode) (afero.File, erro
 	if err != nil {
 		return nil, err
 	}
+	started := time.Now()
 	handle, err := f.vfs.OpenFile(name, flag, perm)
-	return wrapHandle(name, handle, err)
+	elapsed := time.Since(started)
+	change := opensForChange(flag)
+	if change {
+		appLogging.Infof(
+			"rclone open-write path=%q flags=%d duration=%s error=%v",
+			name,
+			flag,
+			elapsed,
+			err,
+		)
+	} else {
+		logGet("open-file", name, elapsed, err)
+	}
+	return wrapHandle(name, handle, err, change)
 }
 
 func (f *FS) Remove(name string) error {
@@ -168,7 +202,10 @@ func (f *FS) Remove(name string) error {
 	if err != nil {
 		return err
 	}
-	return f.vfs.Remove(name)
+	started := time.Now()
+	err = f.vfs.Remove(name)
+	logChange("remove", name, time.Since(started), err)
+	return err
 }
 
 func (f *FS) RemoveAll(name string) error {
@@ -181,12 +218,16 @@ func (f *FS) RemoveAll(name string) error {
 	}
 	node, err := f.vfs.Stat(name)
 	if errors.Is(err, fs.ErrNotExist) {
+		logChange("remove-all", name, 0, nil)
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	return node.RemoveAll()
+	started := time.Now()
+	err = node.RemoveAll()
+	logChange("remove-all", name, time.Since(started), err)
+	return err
 }
 
 func (f *FS) Rename(oldName, newName string) error {
@@ -198,7 +239,16 @@ func (f *FS) Rename(oldName, newName string) error {
 	if err != nil {
 		return err
 	}
-	return f.vfs.Rename(oldName, newName)
+	started := time.Now()
+	err = f.vfs.Rename(oldName, newName)
+	appLogging.Infof(
+		"rclone rename source=%q destination=%q duration=%s error=%v",
+		oldName,
+		newName,
+		time.Since(started),
+		err,
+	)
+	return err
 }
 
 func (f *FS) Stat(name string) (os.FileInfo, error) {
@@ -206,7 +256,10 @@ func (f *FS) Stat(name string) (os.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	return f.vfs.Stat(name)
+	started := time.Now()
+	info, err := f.vfs.Stat(name)
+	logGet("stat", name, time.Since(started), err)
+	return info, err
 }
 
 // Chmod is a no-op because object stores do not expose POSIX modes.
@@ -226,7 +279,39 @@ func (f *FS) Chtimes(name string, atime, mtime time.Time) error {
 	if err != nil {
 		return err
 	}
-	return f.vfs.Chtimes(name, atime, mtime)
+	started := time.Now()
+	err = f.vfs.Chtimes(name, atime, mtime)
+	logChange("change-times", name, time.Since(started), err)
+	return err
+}
+
+func opensForChange(flag int) bool {
+	return flag&(os.O_WRONLY|os.O_RDWR|os.O_APPEND|os.O_CREATE|os.O_TRUNC) != 0
+}
+
+func logGet(operation, name string, elapsed time.Duration, err error) {
+	appLogging.Debugf(
+		"rclone get operation=%s path=%q duration=%s error=%v",
+		operation,
+		name,
+		elapsed,
+		err,
+	)
+}
+
+func logChange(operation, name string, elapsed time.Duration, err error) {
+	appLogging.Infof(
+		"rclone change operation=%s path=%q duration=%s error=%v",
+		operation,
+		name,
+		elapsed,
+		err,
+	)
+}
+
+func logList(name string, entries int, elapsed time.Duration, err error) {
+	format := "rclone list path=%q entries=%d duration=%s error=%v"
+	appLogging.Timedf(elapsed, format, name, entries, elapsed, err)
 }
 
 func cleanName(name string) (string, error) {
@@ -248,7 +333,8 @@ func cleanName(name string) (string, error) {
 
 type file struct {
 	vfs.Handle
-	name string
+	name   string
+	change bool
 }
 
 var _ afero.File = (*file)(nil)
@@ -257,9 +343,25 @@ func (f *file) Name() string {
 	return "/" + f.name
 }
 
-func wrapHandle(name string, handle vfs.Handle, err error) (afero.File, error) {
+func (f *file) Readdir(count int) ([]os.FileInfo, error) {
+	started := time.Now()
+	entries, err := f.Handle.Readdir(count)
+	logList(f.name, len(entries), time.Since(started), err)
+	return entries, err
+}
+
+func (f *file) Close() error {
+	started := time.Now()
+	err := f.Handle.Close()
+	if f.change {
+		logChange("close-write", f.name, time.Since(started), err)
+	}
+	return err
+}
+
+func wrapHandle(name string, handle vfs.Handle, err error, change bool) (afero.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &file{Handle: handle, name: name}, nil
+	return &file{Handle: handle, name: name, change: change}, nil
 }

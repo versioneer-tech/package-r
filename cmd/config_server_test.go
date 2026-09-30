@@ -64,6 +64,27 @@ func TestConfigInitStoresCORSAllowedOrigins(t *testing.T) {
 	}
 }
 
+func TestConfigInitStoresLogLevel(t *testing.T) {
+	dbPath, configPath, rootPath := newConfigTestDB(t)
+
+	runPackageRCommand(
+		t,
+		"--config", configPath,
+		"--database", dbPath,
+		"config", "init",
+		"--root", rootPath,
+		"--log-level=DEBUG",
+	)
+
+	server, err := openTestStorage(t, dbPath).Settings.GetServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if server.LogLevel != "DEBUG" {
+		t.Fatalf("unexpected log level %q", server.LogLevel)
+	}
+}
+
 func TestConfigInitStoresSTACBrowserURL(t *testing.T) {
 	dbPath, configPath, rootPath := newConfigTestDB(t)
 

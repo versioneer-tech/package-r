@@ -26,6 +26,7 @@ import (
 	"github.com/versioneer-tech/package-r/frontend"
 	apphttp "github.com/versioneer-tech/package-r/http"
 	"github.com/versioneer-tech/package-r/img"
+	appLogging "github.com/versioneer-tech/package-r/logging"
 	appmetrics "github.com/versioneer-tech/package-r/metrics"
 	"github.com/versioneer-tech/package-r/objectstorage"
 	"github.com/versioneer-tech/package-r/rclonefs"
@@ -55,6 +56,7 @@ func init() {
 func addServerFlags(flags *pflag.FlagSet) {
 	flags.StringP("address", "a", "127.0.0.1", "address to listen on")
 	flags.StringP("log", "l", "stdout", "log output")
+	flags.String("log-level", "NOTICE", "packageR and rclone log level: ERROR, NOTICE, INFO, or DEBUG")
 	flags.StringP("port", "p", "8888", "port to listen on")
 	flags.StringP("cert", "t", "", "tls certificate")
 	flags.StringP("key", "k", "", "tls key")
@@ -143,6 +145,8 @@ add at least one user with "package-r users add".`,
 		storageConfig.SetBuckets(server.Buckets)
 		checkErr(storageConfig.ValidateFilesystem())
 		checkErr(storageConfig.ValidateUserDir(applicationSettings.CreateUserDir))
+		checkErr(appLogging.SetLevel(server.LogLevel))
+		checkErr(configureRcloneLogLevel(server.LogLevel, os.LookupEnv))
 		if storageConfig.UsesAWSServiceRootWithoutRegion() {
 			log.Println("WARNING: AWS_REGION is not set; rclone will use us-east-1. Buckets in other regions cannot be opened from PACKAGE_R_ROOT=/. Set AWS_REGION or select one bucket with PACKAGE_R_ROOT.")
 		}
@@ -245,6 +249,10 @@ func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
 		server.Log = val
 	}
 
+	if val, set := getParamB(flags, "log-level"); set {
+		server.LogLevel = val
+	}
+
 	isSocketSet := false
 	isAddrSet := false
 
@@ -305,8 +313,21 @@ func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
 	if val, set := getParamB(flags, "cors-allowed-origins"); set {
 		server.CORSAllowedOrigins = val
 	}
+	if strings.TrimSpace(server.LogLevel) == "" {
+		server.LogLevel = "NOTICE"
+	}
 
 	return server
+}
+
+func configureRcloneLogLevel(
+	packageLogLevel string,
+	lookupEnv func(string) (string, bool),
+) error {
+	if _, set := lookupEnv("RCLONE_LOG_LEVEL"); set {
+		return nil
+	}
+	return rclonefs.SetLogLevel(packageLogLevel)
 }
 
 // getParamB returns a value and reports whether a flag, environment variable,
@@ -382,6 +403,7 @@ func initConfig() {
 	v.SetEnvPrefix("PACKAGE_R")
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+	checkErr(v.BindEnv("log-level", "PACKAGE_R_LOG_LEVEL"))
 
 	if err := v.ReadInConfig(); err != nil {
 		var configParseError v.ConfigParseError

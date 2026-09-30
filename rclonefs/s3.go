@@ -173,9 +173,9 @@ func NewS3(ctx context.Context, name string, config objectstorage.Config) (*FS, 
 		return nil, err
 	}
 
-	ctx, globalConfig := rclone.AddConfig(ctx)
-	if err := configstruct.Set(optionDefaults{options: rclone.ConfigOptionsInfo}, globalConfig); err != nil {
-		return nil, fmt.Errorf("configure rclone defaults: %w", err)
+	ctx, err := newRcloneContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 	values := s3ConfigValues(config)
 
@@ -191,6 +191,17 @@ func NewS3(ctx context.Context, name string, config objectstorage.Config) (*FS, 
 		return nil, fmt.Errorf("create rclone S3 backend: %w", err)
 	}
 	return New(ctx, remote)
+}
+
+func newRcloneContext(ctx context.Context) (context.Context, error) {
+	ctx, config := rclone.AddConfig(ctx)
+	if err := configstruct.Set(optionDefaults{options: rclone.ConfigOptionsInfo}, config); err != nil {
+		return nil, fmt.Errorf("configure rclone defaults: %w", err)
+	}
+	// S3 listings already include LastModified. Use it instead of reading
+	// object metadata once for every listed file.
+	config.UseServerModTime = true
+	return ctx, nil
 }
 
 func s3ConfigValues(config objectstorage.Config) configmap.Simple {

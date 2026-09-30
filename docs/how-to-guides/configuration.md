@@ -29,6 +29,7 @@ username/password authentication is the default.
 | `PACKAGE_R_ADDRESS` | `127.0.0.1` | Listen address. |
 | `PACKAGE_R_PORT` | `8888` | HTTP port. |
 | `PACKAGE_R_LOG` | `stdout` | Log output. |
+| `PACKAGE_R_LOG_LEVEL` | `NOTICE` | packageR and rclone log level: `ERROR`, `NOTICE`, `INFO`, or `DEBUG`. |
 | `PACKAGE_R_BASEURL` | Empty | URL path prefix. |
 | `PACKAGE_R_TOKEN_EXPIRATION_TIME` | `2h` | User session lifetime. |
 | `PACKAGE_R_CORS_ALLOWED_ORIGINS` | Empty | Comma-separated browser origins allowed to make cross-origin requests. Use `*` to allow every origin. |
@@ -83,6 +84,9 @@ catalog uses one instance for each configured bucket. User settings cannot
 change the endpoint, credentials, root, or bucket catalog. The credential
 provider refreshes temporary credentials when the selected identity method
 supports refresh.
+
+Directory listings use the server modification time returned by S3. This
+avoids a separate metadata request for each listed object.
 
 Chunked and seek-based uploads use the rclone VFS write cache. Set
 `XDG_CACHE_HOME` to choose its parent directory. For example,
