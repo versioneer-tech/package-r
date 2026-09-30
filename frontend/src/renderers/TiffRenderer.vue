@@ -80,6 +80,11 @@ const information = computed(() => {
     { label: t("files.tiffMaximum"), value: rasterInfo.value.maximum },
     { label: t("files.tiffMean"), value: rasterInfo.value.mean },
     { label: t("files.tiffStdDev"), value: rasterInfo.value.stdDev },
+    { label: t("files.tiffStretch"), value: rasterInfo.value.stretch },
+    {
+      label: t("files.tiffDisplayRange"),
+      value: rasterInfo.value.displayRange,
+    },
     {
       label: t("files.tiffTransfer"),
       value: `${downloadedSize.value} / ${totalSize.value}`,
@@ -110,6 +115,51 @@ function dataType(image, samples) {
     return `${prefix}${image.getBitsPerSample(sample)}`;
   });
   return [...new Set(types)].join(" / ");
+}
+
+function shouldStretch(image, samples) {
+  const displayedSamples = Math.min(samples, 3);
+  return (
+    samples === 1 ||
+    Array.from(
+      { length: displayedSamples },
+      (_, sample) =>
+        image.getSampleFormat(sample) !== 1 ||
+        image.getBitsPerSample(sample) > 8
+    ).some(Boolean)
+  );
+}
+
+function percentileRanges(raster, channels, noData) {
+  const pixelCount = raster.length / channels;
+  const step = Math.max(1, Math.ceil(pixelCount / 100_000));
+  const values = Array.from({ length: channels }, () => []);
+
+  for (let pixel = 0; pixel < pixelCount; pixel += step) {
+    for (let channel = 0; channel < channels; channel++) {
+      const value = raster[pixel * channels + channel];
+      if (Number.isFinite(value) && (noData === null || value !== noData)) {
+        values[channel].push(value);
+      }
+    }
+  }
+
+  return values.map((band) => {
+    if (band.length === 0) return { minimum: 0, maximum: 1 };
+    band.sort((left, right) => left - right);
+    const minimum = band[Math.floor((band.length - 1) * 0.02)];
+    const maximum = band[Math.ceil((band.length - 1) * 0.98)];
+    return maximum > minimum
+      ? { minimum, maximum }
+      : { minimum: band[0], maximum: band[band.length - 1] };
+  });
+}
+
+function stretchToByte(value, range) {
+  if (range.maximum <= range.minimum) return 0;
+  const scaled =
+    (255 * (value - range.minimum)) / (range.maximum - range.minimum);
+  return Math.round(Math.max(0, Math.min(255, scaled)));
 }
 
 async function renderTiff() {
@@ -152,6 +202,8 @@ async function renderTiff() {
       maximum: formatBandStatistic(metadata, "STATISTICS_MAXIMUM"),
       mean: formatBandStatistic(metadata, "STATISTICS_MEAN"),
       stdDev: formatBandStatistic(metadata, "STATISTICS_STDDEV"),
+      stretch: t("files.tiffNoStretch"),
+      displayRange: "—",
     };
 
     const targetWidth = Math.min(768, fullWidth);
@@ -175,29 +227,67 @@ async function renderTiff() {
     canvas.height = targetHeight;
     const ctx = canvas.getContext("2d");
 
-    const rgb = await previewImage.readRGB({
-      width: targetWidth,
-      height: targetHeight,
-      interleave: true,
-    });
-    const maxSampleValue =
-      rgb.BYTES_PER_ELEMENT === 1
-        ? 255
-        : 2 ** previewImage.getBitsPerSample(0) - 1;
-    const toByte = (value) => Math.round((255 * value) / maxSampleValue);
-
     const imageData = ctx.createImageData(targetWidth, targetHeight);
+    const stretch = shouldStretch(previewImage, samples);
 
-    for (let i = 0; i < targetWidth * targetHeight; i++) {
-      imageData.data.set(
-        [
-          toByte(rgb[i * 3] ?? 0),
-          toByte(rgb[i * 3 + 1] ?? 0),
-          toByte(rgb[i * 3 + 2] ?? 0),
-          255,
-        ],
-        i * 4
+    if (stretch) {
+      const channels = Math.min(samples, 3);
+      const selectedSamples = Array.from(
+        { length: channels },
+        (_, sample) => sample
       );
+      const raster = await previewImage.readRasters({
+        width: targetWidth,
+        height: targetHeight,
+        interleave: true,
+        samples: selectedSamples,
+      });
+      const noData = image.getGDALNoData();
+      const ranges = percentileRanges(raster, channels, noData);
+
+      for (let pixel = 0; pixel < targetWidth * targetHeight; pixel++) {
+        const offset = pixel * channels;
+        const greenChannel = Math.min(1, channels - 1);
+        const blueChannel = Math.min(2, channels - 1);
+        const red = stretchToByte(raster[offset] ?? 0, ranges[0]);
+        const green = stretchToByte(
+          raster[offset + greenChannel] ?? 0,
+          ranges[greenChannel]
+        );
+        const blue = stretchToByte(
+          raster[offset + blueChannel] ?? 0,
+          ranges[blueChannel]
+        );
+        imageData.data.set([red, green, blue, 255], pixel * 4);
+      }
+
+      rasterInfo.value.stretch = t("files.tiffPercentileStretch");
+      rasterInfo.value.displayRange = ranges
+        .map(
+          (range) =>
+            `${formatNumber(range.minimum)}–${formatNumber(range.maximum)}`
+        )
+        .join(" / ");
+      canvas.dataset.stretch = "percentile";
+    } else {
+      const rgb = await previewImage.readRGB({
+        width: targetWidth,
+        height: targetHeight,
+        interleave: true,
+      });
+
+      for (let pixel = 0; pixel < targetWidth * targetHeight; pixel++) {
+        imageData.data.set(
+          [
+            rgb[pixel * 3] ?? 0,
+            rgb[pixel * 3 + 1] ?? 0,
+            rgb[pixel * 3 + 2] ?? 0,
+            255,
+          ],
+          pixel * 4
+        );
+      }
+      canvas.dataset.stretch = "none";
     }
 
     ctx.putImageData(imageData, 0, 0);

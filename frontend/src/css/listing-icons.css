@@ -87,8 +87,7 @@
 .file-icons [data-ext=".py"] i::before,
 .file-icons [data-ext=".rb"] i::before,
 .file-icons [data-ext=".rs"] i::before,
-.file-icons [data-ext=".vue"] i::before,
-.file-icons [data-ext=".xml"] i::before {
+.file-icons [data-ext=".vue"] i::before {
   content: "code";
 }
 

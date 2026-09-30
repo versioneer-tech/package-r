@@ -8,6 +8,7 @@ const publicSampleShare = "sample-share";
 const backendBaseURL = `http://127.0.0.1:${process.env.PACKAGE_R_PORT || "8888"}`;
 const screenshotBackendBaseURL = "http://127.0.0.1:8888";
 const overviewPath = `${dataset}/${itemId}/overview.tif`;
+const greenPath = `${dataset}/${itemId}/green.tif`;
 const publicShareOverviewPath = `/share/${publicShare}/${itemId}/overview.tif`;
 const stacBrowserBaseURL = "http://localhost:8080/external/";
 const screenshotOptions = { animations: "disabled", caret: "hide" } as const;
@@ -350,7 +351,9 @@ test.describe("packageR use-case UI", () => {
     await page.goto(`/files/${overviewPath}`);
 
     const preview = page.locator("#previewer .preview");
-    await expectTiffRendered(preview.locator(".tiff-preview canvas"));
+    const canvas = preview.locator(".tiff-preview canvas");
+    await expectTiffRendered(canvas);
+    await expect(canvas).toHaveAttribute("data-stretch", "none");
     await expect(
       page.getByRole("button", { name: "Profile Settings", exact: true })
     ).toHaveCount(0);
@@ -361,6 +364,22 @@ test.describe("packageR use-case UI", () => {
       "authenticated-image-preview.png",
       screenshotOptions
     );
+  });
+
+  test("stretches a higher-bit-depth TIFF preview", async ({ page }) => {
+    await loginAsInitialUser(page);
+    await page.goto(`/files/${greenPath}`);
+
+    const preview = page.locator("#previewer .preview");
+    const canvas = preview.locator(".tiff-preview canvas");
+    await expectTiffRendered(canvas);
+    await expect(canvas).toHaveAttribute("data-stretch", "percentile");
+
+    const information = preview.locator(".tiff-information");
+    await expect(information).toContainText("UInt16");
+    await expect(information).toContainText("Percentile (2–98%)");
+    await expect(information).toContainText("Display range");
+    await expect(information).not.toContainText("Display range—");
   });
 
   test("renders public share directory listing", async ({ page }) => {
@@ -396,6 +415,16 @@ test.describe("packageR use-case UI", () => {
     await page.getByLabel(itemId).dblclick();
     await expect(page).toHaveURL(new RegExp(`/share/${publicShare}/${itemId}/$`));
     await expect(page.getByLabel("rgb.tif")).toBeVisible();
+
+    for (const name of ["product_metadata.xml", "tileinfo_metadata.json"]) {
+      const icon = page.getByLabel(name, { exact: true }).locator("i");
+      await expect(icon).toBeVisible();
+      expect(
+        await icon.evaluate((element) =>
+          getComputedStyle(element, "::before").content.replaceAll('"', "")
+        )
+      ).toBe("description");
+    }
   });
 
   test("previews a public file and creates a presigned URL", async ({
