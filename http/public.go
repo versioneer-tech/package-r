@@ -1,11 +1,13 @@
 package http
 
 import (
+	"crypto/sha256"
 	"errors"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/afero"
@@ -102,6 +104,7 @@ var withHashFile = func(fn handleFunc) handleFunc {
 
 func newPublicShareHandler(server *settings.Server) handleFunc {
 	limit := make(chan struct{}, server.PublicPresignConcurrency)
+	passwords := newSharePasswordCache()
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 		if r.Method != http.MethodGet || !requestQueryEnabled(r, "presign") ||
 			(!requestQueryEnabled(r, "follow") && !requestQueryEnabled(r, "followRedirect")) {
@@ -124,7 +127,7 @@ func newPublicShareHandler(server *settings.Server) handleFunc {
 			return errToStatus(err), err
 		}
 		started := time.Now()
-		status, err := authenticateShareRequest(r, link)
+		status, err := passwords.authenticate(r, link)
 		d.metrics.ObservePresignDuration("authentication", time.Since(started))
 		if status != 0 || err != nil {
 			return status, err
@@ -161,6 +164,42 @@ func newPublicShareHandler(server *settings.Server) handleFunc {
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return http.StatusTemporaryRedirect, nil
 	}
+}
+
+type sharePasswordCache struct {
+	mu       sync.RWMutex
+	verified map[[sha256.Size]byte]struct{}
+}
+
+func newSharePasswordCache() *sharePasswordCache {
+	return &sharePasswordCache{verified: make(map[[sha256.Size]byte]struct{})}
+}
+
+func (c *sharePasswordCache) authenticate(r *http.Request, link *share.Link) (int, error) {
+	password := r.Header.Get("X-SHARE-PASSWORD")
+	if link.PasswordHash == "" || password == "" ||
+		(link.Token != "" && r.URL.Query().Get("token") == link.Token) {
+		return authenticateShareRequest(r, link)
+	}
+
+	key := sha256.Sum256([]byte(link.PasswordHash + "\x00" + password))
+	c.mu.RLock()
+	_, ok := c.verified[key]
+	c.mu.RUnlock()
+	if ok {
+		return 0, nil
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if _, ok := c.verified[key]; ok {
+		return 0, nil
+	}
+	status, err := authenticateShareRequest(r, link)
+	if status == 0 && err == nil {
+		c.verified[key] = struct{}{}
+	}
+	return status, err
 }
 
 func splitSharePath(r *http.Request) (id, filePath string) {
@@ -266,7 +305,7 @@ func authenticateShareRequest(r *http.Request, l *share.Link) (int, error) {
 		return 0, nil
 	}
 
-	if r.URL.Query().Get("token") == l.Token {
+	if l.Token != "" && r.URL.Query().Get("token") == l.Token {
 		return 0, nil
 	}
 

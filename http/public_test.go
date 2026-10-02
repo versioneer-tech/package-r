@@ -272,6 +272,11 @@ func TestAuthenticateShareRequest(t *testing.T) {
 			req:            newHTTPRequest(t),
 			expectedStatus: http.StatusUnauthorized,
 		},
+		"Private share, empty stored token, 401": {
+			share:          &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt},
+			req:            newHTTPRequest(t),
+			expectedStatus: http.StatusUnauthorized,
+		},
 		"Private share, authentication via token": {
 			share: &share.Link{Hash: "h", UserID: 1, PasswordHash: passwordBcrypt, Token: "123"},
 			req:   newHTTPRequest(t, func(r *http.Request) { r.URL.RawQuery = "token=123" }),
@@ -303,6 +308,33 @@ func TestAuthenticateShareRequest(t *testing.T) {
 				t.Fatalf("expected status %d, got %d", tc.expectedStatus, status)
 			}
 		})
+	}
+}
+
+func TestSharePasswordCacheStoresSuccessfulAuthenticationOnly(t *testing.T) {
+	t.Parallel()
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte("my-password"), bcrypt.MinCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	link := &share.Link{PasswordHash: string(passwordHash), Token: "test-token"}
+	cache := newSharePasswordCache()
+
+	valid := newHTTPRequest(t, func(r *http.Request) { r.Header.Set("X-SHARE-PASSWORD", "my-password") })
+	if status, err := cache.authenticate(valid, link); status != 0 || err != nil {
+		t.Fatalf("expected successful authentication, got status=%d err=%v", status, err)
+	}
+	if len(cache.verified) != 1 {
+		t.Fatalf("expected one cached password, got %d", len(cache.verified))
+	}
+
+	invalid := newHTTPRequest(t, func(r *http.Request) { r.Header.Set("X-SHARE-PASSWORD", "wrong-password") })
+	if status, err := cache.authenticate(invalid, link); status != http.StatusUnauthorized || err != nil {
+		t.Fatalf("expected status 401, got status=%d err=%v", status, err)
+	}
+	if len(cache.verified) != 1 {
+		t.Fatalf("expected invalid password not to be cached, got %d entries", len(cache.verified))
 	}
 }
 

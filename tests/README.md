@@ -36,22 +36,23 @@ make test-unit
 #### Current public presign baseline
 
 `TestPublicSharePresignConcurrentHierarchy` is the synthetic baseline for
-concurrent public-share presign requests. Both workloads start downloads at
-deterministic random times from `t0` through `t0+30s` and must finish within
-31 seconds. `w1000` sends 1,000 requests, and `w10000` sends 10,000 requests. The
-test uses a 20 ms simulated public-link operation, one warm-up request, and a
-25 ms client retry delay after an HTTP 429 response. Client request counts and
-overall durations include retries.
+concurrent password-protected public-share presign requests. Both workloads
+start downloads at deterministic random times from `t0` through `t0+30s` and
+must finish within 31 seconds. `w1000` sends 1,000 requests, and `w10000` sends
+10,000 requests. The test uses a real bcrypt password hash, a 20 ms simulated
+public-link operation, one warm-up request, and a 25 ms client retry delay after
+an HTTP 429 response. The warm-up also populates the successful-password cache.
+Client request counts and overall durations include retries.
 
 | Workload | Presign limit | Downloads | Client requests | HTTP 429 | Errors | Maximum active | Overall duration | Presign minimum | Presign average | Presign maximum |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `w1000` | 32 | 1,000 | 1,000 | 0 | 0 | 5 | 29.98 s | 20.18 ms | 21.63 ms | 42.75 ms |
-| `w10000` | 32 | 10,000 | 10,000 | 0 | 0 | 25 | 30.03 s | 20.05 ms | 20.92 ms | 58.61 ms |
-| `w1000` | 8 | 1,000 | 1,000 | 0 | 0 | 6 | 30.01 s | 20.09 ms | 20.88 ms | 25.05 ms |
-| `w10000` | 8 | 10,000 | 37,324 | 27,324 | 0 | 8 | 30.08 s | 20.04 ms | 20.75 ms | 31.96 ms |
+| `w1000` | 32 | 1,000 | 1,000 | 0 | 0 | 5 | 29.98 s | 20.16 ms | 20.92 ms | 31.31 ms |
+| `w10000` | 32 | 10,000 | 10,000 | 0 | 0 | 19 | 30.02 s | 20.03 ms | 20.78 ms | 31.31 ms |
+| `w1000` | 8 | 1,000 | 1,000 | 0 | 0 | 5 | 30.01 s | 20.11 ms | 21.15 ms | 51.53 ms |
+| `w10000` | 8 | 10,000 | 37,642 | 27,642 | 0 | 8 | 30.10 s | 20.04 ms | 20.82 ms | 71.51 ms |
 
 With limit 32, both workloads complete without retries. With limit 8, `w1000`
-also completes without retries. `w10000` receives 27,324 HTTP 429 responses and
+also completes without retries. `w10000` receives 27,642 HTTP 429 responses and
 retries them. All downloads finish within 31 seconds, and no request fails.
 
 Run only this baseline with:

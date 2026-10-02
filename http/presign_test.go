@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/asdine/storm/v3"
+	"golang.org/x/crypto/bcrypt"
 
 	appmetrics "github.com/versioneer-tech/package-r/metrics"
 	"github.com/versioneer-tech/package-r/settings"
@@ -165,6 +166,7 @@ func TestPublicSharePresignDoesNotOutliveShare(t *testing.T) {
 func TestPublicSharePresignConcurrentHierarchy(t *testing.T) {
 	const (
 		levels          = 8
+		sharePassword   = "test-password"
 		publicLinkDelay = 20 * time.Millisecond
 		retryDelay      = 25 * time.Millisecond
 		testDeadline    = 31 * time.Second
@@ -199,7 +201,17 @@ func TestPublicSharePresignConcurrentHierarchy(t *testing.T) {
 			t.Fatalf("unexpected content for %s: %q", relativePath, content)
 		}
 	}
-	if err := store.Share.Save(&share.Link{Hash: "my-share", Path: "/files", UserID: user.ID}); err != nil {
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(sharePassword), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Share.Save(&share.Link{
+		Hash:         "my-share",
+		Path:         "/files",
+		UserID:       user.ID,
+		PasswordHash: string(passwordHash),
+		Token:        "test-token",
+	}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -224,6 +236,7 @@ func TestPublicSharePresignConcurrentHierarchy(t *testing.T) {
 				http.NoBody,
 			)
 			req.URL.Path = strings.TrimPrefix(req.URL.Path, "/")
+			req.Header.Set("X-SHARE-PASSWORD", url.QueryEscape(sharePassword))
 			status, err := handler(recorder, req, &data{store: store, server: server, settings: applicationSettings, metrics: telemetry})
 			return status, time.Since(started), err
 		}
