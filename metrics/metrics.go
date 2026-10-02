@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/mux"
@@ -24,15 +25,16 @@ type VFSStatsProvider interface {
 
 // Metrics owns the collectors exposed by one packageR process.
 type Metrics struct {
-	registry      *prometheus.Registry
-	handler       http.Handler
-	httpRequests  *prometheus.CounterVec
-	httpDuration  *prometheus.HistogramVec
-	httpInFlight  prometheus.Gauge
-	logins        *prometheus.CounterVec
-	tokenRenewals prometheus.Counter
-	tusUploads    *prometheus.CounterVec
-	presigns      *prometheus.CounterVec
+	registry        *prometheus.Registry
+	handler         http.Handler
+	httpRequests    *prometheus.CounterVec
+	httpDuration    *prometheus.HistogramVec
+	httpInFlight    prometheus.Gauge
+	logins          *prometheus.CounterVec
+	tokenRenewals   prometheus.Counter
+	tusUploads      *prometheus.CounterVec
+	presigns        *prometheus.CounterVec
+	presignDuration *prometheus.HistogramVec
 }
 
 // New creates an isolated registry with packageR, rclone, and VFS metrics.
@@ -81,6 +83,13 @@ func New(ctx context.Context, vfs VFSStatsProvider) *Metrics {
 			Name:      "requests_total",
 			Help:      "Total number of object-storage presign results.",
 		}, []string{"result"}),
+		presignDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: "presign",
+			Name:      "stage_duration_seconds",
+			Help:      "Public-share presign duration by bounded processing stage.",
+			Buckets:   prometheus.DefBuckets,
+		}, []string{"stage"}),
 	}
 
 	m.registry.MustRegister(
@@ -91,6 +100,7 @@ func New(ctx context.Context, vfs VFSStatsProvider) *Metrics {
 		m.tokenRenewals,
 		m.tusUploads,
 		m.presigns,
+		m.presignDuration,
 		accounting.NewRcloneCollector(ctx),
 	)
 	if vfs != nil {
@@ -108,9 +118,23 @@ func New(ctx context.Context, vfs VFSStatsProvider) *Metrics {
 	for _, result := range []string{"success", "failure"} {
 		m.presigns.WithLabelValues(result).Add(0)
 	}
+	for _, stage := range []string{"authentication", "resolution", "public_link", "total"} {
+		m.presignDuration.WithLabelValues(stage)
+	}
 
 	m.handler = promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{EnableOpenMetrics: true})
 	return m
+}
+
+// ObservePresignDuration records one public-share presign processing stage.
+func (m *Metrics) ObservePresignDuration(stage string, duration time.Duration) {
+	if m == nil {
+		return
+	}
+	switch stage {
+	case "authentication", "resolution", "public_link", "total":
+		m.presignDuration.WithLabelValues(stage).Observe(duration.Seconds())
+	}
 }
 
 // Handler returns the Prometheus/OpenMetrics endpoint handler.

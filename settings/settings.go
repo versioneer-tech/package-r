@@ -37,22 +37,23 @@ func (s *Settings) GetRules() []rules.Rule {
 
 // Server specific settings.
 type Server struct {
-	Root                  string `json:"root"`
-	Buckets               string `json:"buckets"`
-	BaseURL               string `json:"baseURL"`
-	Socket                string `json:"socket"`
-	TLSKey                string `json:"tlsKey"`
-	TLSCert               string `json:"tlsCert"`
-	Port                  string `json:"port"`
-	Address               string `json:"address"`
-	Log                   string `json:"log"`
-	LogLevel              string `json:"logLevel"`
-	EnableThumbnails      bool   `json:"enableThumbnails"`
-	ResizePreview         bool   `json:"resizePreview"`
-	EnableExec            bool   `json:"enableExec"`
-	TypeDetectionByHeader bool   `json:"typeDetectionByHeader"`
-	TokenExpirationTime   string `json:"tokenExpirationTime"`
-	CORSAllowedOrigins    string `json:"corsAllowedOrigins"`
+	Root                     string `json:"root"`
+	Buckets                  string `json:"buckets"`
+	BaseURL                  string `json:"baseURL"`
+	Socket                   string `json:"socket"`
+	TLSKey                   string `json:"tlsKey"`
+	TLSCert                  string `json:"tlsCert"`
+	Port                     string `json:"port"`
+	Address                  string `json:"address"`
+	Log                      string `json:"log"`
+	LogLevel                 string `json:"logLevel"`
+	EnableThumbnails         bool   `json:"enableThumbnails"`
+	ResizePreview            bool   `json:"resizePreview"`
+	EnableExec               bool   `json:"enableExec"`
+	TypeDetectionByHeader    bool   `json:"typeDetectionByHeader"`
+	TokenExpirationTime      string `json:"tokenExpirationTime"`
+	CORSAllowedOrigins       string `json:"corsAllowedOrigins"`
+	PublicPresignConcurrency int    `json:"publicPresignConcurrency"`
 }
 
 // Clean cleans any variables that might need cleaning.

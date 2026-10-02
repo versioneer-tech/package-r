@@ -13,6 +13,7 @@ import (
 
 	appErrors "github.com/versioneer-tech/package-r/errors"
 	"github.com/versioneer-tech/package-r/files"
+	"github.com/versioneer-tech/package-r/settings"
 	"github.com/versioneer-tech/package-r/share"
 )
 
@@ -96,6 +97,69 @@ var withHashFile = func(fn handleFunc) handleFunc {
 		}
 
 		return fn(w, r, d)
+	}
+}
+
+func newPublicShareHandler(server *settings.Server) handleFunc {
+	limit := make(chan struct{}, server.PublicPresignConcurrency)
+	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+		if r.Method != http.MethodGet || !requestQueryEnabled(r, "presign") ||
+			(!requestQueryEnabled(r, "follow") && !requestQueryEnabled(r, "followRedirect")) {
+			return publicShareHandler(w, r, d)
+		}
+		select {
+		case limit <- struct{}{}:
+			defer func() { <-limit }()
+		default:
+			w.Header().Set("Retry-After", "1")
+			return http.StatusTooManyRequests, nil
+		}
+
+		startedTotal := time.Now()
+		defer func() { d.metrics.ObservePresignDuration("total", time.Since(startedTotal)) }()
+
+		id, relativePath := splitSharePath(r)
+		link, err := d.store.Share.GetByHash(id)
+		if err != nil {
+			return errToStatus(err), err
+		}
+		started := time.Now()
+		status, err := authenticateShareRequest(r, link)
+		d.metrics.ObservePresignDuration("authentication", time.Since(started))
+		if status != 0 || err != nil {
+			return status, err
+		}
+		d.user, err = d.store.Users.Get(d.server.Root, link.UserID)
+		if err != nil {
+			return errToStatus(err), err
+		}
+		d.skipUserDirBaseRules = true
+
+		if !d.Check(link.Path) || !d.Check(relativePath) {
+			return http.StatusForbidden, nil
+		}
+		target := slashClean(path.Join(link.Path, relativePath))
+		started = time.Now()
+		file, err := d.user.Fs.Stat(target)
+		d.metrics.ObservePresignDuration("resolution", time.Since(started))
+		if err != nil {
+			return errToStatus(err), err
+		}
+		if file.IsDir() {
+			return publicShareHandler(w, r, d)
+		}
+
+		started = time.Now()
+		redirectURL, err := presignOrLocalURL(r, d.store.Users, d.user, target, "", publicSharePresignLifetime(link.Expire))
+		d.metrics.ObservePresignDuration("public_link", time.Since(started))
+		d.metrics.ObservePresign(err == nil)
+		if errors.Is(err, appErrors.ErrInvalidOption) {
+			return http.StatusBadRequest, nil
+		} else if err != nil {
+			return http.StatusInternalServerError, err
+		}
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+		return http.StatusTemporaryRedirect, nil
 	}
 }
 

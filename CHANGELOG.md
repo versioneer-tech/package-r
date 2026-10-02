@@ -15,6 +15,14 @@ now-deprecated File Browser project is no longer maintained.
 Existing capabilities, including package sharing and dynamic STAC APIs, remain.
 See the [documentation](docs/index.md) for details.
 
+## vnext.1.1.0 - proposed
+
+- improve COG previews with raster statistics and automatic contrast stretching
+
+- add configurable presign concurrency
+
+- add configurable log levels and improve catalog and rclone diagnostics
+
 ## vnext.1.0.2 - 2026-09-30
 
 - unify browsing capabilities for both authenticated and public (via sharing) cases

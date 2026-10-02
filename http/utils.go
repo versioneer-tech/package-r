@@ -31,9 +31,15 @@ func renderJSONWithContentType(w http.ResponseWriter, data interface{}, contentT
 }
 
 func errToStatus(err error) int {
+	var responseError interface{ HTTPStatusCode() int }
+
 	switch {
 	case err == nil:
 		return http.StatusOK
+	case errors.As(err, &responseError) &&
+		(responseError.HTTPStatusCode() == http.StatusUnauthorized ||
+			responseError.HTTPStatusCode() == http.StatusForbidden):
+		return http.StatusForbidden
 	case os.IsPermission(err):
 		return http.StatusForbidden
 	case os.IsNotExist(err), errors.Is(err, libErrors.ErrNotExist):

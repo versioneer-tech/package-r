@@ -75,7 +75,7 @@ func NewHandler(
 	api.PathPrefix("/command").Handler(wrap(commandsHandler, "/api/command")).Methods("GET")
 
 	public := api.PathPrefix("/public").Subrouter()
-	public.PathPrefix("/share").Handler(wrap(publicShareHandler, "/api/public/share/")).Methods("GET", "HEAD")
+	public.PathPrefix("/share").Handler(wrap(newPublicShareHandler(server), "/api/public/share/")).Methods("GET", "HEAD")
 	public.PathPrefix("/catalog").Handler(wrap(catalogHandler, "/api/public/catalog/")).Methods("GET", "HEAD")
 
 	return corsMiddleware(server.CORSAllowedOrigins, stripPrefix(server.BaseURL, r)), nil

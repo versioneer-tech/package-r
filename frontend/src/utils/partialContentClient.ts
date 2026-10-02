@@ -5,6 +5,13 @@ interface ByteRange {
   end: number;
 }
 
+export class PreviewRequestError extends Error {
+  constructor(public readonly status: number) {
+    super(`Preview request failed with HTTP ${status}`);
+    this.name = "PreviewRequestError";
+  }
+}
+
 function parseRange(
   value: string | null,
   objectSize: number
@@ -100,6 +107,10 @@ export class PartialContentClient extends BaseClient {
       headers,
       cache: "no-store",
     });
+
+    if (response.status === 401 || response.status === 403) {
+      throw new PreviewRequestError(response.status);
+    }
 
     return new PartialContentResponse(
       response,

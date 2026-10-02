@@ -33,6 +33,12 @@ func mustGetBool(flags *pflag.FlagSet, flag string) bool {
 	return b
 }
 
+func mustGetInt(flags *pflag.FlagSet, flag string) int {
+	value, err := flags.GetInt(flag)
+	checkErr(err)
+	return value
+}
+
 func mustGetUint(flags *pflag.FlagSet, flag string) uint {
 	b, err := flags.GetUint(flag)
 	checkErr(err)

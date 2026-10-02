@@ -1,6 +1,6 @@
 <template>
   <div v-if="!checked" class="tiff-status">Checking...</div>
-  <Errors v-else-if="!url || loadError" :errorCode="415" />
+  <Errors v-else-if="!url || loadError" :errorCode="errorCode" />
   <div v-else class="tiff-preview">
     <div class="tiff-image">
       <canvas ref="canvasEl" :class="{ hidden: !rendered }" />
@@ -38,7 +38,10 @@ import { fromCustomClient } from "geotiff";
 import { filesize } from "filesize";
 import Errors from "@/views/Errors.vue";
 import { useFileStore } from "@/stores/file";
-import { PartialContentClient } from "@/utils/partialContentClient";
+import {
+  PartialContentClient,
+  PreviewRequestError,
+} from "@/utils/partialContentClient";
 import { useI18n } from "vue-i18n";
 
 const props = defineProps({
@@ -49,6 +52,7 @@ const props = defineProps({
 });
 
 const loadError = ref(false);
+const errorCode = ref(415);
 const checked = ref(false);
 const rendered = ref(false);
 const canvasEl = ref(null);
@@ -164,6 +168,7 @@ function stretchToByte(value, range) {
 
 async function renderTiff() {
   loadError.value = false;
+  errorCode.value = 415;
   checked.value = false;
   rendered.value = false;
   downloadedBytes.value = 0;
@@ -296,6 +301,12 @@ async function renderTiff() {
     canvas.dataset.rendered = "true";
   } catch (err) {
     console.error("[GeoTIFF] Rendering failed:", err);
+    if (
+      err instanceof PreviewRequestError &&
+      (err.status === 401 || err.status === 403)
+    ) {
+      errorCode.value = 403;
+    }
     loadError.value = true;
     checked.value = true;
   }
