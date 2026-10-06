@@ -166,6 +166,17 @@ func newPublicShareHandler(server *settings.Server) handleFunc {
 	}
 }
 
+func newLegacyPublicDownloadHandler(server *settings.Server) handleFunc {
+	publicShare := newPublicShareHandler(server)
+	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+		query := r.URL.Query()
+		query.Set("presign", "true")
+		query.Set("follow", "true")
+		r.URL.RawQuery = query.Encode()
+		return publicShare(w, r, d)
+	}
+}
+
 type sharePasswordCache struct {
 	mu       sync.RWMutex
 	verified map[[sha256.Size]byte]struct{}

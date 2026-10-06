@@ -98,6 +98,40 @@ func TestPublicShareOpenUsesPresignedURL(t *testing.T) {
 	}
 }
 
+func TestLegacyPublicDownloadUsesPresignedURL(t *testing.T) {
+	root, store, user := newPresignTestStorage(t)
+	name := "S2B_T33UXP_20260218T100524_L2A/overview.tif"
+	sharePath := "/my-bucket/vienna-s2l2a-26"
+	writePresignTestFile(t, root, filepath.Join(sharePath, name))
+	if err := store.Share.Save(&share.Link{Hash: "vienna-s2l2a-26", Path: sharePath, UserID: user.ID}); err != nil {
+		t.Fatal(err)
+	}
+	linker := &recordingPublicLinkStore{
+		Store: store.Users,
+		url:   "https://objects.example.invalid/data.tif?signature=xyz",
+	}
+	store.Users = linker
+
+	handler := handle(newLegacyPublicDownloadHandler(&settings.Server{
+		Root:                     root,
+		PublicPresignConcurrency: 1,
+	}), "/api/public/dl/", store, &settings.Server{Root: root})
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8888/api/public/dl/vienna-s2l2a-26/"+name, http.NoBody)
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusTemporaryRedirect {
+		t.Fatalf("expected temporary redirect, got %d", recorder.Code)
+	}
+	if location := recorder.Header().Get("Location"); location != linker.url {
+		t.Fatalf("expected object-storage URL, got %q", location)
+	}
+	if linker.name != filepath.ToSlash(filepath.Join(sharePath, name)) {
+		t.Fatalf("expected shared object path, got %q", linker.name)
+	}
+}
+
 func TestPublicSharePresignHasNoLocalDownloadFallback(t *testing.T) {
 	root, store, _ := newPresignTestStorage(t)
 	writePresignTestFile(t, root, "files/data.txt")
