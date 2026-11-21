@@ -64,8 +64,13 @@ class PlaywrightCheckTests(unittest.TestCase):
         binaries = self.root / "bin"
         binaries.mkdir()
         (binaries / "node").symlink_to(NODE)
+        # The clean PATH omits tools installed by CI setup actions.
         commands = {
+            "cc": "exit 0",
+            "cmp": "exit 0",
+            "curl": "exit 0",
             "pnpm": "exit 0",
+            "python3": "exit 0",
             "jq": "exit 0",
             "stac-check": "exit 0",
             "uv": "exit 0",
