@@ -28,7 +28,7 @@ jobs:
           artifact-ids: ${{ inputs.candidate-id }}
           path: dist/candidate
           merge-multiple: true
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: build/trivy-cache
           key: trivy-${{ runner.os }}-${{ github.run_id }}

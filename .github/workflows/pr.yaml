@@ -30,13 +30,13 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: "22.x"
 
@@ -44,7 +44,7 @@ jobs:
         uses: astral-sh/setup-uv@v10
 
       - name: Cache hook tools
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml', 'go.mod', 'uv.lock') }}
@@ -65,7 +65,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -88,7 +88,7 @@ jobs:
           package_json_file: frontend/package.json
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: "22.x"
           cache: pnpm
@@ -132,7 +132,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -151,13 +151,13 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
@@ -165,7 +165,7 @@ jobs:
 
       - name: Restore Sentinel-2 test data
         id: sentinel-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: tests/data/vienna-s2l2a-26
           key: sentinel-2-vienna-${{ runner.os }}-${{ hashFiles('scripts/download_sentinel2.py') }}
@@ -205,7 +205,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -226,7 +226,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
 
