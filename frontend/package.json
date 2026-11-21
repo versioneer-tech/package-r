@@ -50,7 +50,7 @@
     "@playwright/test": "^1.65.1",
     "@tsconfig/node22": "^22.0.7",
     "@types/lodash-es": "^4.17.12",
-    "@types/node": "^22.20.4",
+    "@types/node": "^26.6.6",
     "@typescript-eslint/eslint-plugin": "^8.73.0",
     "@vitejs/plugin-legacy": "^8.2.4",
     "@vitejs/plugin-vue": "^6.0.11",
