@@ -179,6 +179,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Trust checkout in the test container
+        # Checkout sets safe.directory under a temporary HOME.
+        run: git config --global --add safe.directory "$(pwd)"
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
