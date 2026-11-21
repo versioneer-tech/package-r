@@ -9,8 +9,9 @@ import subprocess
 
 
 def documentation_only(paths):
+    # Screenshot baselines are also browser test inputs.
     return bool(paths) and all(
-        path.startswith("docs/")
+        (path.startswith("docs/") and not path.startswith("docs/imgs/screenshots/"))
         or path in {"mkdocs.yml", ".readthedocs.yaml", ".markdownlint.yaml", "tests/README.md"}
         or (path.endswith(".md") and ("/" not in path or path.startswith(".github/")))
         for path in paths

@@ -12,7 +12,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  reporter: "html",
+  reporter: [["list"], ["html", { open: "never" }]],
   // Screenshot tests maintain the documentation images.
   snapshotPathTemplate: "../docs/imgs/screenshots/{arg}{ext}",
   use: {
@@ -44,7 +44,7 @@ export default defineConfig({
       timeout: 180 * 1000,
     },
     {
-      command: `PLAYWRIGHT_STAC_BROWSER_URL=http://localhost:8080/external/ PACKAGE_R_PORT=${backendPort} exec node node_modules/vite/bin/vite.js --port ${frontendPort}`,
+      command: `PLAYWRIGHT_STAC_BROWSER_URL=http://localhost:8080/external/ PACKAGE_R_PORT=${backendPort} exec node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${frontendPort} --strictPort`,
       url: frontendURL,
       reuseExistingServer: false,
       gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },

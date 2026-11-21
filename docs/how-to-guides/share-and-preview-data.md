@@ -123,16 +123,10 @@ Add a path below the share to select matching catalog entries:
 /api/public/catalog/vienna-s2l2a-26/S2B_T33UXP_20260218T100524_L2A/
 ```
 
-The root response is a STAC `Collection` that links to each matching Item. A
-path below the share returns a STAC `Feature` or `FeatureCollection`. Internal
-asset links become public package URLs.
-
 Use the absolute endpoint URL in a STAC Browser. Operators can
 [configure STAC Browser links](configuration.md#catalogs) in packageR.
 Use HTTPS for both services in a hosted deployment to avoid
 [mixed-content errors](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Mixed_content).
-For local development, see the
-[local STAC Browser setup](https://github.com/versioneer-tech/package-r#use-a-local-stac-browser).
 
 Open the public share and select **Info** to get the Collection preview link.
 Open an acquisition directory and select **Info** to get its Item preview link.

@@ -18,15 +18,6 @@ Object operations: Browser -> packageR API -> rclone VFS -> object storage
 Previews and downloads: Browser -> object storage (presigned URL)
 ```
 
-Use packageR to:
-
-- publish object prefixes with an optional share password
-- browse one bucket or all permitted buckets
-- upload, download, copy, move, rename, and delete objects
-- inspect metadata and calculate checksums
-- create time-limited object URLs
-- publish a Parquet catalog as STAC JSON
-
 One storage identity is shared by all packageR sessions. Its storage policy
 sets the maximum access. packageR can reduce that access with user scopes,
 path rules, and action permissions. See

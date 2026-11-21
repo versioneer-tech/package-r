@@ -22,10 +22,6 @@ preferences. It does not change objects in storage.
 
 ## Defaults
 
-packageR listens on `127.0.0.1:8888` and uses `/tmp/package-r.db` by default.
-Create the database and its first user before you start the server. JSON
-username/password authentication is the default.
-
 | Variable | Default | Description |
 | --- | --- | --- |
 | `PACKAGE_R_DATABASE` | `/tmp/package-r.db` | Bolt runtime-cache path. |
@@ -81,11 +77,9 @@ Startup fails when only one static key variable is set. Do not put projected
 tokens or static credentials in packageR configuration, logs, or the Bolt
 database.
 
-The service keeps process-owned rclone VFS instances. An explicit bucket
-catalog uses one instance for each configured bucket. User settings cannot
-change the endpoint, credentials, root, or bucket catalog. The credential
-provider refreshes temporary credentials when the selected identity method
-supports refresh.
+User settings cannot change the endpoint, credentials, root, or bucket
+catalog. The credential provider refreshes temporary credentials when the
+selected identity method supports refresh.
 
 ### Cache directories
 

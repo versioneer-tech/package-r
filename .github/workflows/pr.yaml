@@ -81,6 +81,7 @@ jobs:
         run: make lint-files
 
       - name: Test repository tooling
+        if: needs.changes.outputs.docs_only == 'true'
         run: make test-tooling
 
   lint_backend:
@@ -156,14 +157,25 @@ jobs:
     with:
       candidate-id: ${{ needs.build.outputs.artifact-id }}
 
-  unit:
+  tests:
     needs: changes
     if: needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
+      options: --init --shm-size=1g
+    timeout-minutes: 60
     permissions:
       contents: read
+    env:
+      CGO_ENABLED: "1"
     steps:
+      - name: Install build tools
+        run: |
+          sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources
+          apt-get update
+          apt-get install --yes --no-install-recommends build-essential jq pkg-config unzip
+
       - name: Checkout code
         uses: actions/checkout@v7
 
@@ -173,46 +185,31 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Run Go unit tests
-        run: make test-unit
-
-  rclone_integration:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    needs: [changes, unit]
-    if: needs.changes.outputs.docs_only != 'true'
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Set up Go
-        uses: actions/setup-go@v7
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
         with:
-          go-version-file: go.mod
-          cache: true
+          package_json_file: frontend/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22.x"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-          cache: pip
-          cache-dependency-path: tests/requirements.txt
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
 
       - name: Restore Sentinel-2 test data
-        id: sentinel-cache
         uses: actions/cache@v6
         with:
           path: tests/data/vienna-s2l2a-26
           key: sentinel-2-vienna-${{ runner.os }}-${{ hashFiles('scripts/download_sentinel2.py') }}
-
-      - name: Install integration test dependencies
-        run: pip install -r tests/requirements.txt
-
-      - name: Materialize Sentinel-2 test data
-        if: steps.sentinel-cache.outputs.cache-hit != 'true'
-        run: python scripts/download_sentinel2.py
 
       - name: Install rclone
         shell: bash
@@ -225,30 +222,27 @@ jobs:
             --output "${archive}" \
             "https://github.com/rclone/rclone/releases/download/v${RCLONE_RELEASE_VERSION}/rclone-v${RCLONE_RELEASE_VERSION}-linux-amd64.zip"
           unzip -q "${archive}" -d "${directory}"
-          sudo install -m 0755 \
+          install -m 0755 \
             "${directory}/rclone-v${RCLONE_RELEASE_VERSION}-linux-amd64/rclone" \
             /usr/local/bin/rclone
           rclone version
 
-      - name: Run local rclone API integration tests
-        run: make test-integration
+      - name: Prepare tests
+        run: make setup-tests
 
-  race:
-    needs: changes
-    if: needs.changes.outputs.docs_only != 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
+      - name: Run all tests
+        run: make test
+
+      - name: Save browser failure reports
+        if: failure()
+        uses: actions/upload-artifact@v7
         with:
-          persist-credentials: false
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-      - run: make test-race
+          name: playwright-results
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
 
   go_vulnerabilities:
     needs: changes
@@ -279,7 +273,7 @@ jobs:
         run: make docs
 
   required_checks:
-    needs: [changes, lint_files, docs, lint_backend, lint_frontend, build, security, unit, rclone_integration, race, go_vulnerabilities]
+    needs: [changes, lint_files, docs, lint_backend, lint_frontend, build, security, tests, go_vulnerabilities]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -293,6 +287,5 @@ jobs:
           (needs.changes.outputs.docs_only != 'true' &&
           (needs.lint_backend.result != 'success' || needs.lint_frontend.result != 'success' ||
           needs.build.result != 'success' || needs.security.result != 'success' ||
-          needs.unit.result != 'success' || needs.rclone_integration.result != 'success' ||
-          needs.race.result != 'success' || needs.go_vulnerabilities.result != 'success'))
+          needs.tests.result != 'success' || needs.go_vulnerabilities.result != 'success'))
         run: exit 1

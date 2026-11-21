@@ -22,6 +22,7 @@ class CheckSelectionTests(unittest.TestCase):
             "http/catalog.go", "frontend/package.json", "frontend/public/example.md",
             "tests/data/sample-files/sample.md", "scripts/ci-checks.py", "tests/requirements.txt",
             ".github/workflows/pr.yaml", "Makefile", "unknown.txt",
+            "docs/imgs/screenshots/authenticated-public-listing.png",
         ):
             with self.subTest(path=path):
                 self.assertFalse(CHECKS["documentation_only"](["README.md", path]))

@@ -28,7 +28,8 @@ current vulnerability data.
 ### CI workflows
 
 The [workflows](.github/workflows/) use shared Make targets for local and CI
-checks. All jobs that select a runner use Ubuntu 24.04.
+checks. All jobs that select a runner use Ubuntu 24.04. The combined test job
+uses Playwright's Ubuntu 24.04 container to keep browser fonts consistent.
 
 | File | Trigger | Purpose |
 | --- | --- | --- |
@@ -41,16 +42,11 @@ checks. All jobs that select a runner use Ubuntu 24.04.
 
 Full Tests runs include:
 
-- file syntax, whitespace, Markdown, Dockerfile, and secret checks
-- tests for CI selection, secret scan boundaries, and release security checks
-- strict documentation and OpenAPI validation
-- Go formatting and lint, frontend lint, and TypeScript checks
-- the full Go unit suite and focused race detection
-- API integration tests with local rclone 1.76 S3 and synthetic credentials
-- the production candidate build, Trivy scans, and govulncheck
-
-Gitleaks scans selected files with redacted output. Commit hooks check staged
-content; CI checks repository files. These checks do not scan full Git history.
+- `make lint-files`: file validation, Markdown, Dockerfiles, and secret checks
+- `make lint-backend lint-frontend`: Go formatting and lint, frontend lint, and types
+- `make docs`: strict documentation and OpenAPI validation
+- `make test`: tooling, Go unit and race tests, rclone API tests, and Chromium
+- a production candidate build, Trivy scans, and govulncheck
 
 Documentation-only changes run file, tooling, and documentation checks. They
 skip runtime tests, builds, and vulnerability scans. Manual Tests runs select
@@ -58,16 +54,15 @@ all checks. The `required_checks` job fails if a required job fails or is
 unexpectedly skipped. Repository rules must require this status to block
 merging.
 
-Playwright browser tests and timed presign load tests are explicit local
-commands. See [tests/README.md](tests/README.md) for test scope and commands.
+The [test guide](tests/README.md) covers setup and test scope. Timed load tests
+run separately with `make performance`.
 
 ### Candidate build
 
 A candidate is a build saved for scanning before publication. The shared
-[build-candidate action](.github/actions/build-candidate/action.yml) sets up Go
-from `go.mod`, pnpm from `frontend/package.json`, Node.js, uv, and Docker Buildx.
-It runs `make candidate` with a version and source commit. CGO stays enabled
-for DuckDB.
+[build-candidate action](.github/actions/build-candidate/action.yml) runs
+`make candidate` with a version and source commit. It selects Go from `go.mod`
+and pnpm from `frontend/package.json`. CGO stays enabled for DuckDB.
 
 The Make target builds the frontend with the frozen pnpm lockfile, embeds it
 in the production Go binary, and builds the Linux AMD64 image. It saves:
@@ -155,8 +150,7 @@ A pushed release tag starts this sequence:
 1. Verify that the exact tagged commit passed a full Tests run on `main`,
    through a push or manual run. A successful PR run alone is not sufficient.
    For a documentation-only commit, run Tests manually on `main` first.
-2. Build a new candidate with the release version. The earlier PR or main
-   candidate is not reused.
+2. Build a new candidate with the release version.
 3. Scan the new candidate and apply the blocking policy.
 4. Download the candidate and scan records by artifact ID. Check the image,
    binary archive, dependency inputs, and report checksums with
@@ -192,9 +186,7 @@ and tagged dependency manifests. The reports record the source commit and
 image identity. A missing release artifact fails the scan.
 
 The daily job does not rebuild, remove, or replace a release. A blocking
-finding fails the workflow. Dependabot opens dependency update PRs through
-[its separate configuration](.github/dependabot.yml); it does not repair an
-already published artifact.
+finding fails the workflow.
 
 ### Reports and retention
 
@@ -211,25 +203,51 @@ govulncheck writes `build/security/govulncheck.txt`.
 | govulncheck text report | GitHub Actions artifact for 90 days, including check failures |
 | Release binary archive, security manifest, three SBOMs, and scan record archive | GitHub release assets |
 
-### Run the checks locally
+### Limits
 
-Use Linux AMD64 with Go, a C/C++ toolchain, Node.js, pnpm, uv, and Docker Buildx.
-Run these shared commands from the repository root:
+The checks depend on the scanners' package detection and vulnerability data.
+A successful scan does not prove that a release has no vulnerabilities.
+Frontend development dependencies and general build dependencies have no
+separate Trivy scan.
+
+Artifact checksums and image digests verify content identity. The workflows
+do not sign commits, tags, or images, and do not generate signed build
+attestations.
+
+## Developer checks
+
+### Hooks
+
+Install the hooks once per checkout:
 
 ```bash
-make lint-files test-tooling docs
-make lint-backend lint-frontend
-make test-unit test-race
-make test-integration
+make hooks
+```
+
+Commit hooks run the applicable Go and frontend linters, file validation,
+markdownlint, Hadolint, and Gitleaks. Gitleaks checks staged content with
+redacted output; CI checks repository files. Neither scans full Git history.
+Hooks do not run tests or build the application.
+
+Commit messages use Conventional Commits, such as `fix: handle empty catalogs`.
+The push hook checks branch names. CI checks the PR title.
+
+### Run checks locally
+
+Use Linux AMD64 with the [required tools](tests/README.md#requirements) and
+Docker Buildx. From the repository root:
+
+```bash
+make check docs
+make setup-tests && make test
 make vulncheck
 make candidate
 make security
 make security-verify
 ```
 
-API integration needs rclone 1.76 or newer and the generated Sentinel-2
-fixture. Follow [tests/README.md](tests/README.md) for setup and check
-selection. Local checks do not publish artifacts.
+Local checks do not publish artifacts. The test guide covers setup and
+check selection.
 
 To rescan a release, put its source checkout at the release commit in
 `build/release-source` and its published binary archive in
@@ -243,13 +261,14 @@ make security-rescan RELEASE_IMAGE='ghcr.io/versioneer-tech/package-r@sha256:<di
 For a release without a security manifest, use its image tag instead of a
 digest. Use the matching source commit and binary archive in both cases.
 
-### Limits
+### Cleanup
 
-The checks depend on the scanners' package detection and vulnerability data.
-A successful scan does not prove that a release has no vulnerabilities.
-Frontend development dependencies and general build dependencies have no
-separate Trivy scan.
+`make clean` removes binaries, build and release outputs, generated documentation,
+and test reports. It keeps downloaded test data, frontend and Python dependencies,
+and local databases. `pnpm run clean` in `frontend` uses `make clean-frontend`.
 
-Artifact checksums and image digests verify content identity. The workflows
-do not sign commits, tags, or images, and do not generate signed build
-attestations.
+### Dependency updates
+
+[Dependabot](.github/dependabot.yml) checks Docker images daily. It checks Go,
+frontend, Actions, hooks, and Python support dependencies weekly and opens
+update PRs. Published releases need a new release to include dependency fixes.

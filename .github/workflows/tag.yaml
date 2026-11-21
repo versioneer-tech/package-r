@@ -48,7 +48,7 @@ jobs:
             )"
             if jq -e '
               .jobs as $jobs |
-              all(["lint_backend", "lint_frontend", "build", "unit", "rclone_integration", "race", "required_checks"][];
+              all(["lint_backend", "lint_frontend", "build", "tests", "required_checks"][];
                   . as $name | any($jobs[]; .name == $name and .conclusion == "success"))
             ' <<<"${jobs}" >/dev/null; then
               exit 0

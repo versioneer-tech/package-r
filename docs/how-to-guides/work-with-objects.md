@@ -1,7 +1,6 @@
 # Work with objects
 
-This guide covers common browser tasks. Available buttons depend on your
-permissions.
+Available actions depend on your permissions.
 
 ## Sign in
 

@@ -9,9 +9,11 @@ required_commands=(
   cmp
   curl
   go
+  jq
   node
   pnpm
   python3
+  uv
   "${RCLONE_BIN}"
 )
 missing_commands=()
@@ -22,11 +24,6 @@ for command_name in "${required_commands[@]}"; do
   fi
 done
 
-if ! command -v stac-check >/dev/null 2>&1 &&
-  ! command -v uv >/dev/null 2>&1; then
-  missing_commands+=("stac-check or uv")
-fi
-
 if ((${#missing_commands[@]} > 0)); then
   printf 'Missing tools required by make test:\n' >&2
   printf '  - %s\n' "${missing_commands[@]}" >&2
@@ -35,4 +32,5 @@ fi
 
 tests_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 "${tests_dir}/../scripts/check-rclone.sh" "${RCLONE_BIN}"
+node "${tests_dir}/../frontend/scripts/check-playwright.mjs"
 printf 'All tools required by make test are available.\n'

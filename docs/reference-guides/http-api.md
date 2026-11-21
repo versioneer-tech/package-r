@@ -179,12 +179,10 @@ curl -fsS \
   "$PACKAGE_R_URL/api/public/share/my-share/"
 ```
 
-Public file metadata supports the same checksum and presign query values as an
-authenticated resource. With `presign=true` and `followRedirect=true`, the
-response is a `307 Temporary Redirect` to object storage. Public shares do not provide a
-packageR download or directory archive endpoint.
-
-Use `GET` for presign requests. `HEAD` with `presign=true` is rejected.
+Public file metadata accepts the [checksum and presign query values](#resources).
+Use `GET` for presign requests; `HEAD` with
+`presign=true` is rejected. Public shares do not provide a packageR download
+or directory archive endpoint.
 
 ## Public catalogs
 

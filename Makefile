@@ -31,11 +31,24 @@ build-backend-dev: ## Build backend with filesystem frontend assets for local/de
 # ------------------------------------------------------------------------------
 
 .PHONY: test
-test: ## Run unit, API integration, and browser tests
-	$Q bash tests/check-tools.bash
+test: ## Run every test suite, including race detection and Chromium
+	$Q $(MAKE) --no-print-directory test-check
+	$Q $(MAKE) --no-print-directory test-tooling
 	$Q $(MAKE) --no-print-directory test-unit
+	$Q $(MAKE) --no-print-directory test-race
 	$Q $(MAKE) --no-print-directory test-integration
 	$Q $(MAKE) --no-print-directory test-frontend
+
+.PHONY: setup-tests
+setup-tests: ## Install frontend test dependencies and download missing test data
+	$Q cd frontend && pnpm install --frozen-lockfile && \
+		if ! node scripts/check-playwright.mjs >/dev/null 2>&1; then \
+			pnpm exec playwright install --with-deps chromium && node scripts/check-playwright.mjs; \
+		fi
+	$Q if [[ ! -f tests/data/vienna-s2l2a-26/vienna-s2l2a-26.parquet ]]; then \
+		uv run --no-project --with-requirements tests/requirements.txt \
+			python scripts/download_sentinel2.py; \
+	fi
 
 .PHONY: test-check
 test-check: ## Check tools required by make test
@@ -49,8 +62,8 @@ test-unit: ## Run Go unit tests
 test-race: ## Check shared HTTP, storage, authentication, and telemetry code for races
 	$Q CGO_ENABLED=1 $(go) test -race ./auth ./diskcache ./http ./logging ./metrics ./rclonefs
 
-.PHONY: test-presign-load
-test-presign-load: ## Run the timed public presign workloads
+.PHONY: performance
+performance: ## Run the timed public presign workloads on an idle host
 	$Q CGO_ENABLED=1 $(go) test -tags loadtest ./http -run '^TestPublicSharePresignConcurrentHierarchy$$' -count=1 -v
 
 .PHONY: test-tooling
@@ -68,9 +81,9 @@ test-integration: ## Run API integration tests with local rclone S3
 
 .PHONY: test-frontend
 test-frontend: ## Run frontend Playwright tests
+	$Q cd frontend && pnpm install --frozen-lockfile && node scripts/check-playwright.mjs
 	$Q $(MAKE) build-backend-dev
-	$Q cd frontend && pnpm install --frozen-lockfile && \
-		PACKAGE_R_PLAYWRIGHT_BUILD=false pnpm exec playwright test --project=chromium
+	$Q cd frontend && PACKAGE_R_PLAYWRIGHT_BUILD=false pnpm exec playwright test --project=chromium $(PLAYWRIGHT_ARGS)
 
 .PHONY: docs
 docs: ## Build documentation with strict validation
@@ -164,7 +177,15 @@ fmt: $(goimports) ## Format Go source files
 # ------------------------------------------------------------------------------
 
 .PHONY: clean
-clean: clean-tools ## Clean all build artifacts
+clean: clean-tools clean-frontend ## Remove build outputs, generated docs, and test reports
+	$Q rm -rf package-r bin build dist site docs/generated
+
+.PHONY: clean-frontend
+clean-frontend: ## Remove frontend build outputs and browser test reports
+	$Q if [[ -d frontend/dist ]]; then \
+		find frontend/dist -mindepth 1 -maxdepth 1 ! -name .gitkeep -exec rm -rf {} +; \
+	fi
+	$Q rm -rf frontend/test-results frontend/playwright-report frontend/playwright/.cache
 
 # ------------------------------------------------------------------------------
 # Help Target
