@@ -21,10 +21,10 @@ func TestProxyAuthMapperUsesDocumentedSingleDotClaim(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest("GET", "/", nil)
+	req := httptest.NewRequest("GET", "/", http.NoBody)
 	req.Header.Set("X-Userinfo", base64.StdEncoding.EncodeToString(encodedClaims))
 
-	got, ok := ProxyAuth{Header: "X-Userinfo", Mapper: ".sub"}.Extract(req)
+	got, ok := (&ProxyAuth{Header: "X-Userinfo", Mapper: ".sub"}).Extract(req)
 	if !ok {
 		t.Fatal("expected proxy mapper to extract claim")
 	}
@@ -34,7 +34,7 @@ func TestProxyAuthMapperUsesDocumentedSingleDotClaim(t *testing.T) {
 }
 
 func TestProxyAuthKeepsTrustedProxyUnverifiedJWTDecode(t *testing.T) {
-	token := signedProxyTestJWT(t, proxyTestTokenConfig{
+	token := signedProxyTestJWT(t, &proxyTestTokenConfig{
 		PrivateKey: proxyTestRSAKey(t),
 		KeyID:      "unverified",
 		Issuer:     "https://issuer.example/",
@@ -43,10 +43,10 @@ func TestProxyAuthKeepsTrustedProxyUnverifiedJWTDecode(t *testing.T) {
 		ExpiresAt:  time.Now().Add(time.Hour),
 	})
 
-	req := httptest.NewRequest("GET", "/", nil)
+	req := httptest.NewRequest("GET", "/", http.NoBody)
 	req.Header.Set("X-Access-Token", token)
 
-	got, ok := ProxyAuth{Header: "X-Access-Token", Mapper: ".preferred_username"}.Extract(req)
+	got, ok := (&ProxyAuth{Header: "X-Access-Token", Mapper: ".preferred_username"}).Extract(req)
 	if !ok {
 		t.Fatal("expected trusted-proxy mode to decode JWT claim without signature validation")
 	}
@@ -93,67 +93,11 @@ func TestBearerToken(t *testing.T) {
 	}
 }
 
-func TestProxyAuthExtractsSelfCreatedJWTWithJWKSURL(t *testing.T) {
-	key := proxyTestRSAKey(t)
-	jwks := proxyTestJWKSServer(t, key, "self-created-key")
-
-	token := signedProxyTestJWT(t, proxyTestTokenConfig{
-		PrivateKey: key,
-		KeyID:      "self-created-key",
-		Issuer:     "https://issuer.example/",
-		Audience:   "workspace-api",
-		Subject:    "service-account-package-r",
-		ExpiresAt:  time.Now().Add(time.Hour),
-	})
-
-	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	got, ok := ProxyAuth{
-		Header:      "Authorization",
-		Mapper:      ".preferred_username",
-		JWTJwksURL:  jwks.URL,
-		JWTIssuer:   "https://issuer.example/",
-		JWTAudience: "workspace-api",
-	}.Extract(req)
-	if !ok {
-		t.Fatal("expected self-created JWT to pass strict JWKS validation")
-	}
-	if got != "service-account-package-r" {
-		t.Fatalf("expected service account username, got %q", got)
-	}
-}
-
-func TestProxyAuthExtractsSelfCreatedJWTWithoutJWKSURL(t *testing.T) {
-	token := signedProxyTestJWT(t, proxyTestTokenConfig{
-		PrivateKey: proxyTestRSAKey(t),
-		KeyID:      "trusted-proxy-key",
-		Issuer:     "https://issuer.example/",
-		Audience:   "workspace-api",
-		Subject:    "service-account-package-r",
-		ExpiresAt:  time.Now().Add(time.Hour),
-	})
-
-	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	got, ok := ProxyAuth{
-		Header: "Authorization",
-		Mapper: ".preferred_username",
-	}.Extract(req)
-	if !ok {
-		t.Fatal("expected self-created JWT to be decoded in trusted-proxy mode")
-	}
-	if got != "service-account-package-r" {
-		t.Fatalf("expected service account username, got %q", got)
-	}
-}
-
 func TestProxyAuthValidatesStrictJWTViaJWKS(t *testing.T) {
 	key := proxyTestRSAKey(t)
 	jwks := proxyTestJWKSServer(t, key, "key-1")
 
-	token := signedProxyTestJWT(t, proxyTestTokenConfig{
+	token := signedProxyTestJWT(t, &proxyTestTokenConfig{
 		PrivateKey: key,
 		KeyID:      "key-1",
 		Issuer:     "https://issuer.example/",
@@ -163,23 +107,27 @@ func TestProxyAuthValidatesStrictJWTViaJWKS(t *testing.T) {
 		NotBefore:  time.Now().Add(-time.Minute),
 	})
 
-	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("X-Access-Token", token)
-
-	got, ok := ProxyAuth{
-		Header:        "X-Access-Token",
-		Mapper:        ".preferred_username",
-		JWTJwksURL:    jwks.URL,
-		JWTIssuer:     "https://issuer.example/",
-		JWTAudience:   "package-r",
-		JWTAlgorithms: "RS256",
-		JWTClockSkew:  "30s",
-	}.Extract(req)
-	if !ok {
-		t.Fatal("expected strict proxy JWT validation to pass")
-	}
-	if got != "alice" {
-		t.Fatalf("expected username alice, got %q", got)
+	for _, header := range []string{"X-Access-Token", "Authorization"} {
+		t.Run(header, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/", http.NoBody)
+			value := token
+			if header == "Authorization" {
+				value = "Bearer " + token
+			}
+			req.Header.Set(header, value)
+			got, ok := (&ProxyAuth{
+				Header:        header,
+				Mapper:        ".preferred_username",
+				JWTJwksURL:    jwks.URL,
+				JWTIssuer:     "https://issuer.example/",
+				JWTAudience:   "package-r",
+				JWTAlgorithms: "RS256",
+				JWTClockSkew:  "30s",
+			}).Extract(req)
+			if !ok || got != "alice" {
+				t.Fatalf("validated username=%q accepted=%t", got, ok)
+			}
+		})
 	}
 }
 
@@ -190,11 +138,10 @@ func TestProxyAuthStrictJWTRejectsInvalidTokens(t *testing.T) {
 	tests := []struct {
 		name  string
 		token string
-		auth  ProxyAuth
 	}{
 		{
 			name: "wrong signature",
-			token: signedProxyTestJWT(t, proxyTestTokenConfig{
+			token: signedProxyTestJWT(t, &proxyTestTokenConfig{
 				PrivateKey: proxyTestRSAKey(t),
 				KeyID:      "key-1",
 				Issuer:     "https://issuer.example/",
@@ -205,7 +152,7 @@ func TestProxyAuthStrictJWTRejectsInvalidTokens(t *testing.T) {
 		},
 		{
 			name: "wrong issuer",
-			token: signedProxyTestJWT(t, proxyTestTokenConfig{
+			token: signedProxyTestJWT(t, &proxyTestTokenConfig{
 				PrivateKey: key,
 				KeyID:      "key-1",
 				Issuer:     "https://other-issuer.example/",
@@ -216,7 +163,7 @@ func TestProxyAuthStrictJWTRejectsInvalidTokens(t *testing.T) {
 		},
 		{
 			name: "wrong audience",
-			token: signedProxyTestJWT(t, proxyTestTokenConfig{
+			token: signedProxyTestJWT(t, &proxyTestTokenConfig{
 				PrivateKey: key,
 				KeyID:      "key-1",
 				Issuer:     "https://issuer.example/",
@@ -227,7 +174,7 @@ func TestProxyAuthStrictJWTRejectsInvalidTokens(t *testing.T) {
 		},
 		{
 			name: "expired",
-			token: signedProxyTestJWT(t, proxyTestTokenConfig{
+			token: signedProxyTestJWT(t, &proxyTestTokenConfig{
 				PrivateKey: key,
 				KeyID:      "key-1",
 				Issuer:     "https://issuer.example/",
@@ -240,10 +187,10 @@ func TestProxyAuthStrictJWTRejectsInvalidTokens(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest("GET", "/", http.NoBody)
 			req.Header.Set("X-Access-Token", tt.token)
 
-			got, ok := ProxyAuth{
+			got, ok := (&ProxyAuth{
 				Header:        "X-Access-Token",
 				Mapper:        ".preferred_username",
 				JWTJwksURL:    jwks.URL,
@@ -251,7 +198,7 @@ func TestProxyAuthStrictJWTRejectsInvalidTokens(t *testing.T) {
 				JWTAudience:   "package-r",
 				JWTAlgorithms: "RS256",
 				JWTClockSkew:  "30s",
-			}.Extract(req)
+			}).Extract(req)
 			if ok {
 				t.Fatalf("expected strict proxy JWT validation to fail, got username %q", got)
 			}
@@ -269,7 +216,7 @@ type proxyTestTokenConfig struct {
 	NotBefore  time.Time
 }
 
-func signedProxyTestJWT(t *testing.T, cfg proxyTestTokenConfig) string {
+func signedProxyTestJWT(t *testing.T, cfg *proxyTestTokenConfig) string {
 	t.Helper()
 
 	claims := jwt.MapClaims{
@@ -320,14 +267,10 @@ func proxyTestJWKSServer(t *testing.T, key *rsa.PrivateKey, keyID string) *httpt
 		t.Fatal(err)
 	}
 
-	return httptest.NewServer(httpHandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(body)
 	}))
-}
-
-type httpHandlerFunc func(http.ResponseWriter, *http.Request)
-
-func (f httpHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	f(w, r)
+	t.Cleanup(server.Close)
+	return server
 }

@@ -32,15 +32,15 @@ type data struct {
 }
 
 // Check implements rules.Checker.
-func (d *data) Check(path string) bool {
-	path = cleanAccessPath(path)
-	if d.user.HideDotfiles && rules.MatchHidden(path) {
+func (d *data) Check(requestPath string) bool {
+	requestPath = cleanAccessPath(requestPath)
+	if d.user.HideDotfiles && rules.MatchHidden(requestPath) {
 		return false
 	}
 
 	allow := true
 	for _, rule := range d.settings.Rules {
-		if rule.Matches(path) {
+		if rule.Matches(requestPath) {
 			allow = rule.Allow
 		}
 	}
@@ -49,12 +49,12 @@ func (d *data) Check(path string) bool {
 		if d.skipUserDirBaseRules && d.settings.IsGeneratedUserDirBaseRule(d.user.Username, rule) {
 			continue
 		}
-		if rule.Matches(path) {
+		if rule.Matches(requestPath) {
 			allow = rule.Allow
 		}
 	}
 
-	if !d.skipUserDirBaseRules && !d.checkUserDirPath(path) {
+	if !d.skipUserDirBaseRules && !d.checkUserDirPath(requestPath) {
 		return false
 	}
 

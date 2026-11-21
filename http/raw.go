@@ -34,13 +34,13 @@ func parseQueryFiles(r *http.Request, f *files.FileInfo, _ *users.User) ([]strin
 		fileSlice = append(fileSlice, f.Path)
 	} else {
 		for _, name := range names {
-			name, err := url.QueryUnescape(strings.ReplaceAll(name, "+", "%2B"))
+			trimmedName, err := url.QueryUnescape(strings.ReplaceAll(name, "+", "%2B"))
 			if err != nil {
 				return nil, err
 			}
 
-			name = slashClean(name)
-			fileSlice = append(fileSlice, filepath.Join(f.Path, name))
+			trimmedName = slashClean(trimmedName)
+			fileSlice = append(fileSlice, filepath.Join(f.Path, trimmedName))
 		}
 	}
 
@@ -223,7 +223,11 @@ func serveRawFile(w http.ResponseWriter, r *http.Request, file *files.FileInfo, 
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	defer fd.Close()
+	defer func() {
+		if closeErr := fd.Close(); closeErr != nil {
+			log.Print("Cannot close served file")
+		}
+	}()
 	if downloadUser != "" {
 		log.Printf("[DOWNLOAD] user=%q path=%q delivery=package_r", downloadUser, file.Path)
 	}

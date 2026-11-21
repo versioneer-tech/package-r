@@ -106,8 +106,7 @@ func newPublicShareHandler(server *settings.Server) handleFunc {
 	limit := make(chan struct{}, server.PublicPresignConcurrency)
 	passwords := newSharePasswordCache()
 	return func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
-		if r.Method != http.MethodGet || !requestQueryEnabled(r, "presign") ||
-			(!requestQueryEnabled(r, "follow") && !requestQueryEnabled(r, "followRedirect")) {
+		if !isPublicPresignRedirect(r) {
 			return publicShareHandler(w, r, d)
 		}
 		select {
@@ -164,6 +163,11 @@ func newPublicShareHandler(server *settings.Server) handleFunc {
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return http.StatusTemporaryRedirect, nil
 	}
+}
+
+func isPublicPresignRedirect(r *http.Request) bool {
+	return r.Method == http.MethodGet && requestQueryEnabled(r, "presign") &&
+		(requestQueryEnabled(r, "follow") || requestQueryEnabled(r, "followRedirect"))
 }
 
 func newLegacyPublicDownloadHandler(server *settings.Server) handleFunc {

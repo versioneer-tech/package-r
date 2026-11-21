@@ -49,7 +49,7 @@ func Load() Config {
 
 // ValidateFilesystem checks the storage root and static credential pair.
 // An empty pair selects the ambient AWS credential chain.
-func (c Config) ValidateFilesystem() error {
+func (c *Config) ValidateFilesystem() error {
 	if err := c.ValidateRoot(); err != nil {
 		return err
 	}
@@ -63,18 +63,18 @@ func (c Config) ValidateFilesystem() error {
 
 // UsesAmbientCredentials reports whether rclone must use the AWS credential
 // provider chain instead of a configured static key pair.
-func (c Config) UsesAmbientCredentials() bool {
+func (c *Config) UsesAmbientCredentials() bool {
 	return strings.TrimSpace(c.AccessKeyID) == "" && strings.TrimSpace(c.SecretAccessKey) == ""
 }
 
 // UsesAWSServiceRootWithoutRegion reports a configuration that makes rclone
 // default to us-east-1 while it browses buckets at the AWS service root.
-func (c Config) UsesAWSServiceRootWithoutRegion() bool {
+func (c *Config) UsesAWSServiceRootWithoutRegion() bool {
 	return c.Bucket == "" && strings.TrimSpace(c.Endpoint) == "" && strings.TrimSpace(c.Region) == ""
 }
 
 // ValidateRoot checks that the root is the S3 service root or one bucket.
-func (c Config) ValidateRoot() error {
+func (c *Config) ValidateRoot() error {
 	if c.Bucket == "." || c.Bucket == ".." ||
 		strings.Contains(c.Bucket, "/") || strings.ContainsRune(c.Bucket, 0) {
 		return ErrInvalidRoot
@@ -97,7 +97,7 @@ func (c Config) ValidateRoot() error {
 }
 
 // ValidateUserDir checks whether generated user directories have a bucket.
-func (c Config) ValidateUserDir(enabled bool) error {
+func (c *Config) ValidateUserDir(enabled bool) error {
 	if enabled && c.Bucket == "" {
 		return ErrUserDirNeedsBucket
 	}
@@ -105,7 +105,7 @@ func (c Config) ValidateUserDir(enabled bool) error {
 }
 
 // Root returns the rclone backend root. An empty root exposes S3 buckets.
-func (c Config) Root() string {
+func (c *Config) Root() string {
 	return c.Bucket
 }
 
@@ -120,7 +120,7 @@ func (c *Config) SetBuckets(value string) {
 }
 
 // ConfiguredBuckets returns the explicit service-root bucket catalog.
-func (c Config) ConfiguredBuckets() []string {
+func (c *Config) ConfiguredBuckets() []string {
 	if strings.TrimSpace(c.Buckets) == "" {
 		return nil
 	}

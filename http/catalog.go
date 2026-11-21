@@ -61,7 +61,7 @@ var catalogHandler = withHashFile(func(w http.ResponseWriter, r *http.Request, d
 		assetMappings = append(assetMappings, catalog.AssetMapping{From: mapping.From, To: mapping.To})
 	}
 
-	result, err := catalog.QueryCatalogParquet(r.Context(), catalog.QueryOptions{
+	result, err := catalog.QueryCatalogParquet(r.Context(), &catalog.QueryOptions{
 		CatalogURL:      catalogURL,
 		RequestPath:     cf.File.Path,
 		AssetsURL:       assetsURL,
@@ -109,7 +109,7 @@ func remoteCatalogURL(
 	sharePath string,
 	catalogPath string,
 	shareExpire int64,
-) (string, func(), error) {
+) (remoteURL string, cleanup func(), queryErr error) {
 	select {
 	case catalogQuerySlots <- struct{}{}:
 	case <-ctx.Done():

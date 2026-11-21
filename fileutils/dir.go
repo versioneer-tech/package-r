@@ -31,8 +31,8 @@ func CopyDir(fs afero.Fs, source, dest string) error {
 		_ = dir.Close()
 		return err
 	}
-	if err := dir.Close(); err != nil {
-		return err
+	if closeErr := dir.Close(); closeErr != nil {
+		return closeErr
 	}
 
 	var errs []error

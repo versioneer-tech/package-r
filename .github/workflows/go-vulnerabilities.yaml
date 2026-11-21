@@ -1,0 +1,29 @@
+name: Check Go vulnerabilities
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: make vulncheck
+      - name: Retain Go vulnerability report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: govulncheck-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/security/govulncheck.txt
+          retention-days: 90
+          if-no-files-found: error

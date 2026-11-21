@@ -62,40 +62,47 @@ func (u *User) Clean(baseScope string, fields ...string) error {
 	}
 
 	for _, field := range fields {
-		switch field {
-		case "Username":
-			if u.Username == "" {
-				return errors.ErrEmptyUsername
-			}
-		case "Password":
-			if u.Password == "" {
-				return errors.ErrEmptyPassword
-			}
-		case "ViewMode":
-			if u.ViewMode == "" {
-				u.ViewMode = ListViewMode
-			}
-		case "Commands":
-			if u.Commands == nil {
-				u.Commands = []string{}
-			}
-		case "Sorting":
-			if u.Sorting.By == "" {
-				u.Sorting.By = "name"
-			}
-		case "Rules":
-			if u.Rules == nil {
-				u.Rules = []rules.Rule{}
-			}
+		if err := u.cleanField(field); err != nil {
+			return err
 		}
 	}
 
 	if u.Fs == nil {
 		scope := u.Scope
-		scope = filepath.Join(baseScope, filepath.Join("/", scope))
+		scope = filepath.Join(baseScope, filepath.Join(string(filepath.Separator), scope))
 		u.Fs = afero.NewBasePathFs(afero.NewOsFs(), scope)
 	}
 
+	return nil
+}
+
+func (u *User) cleanField(field string) error {
+	switch field {
+	case "Username":
+		if u.Username == "" {
+			return errors.ErrEmptyUsername
+		}
+	case "Password":
+		if u.Password == "" {
+			return errors.ErrEmptyPassword
+		}
+	case "ViewMode":
+		if u.ViewMode == "" {
+			u.ViewMode = ListViewMode
+		}
+	case "Commands":
+		if u.Commands == nil {
+			u.Commands = []string{}
+		}
+	case "Sorting":
+		if u.Sorting.By == "" {
+			u.Sorting.By = "name"
+		}
+	case "Rules":
+		if u.Rules == nil {
+			u.Rules = []rules.Rule{}
+		}
+	}
 	return nil
 }
 

@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/asdine/storm/v3"
 	"github.com/spf13/cobra"
@@ -74,8 +76,8 @@ func dbExists(path string) (bool, error) {
 		d := filepath.Dir(path)
 		_, err = os.Stat(d)
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(d, 0700); err != nil {
-				return false, err
+			if mkdirErr := os.MkdirAll(d, 0700); mkdirErr != nil {
+				return false, mkdirErr
 			}
 			return false, nil
 		}
@@ -110,7 +112,7 @@ func python(fn pythonFunc, cfg pythonConfig) cobraFunc {
 		data.hadDB = exists
 		db, err := storm.Open(path)
 		checkErr(err)
-		defer db.Close()
+		defer func() { checkErr(db.Close()) }()
 		data.store = bolt.NewStorage(db)
 		fn(cmd, args, data)
 	}
@@ -126,4 +128,23 @@ func convertCmdStrToCmdArray(cmd string) []string {
 		cmdArray = strings.Split(trimmedCmdStr, " ")
 	}
 	return cmdArray
+}
+
+// tableWriter keeps the first write error until the table is flushed.
+type tableWriter struct {
+	*tabwriter.Writer
+	err error
+}
+
+func (w *tableWriter) printf(format string, args ...interface{}) {
+	if w.err == nil {
+		_, w.err = fmt.Fprintf(w.Writer, format, args...)
+	}
+}
+
+func (w *tableWriter) flush() error {
+	if w.err != nil {
+		return w.err
+	}
+	return w.Flush()
 }

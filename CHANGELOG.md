@@ -2,7 +2,7 @@
 
 This changelog covers packageR vNext releases.
 
-### Now based on rclone VFS
+## Now based on rclone VFS
 
 packageR now uses an embedded rclone VFS. It does not need an external FUSE
 mount or a similar remount.
@@ -15,7 +15,17 @@ now-deprecated File Browser project is no longer maintained.
 Existing capabilities, including package sharing and dynamic STAC APIs, remain.
 See the [documentation](docs/index.md) for details.
 
-## vnext.1.1.0 - proposed
+## vnext.1.2.0 - 2026-11-21
+
+- dependency upgrades and security hardenings (distroless)
+
+- reworked test suites
+
+## vnext.1.1.1 - 2026-10-06
+
+- restore old /dl route for compatibility
+
+## vnext.1.1.0 - 2026-10-02
 
 - improve COG previews with raster statistics and automatic contrast stretching
 

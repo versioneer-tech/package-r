@@ -40,7 +40,7 @@ func TestRcloneContextUsesServerModificationTime(t *testing.T) {
 }
 
 func TestNewS3UsesProgrammaticConfiguration(t *testing.T) {
-	fileSystem, err := NewS3(context.Background(), "my-constructor", objectstorage.Config{
+	fileSystem, err := NewS3(context.Background(), "my-constructor", &objectstorage.Config{
 		AccessKeyID:     "access",
 		SecretAccessKey: "secret",
 		Endpoint:        "http://127.0.0.1:1",
@@ -74,7 +74,7 @@ func TestNewS3UsesAmbientCredentialChain(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "ambient-secret")
 	t.Setenv("AWS_SESSION_TOKEN", "")
 
-	fileSystem, err := NewS3(context.Background(), "my-ambient", objectstorage.Config{
+	fileSystem, err := NewS3(context.Background(), "my-ambient", &objectstorage.Config{
 		Endpoint: "http://127.0.0.1:1",
 		Region:   "us-east-1",
 		Bucket:   "bucket",
@@ -98,7 +98,7 @@ func TestNewS3UsesAmbientCredentialChain(t *testing.T) {
 }
 
 func TestS3ConfigValuesSelectCredentialSource(t *testing.T) {
-	static := s3ConfigValues(objectstorage.Config{
+	static := s3ConfigValues(&objectstorage.Config{
 		AccessKeyID:     "access",
 		SecretAccessKey: "secret",
 		SessionToken:    "token",
@@ -108,7 +108,7 @@ func TestS3ConfigValuesSelectCredentialSource(t *testing.T) {
 		t.Fatalf("unexpected static credential settings: %#v", static)
 	}
 
-	ambient := s3ConfigValues(objectstorage.Config{SessionToken: "ignored"})
+	ambient := s3ConfigValues(&objectstorage.Config{SessionToken: "ignored"})
 	if ambient["env_auth"] != "true" || ambient["access_key_id"] != "" ||
 		ambient["secret_access_key"] != "" || ambient["session_token"] != "" {
 		t.Fatalf("unexpected ambient credential settings: %#v", ambient)
@@ -201,7 +201,7 @@ func TestManagerBuildsConfiguredBucketCatalog(t *testing.T) {
 	t.Setenv("AWS_ENDPOINT_URL", "http://127.0.0.1:1")
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	manager := NewManager(context.Background(), "/", "xyz-data,xyz-archive")
+	manager := NewManager(context.Background(), "/", "test-data,test-archive")
 	t.Cleanup(func() { _ = manager.Close() })
 	fileSystem, err := manager.FileSystem()
 	if err != nil {
@@ -211,11 +211,11 @@ func TestManagerBuildsConfiguredBucketCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(entries) != 2 || entries[0].Name() != "xyz-archive" || entries[1].Name() != "xyz-data" {
+	if len(entries) != 2 || entries[0].Name() != "test-archive" || entries[1].Name() != "test-data" {
 		t.Fatalf("unexpected bucket catalog: %#v", entries)
 	}
 
-	link, err := manager.PublicLink(context.Background(), "/xyz-archive/report.txt", time.Hour)
+	link, err := manager.PublicLink(context.Background(), "/test-archive/report.txt", time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,10 +223,10 @@ func TestManagerBuildsConfiguredBucketCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if parsed.Path != "/xyz-archive/report.txt" {
+	if parsed.Path != "/test-archive/report.txt" {
 		t.Fatalf("unexpected public link path %q", parsed.Path)
 	}
-	if _, err := manager.PublicLink(context.Background(), "/xyz-missing/report.txt", time.Hour); !errors.Is(err, os.ErrNotExist) {
+	if _, err := manager.PublicLink(context.Background(), "/test-missing/report.txt", time.Hour); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected missing bucket error, got %v", err)
 	}
 }

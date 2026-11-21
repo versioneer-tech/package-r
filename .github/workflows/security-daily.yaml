@@ -1,0 +1,112 @@
+name: Rescan published releases
+
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-security-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  go_vulnerabilities:
+    uses: ./.github/workflows/go-vulnerabilities.yaml
+
+  releases:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.releases.outputs.matrix }}
+      count: ${{ steps.releases.outputs.count }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10
+      - name: List published release tags
+        id: releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          matrix="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases" |
+            uv run --locked --group tooling python scripts/security.py releases)"
+          printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+          printf 'count=%s\n' "$(jq '.include | length' <<< "$matrix")" >> "$GITHUB_OUTPUT"
+
+  scan:
+    needs: releases
+    if: needs.releases.outputs.count != '0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.releases.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10
+      - name: Download published binary
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ matrix.tag }}
+        run: gh release download "$RELEASE_TAG" --pattern linux-amd64-package-r.tar.gz --dir build/release-metadata
+      - name: Download published image identity
+        if: matrix.manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ matrix.tag }}
+        run: gh release download "$RELEASE_TAG" --pattern security-manifest.json --dir build/release-metadata
+      - name: Select immutable release identity
+        id: release
+        env:
+          RELEASE_TAG: ${{ matrix.tag }}
+        run: |
+          uv run --locked --group tooling python scripts/security.py release-ref \
+            --tag "$RELEASE_TAG" --manifest build/release-metadata/security-manifest.json >> "$GITHUB_OUTPUT"
+      - name: Get release dependency manifests
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.release.outputs.commit }}
+          path: build/release-source
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /go.mod
+            /go.sum
+            /frontend/package.json
+            /frontend/pnpm-lock.yaml
+      - uses: docker/login-action@v4
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/release-registry-auth
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - uses: actions/cache@v5
+        with:
+          path: build/trivy-cache
+          key: trivy-${{ runner.os }}-${{ github.run_id }}-${{ matrix.tag }}
+          restore-keys: trivy-${{ runner.os }}-
+      - name: Scan published image and release dependencies
+        env:
+          RELEASE_IMAGE: ${{ steps.release.outputs.image }}
+          DOCKER_CONFIG: ${{ runner.temp }}/release-registry-auth
+        run: make security-rescan RELEASE_IMAGE="$RELEASE_IMAGE"
+      - name: Retain daily reports and SBOMs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-${{ matrix.tag }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/security/
+          retention-days: 90
+          if-no-files-found: error

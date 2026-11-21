@@ -123,8 +123,8 @@ add at least one user with "package-r users add".`,
 		cacheDir, err := cmd.Flags().GetString("cache-dir")
 		checkErr(err)
 		if cacheDir != "" {
-			if err := os.MkdirAll(cacheDir, 0700); err != nil {
-				log.Fatalf("can't make directory %s: %s", cacheDir, err)
+			if mkdirErr := os.MkdirAll(cacheDir, 0700); mkdirErr != nil {
+				log.Fatalf("can't make directory %s: %s", cacheDir, mkdirErr)
 			}
 			fileCache = diskcache.New(afero.NewOsFs(), cacheDir)
 		}
@@ -135,8 +135,8 @@ add at least one user with "package-r users add".`,
 		applicationSettings, err := d.store.Settings.Get()
 		checkErr(err)
 		if applicationSettings.AuthMethod == auth.MethodProxyAuth {
-			configuredAuth, err := d.store.Auth.Get(applicationSettings.AuthMethod)
-			checkErr(err)
+			configuredAuth, getErr := d.store.Auth.Get(applicationSettings.AuthMethod)
+			checkErr(getErr)
 			if proxyAuth, ok := configuredAuth.(*auth.ProxyAuth); ok && proxyAuth.UsesUnverifiedClaimMapping() {
 				log.Println("WARNING: proxy claim mapping is enabled without a JWKS URL; token claims are decoded but not validated. Trust only a header set by the upstream proxy.")
 			}
@@ -168,18 +168,18 @@ add at least one user with "package-r users add".`,
 		case server.Socket != "":
 			listener, err = net.Listen("unix", server.Socket)
 			checkErr(err)
-			socketPerm, err := cmd.Flags().GetUint32("socket-perm")
-			checkErr(err)
-			err = os.Chmod(server.Socket, os.FileMode(socketPerm))
-			checkErr(err)
+			socketPerm, permissionErr := cmd.Flags().GetUint32("socket-perm")
+			checkErr(permissionErr)
+			permissionErr = os.Chmod(server.Socket, os.FileMode(socketPerm))
+			checkErr(permissionErr)
 		case server.TLSKey != "" && server.TLSCert != "":
-			cer, err := tls.LoadX509KeyPair(server.TLSCert, server.TLSKey)
-			checkErr(err)
-			listener, err = tls.Listen("tcp", adr, &tls.Config{
+			cer, tlsErr := tls.LoadX509KeyPair(server.TLSCert, server.TLSKey)
+			checkErr(tlsErr)
+			listener, tlsErr = tls.Listen("tcp", adr, &tls.Config{
 				MinVersion:   tls.VersionTLS12,
 				Certificates: []tls.Certificate{cer}},
 			)
-			checkErr(err)
+			checkErr(tlsErr)
 		default:
 			listener, err = net.Listen("tcp", adr)
 			checkErr(err)
@@ -198,7 +198,11 @@ add at least one user with "package-r users add".`,
 		handler, err := apphttp.NewHandler(imgSvc, fileCache, d.store, server, assetsFs, telemetry)
 		checkErr(err)
 
-		defer listener.Close()
+		defer func() {
+			if closeErr := listener.Close(); closeErr != nil && !errors.Is(closeErr, net.ErrClosed) {
+				log.Printf("close listener: %v", closeErr)
+			}
+		}()
 
 		log.Println("Listening on", listener.Addr().String())
 		httpServer := &http.Server{
@@ -234,62 +238,23 @@ func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
 	server, err := st.Settings.GetServer()
 	checkErr(err)
 
-	if val, set := getParamB(flags, "root"); set {
-		server.Root = val
+	for _, binding := range []struct {
+		name        string
+		destination *string
+	}{
+		{"root", &server.Root},
+		{"buckets", &server.Buckets},
+		{"baseurl", &server.BaseURL},
+		{"log", &server.Log},
+		{"log-level", &server.LogLevel},
+		{"token-expiration-time", &server.TokenExpirationTime},
+		{"cors-allowed-origins", &server.CORSAllowedOrigins},
+	} {
+		if value, set := getParamB(flags, binding.name); set {
+			*binding.destination = value
+		}
 	}
-
-	if val, set := getParamB(flags, "buckets"); set {
-		server.Buckets = val
-	}
-
-	if val, set := getParamB(flags, "baseurl"); set {
-		server.BaseURL = val
-	}
-
-	if val, set := getParamB(flags, "log"); set {
-		server.Log = val
-	}
-
-	if val, set := getParamB(flags, "log-level"); set {
-		server.LogLevel = val
-	}
-
-	isSocketSet := false
-	isAddrSet := false
-
-	if val, set := getParamB(flags, "address"); set {
-		server.Address = val
-		isAddrSet = isAddrSet || set
-	}
-
-	if val, set := getParamB(flags, "port"); set {
-		server.Port = val
-		isAddrSet = isAddrSet || set
-	}
-
-	if val, set := getParamB(flags, "key"); set {
-		server.TLSKey = val
-		isAddrSet = isAddrSet || set
-	}
-
-	if val, set := getParamB(flags, "cert"); set {
-		server.TLSCert = val
-		isAddrSet = isAddrSet || set
-	}
-
-	if val, set := getParamB(flags, "socket"); set {
-		server.Socket = val
-		isSocketSet = isSocketSet || set
-	}
-
-	if isAddrSet && isSocketSet {
-		checkErr(errors.New("--socket flag cannot be used with --address, --port, --key nor --cert"))
-	}
-
-	// Do not use saved Socket if address was manually set.
-	if isAddrSet && server.Socket != "" {
-		server.Socket = ""
-	}
+	applyRunAddress(flags, server)
 
 	if disableThumbnails, set := getBoolParam(flags, "disable-thumbnails"); set {
 		server.EnableThumbnails = !disableThumbnails
@@ -307,13 +272,6 @@ func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
 		server.EnableExec = !disableExec
 	}
 
-	if val, set := getParamB(flags, "token-expiration-time"); set {
-		server.TokenExpirationTime = val
-	}
-
-	if val, set := getParamB(flags, "cors-allowed-origins"); set {
-		server.CORSAllowedOrigins = val
-	}
 	if flags.Changed("public-presign-concurrency") {
 		server.PublicPresignConcurrency = mustGetInt(flags, "public-presign-concurrency")
 	}
@@ -322,6 +280,45 @@ func getRunParams(flags *pflag.FlagSet, st *storage.Storage) *settings.Server {
 	}
 
 	return server
+}
+
+func applyRunAddress(flags *pflag.FlagSet, server *settings.Server) {
+	isSocketSet := false
+	isAddrSet := false
+
+	if val, set := getParamB(flags, "address"); set {
+		server.Address = val
+		isAddrSet = true
+	}
+
+	if val, set := getParamB(flags, "port"); set {
+		server.Port = val
+		isAddrSet = true
+	}
+
+	if val, set := getParamB(flags, "key"); set {
+		server.TLSKey = val
+		isAddrSet = true
+	}
+
+	if val, set := getParamB(flags, "cert"); set {
+		server.TLSCert = val
+		isAddrSet = true
+	}
+
+	if val, set := getParamB(flags, "socket"); set {
+		server.Socket = val
+		isSocketSet = true
+	}
+
+	if isAddrSet && isSocketSet {
+		checkErr(errors.New("--socket flag cannot be used with --address, --port, --key nor --cert"))
+	}
+
+	// Do not use saved Socket if address was manually set.
+	if isAddrSet && server.Socket != "" {
+		server.Socket = ""
+	}
 }
 
 func configureRcloneLogLevel(
@@ -337,8 +334,8 @@ func configureRcloneLogLevel(
 // getParamB returns a value and reports whether a flag, environment variable,
 // or configuration file set it. Check flags first because Viper treats a
 // bound flag with a default value as set.
-func getParamB(flags *pflag.FlagSet, key string) (string, bool) {
-	value, _ := flags.GetString(key)
+func getParamB(flags *pflag.FlagSet, key string) (value string, set bool) {
+	value, _ = flags.GetString(key)
 
 	// If set on Flags, use it.
 	if flags.Changed(key) {
@@ -359,7 +356,7 @@ func getParam(flags *pflag.FlagSet, key string) string {
 	return val
 }
 
-func getBoolParam(flags *pflag.FlagSet, key string) (bool, bool) {
+func getBoolParam(flags *pflag.FlagSet, key string) (value, set bool) {
 	value, err := flags.GetBool(key)
 	checkErr(err)
 

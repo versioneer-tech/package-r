@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -192,7 +193,11 @@ func tusPatchHandler() handleFunc {
 			return http.StatusInternalServerError, fmt.Errorf("could not seek file: %w", err)
 		}
 
-		defer r.Body.Close()
+		defer func() {
+			if closeErr := r.Body.Close(); closeErr != nil {
+				log.Print("Cannot close upload request body")
+			}
+		}()
 		bytesWritten, err := io.Copy(openFile, r.Body)
 		if err != nil {
 			return http.StatusInternalServerError, fmt.Errorf("could not write to file: %w", err)

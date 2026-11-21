@@ -1,15 +1,12 @@
 # Run packageR on Kubernetes
 
-The packageR container starts the application directly. Prepare its runtime
-database before the main container starts. The preferred packageR deployment
-model keeps runtime state ephemeral and treats shares like other
-configuration, with an init container creating them during the bootstrap
-phase. An init container and an `emptyDir` volume make this setup explicit:
+The runtime image has no shell. Prepare the database with direct packageR
+commands in separate init containers. They share an `emptyDir` volume:
 
-1. The init container creates a new database, users, and public shares.
+1. The init containers create the database, users, and public shares.
 2. The main container reads the prepared database and starts packageR.
-3. Kubernetes discards the database when it replaces the Pod. The next init
-   container creates it again from the deployment configuration.
+3. Kubernetes discards the database when it replaces the Pod. The new Pod
+   creates it again from the deployment configuration.
 
 Keep passwords and object-storage credentials in Kubernetes Secrets. Prefer a
 workload identity when the object-storage service supports it. Pin the image
@@ -46,39 +43,59 @@ spec:
         runAsGroup: 100
         fsGroup: 100
       initContainers:
-        - name: prepare-database
+        - name: configure
           image: ghcr.io/versioneer-tech/package-r:latest
-          command: ["/bin/sh", "-ec"]
+          command: ["/package-r"]
           args:
-            - |
-              database=/state/package-r.db
-              work_database=/state/package-r.db.new
-              rm -f "$work_database"
-              export PACKAGE_R_DATABASE="$work_database"
-
-              /package-r config init \
-                --address=0.0.0.0 \
-                --root=my-bucket \
-                --stac-browser-url=https://stac-browser.example/external/
-
-              /package-r users add admin "$ADMIN_PASSWORD" \
-                --perm.create=true \
-                --perm.delete=true \
-                --perm.modify=true \
-                --perm.rename=true
-
-              /package-r shares add admin public / \
-                --password="$SHARE_PASSWORD" \
-                --catalog-name=openaerialmap-assets.parquet \
-                --asset-mappings='[{"from":"s3://data/","to":"."}]'
-
-              mv "$work_database" "$database"
+            - config
+            - init
+            - --address=0.0.0.0
+            - --root=my-bucket
+            - --stac-browser-url=https://stac-browser.example/external/
           env:
+            - name: PACKAGE_R_DATABASE
+              value: /state/package-r.db
+          volumeMounts:
+            - name: state
+              mountPath: /state
+        - name: create-admin
+          image: ghcr.io/versioneer-tech/package-r:latest
+          command: ["/package-r"]
+          args:
+            - users
+            - add
+            - admin
+            - $(ADMIN_PASSWORD)
+            - --perm.create=true
+            - --perm.delete=true
+            - --perm.modify=true
+            - --perm.rename=true
+          env:
+            - name: PACKAGE_R_DATABASE
+              value: /state/package-r.db
             - name: ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: package-r-secrets
                   key: admin-password
+          volumeMounts:
+            - name: state
+              mountPath: /state
+        - name: create-share
+          image: ghcr.io/versioneer-tech/package-r:latest
+          command: ["/package-r"]
+          args:
+            - shares
+            - add
+            - admin
+            - public
+            - /
+            - --password=$(SHARE_PASSWORD)
+            - --catalog-name=openaerialmap-assets.parquet
+            - '--asset-mappings=[{"from":"s3://data/","to":"."}]'
+          env:
+            - name: PACKAGE_R_DATABASE
+              value: /state/package-r.db
             - name: SHARE_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -150,10 +167,11 @@ spec:
       targetPort: http
 ```
 
-The main container can update runtime state in the database. These changes
-last for the life of the Pod only. A replacement Pod gets a new database from
-its init container and existing login sessions end. Run one replica because
-each Pod has its own database and session-signing key.
+Kubernetes expands `$(ADMIN_PASSWORD)` and `$(SHARE_PASSWORD)` in the command
+arguments. No shell is needed.
+
+Run one replica because each Pod has its own database and session-signing
+key. Replacing the Pod ends existing login sessions.
 
 An empty `--password` value creates an unprotected share. An empty or omitted
 `--catalog-name` value creates a share without a catalog endpoint. Use a
@@ -161,7 +179,7 @@ relative catalog path inside the shared prefix. Use `--asset-mappings` only
 when catalog asset URLs do not match paths in that share.
 
 Change the bucket, paths, authentication, permissions, and share definitions
-in the init-container command. Do not add bootstrap logic to the main
+in the init-container commands. Do not add bootstrap logic to the main
 container. See [Configuration](configuration.md) for the available settings.
 
 An Ingress normally forwards packageR CORS response headers unchanged. Route

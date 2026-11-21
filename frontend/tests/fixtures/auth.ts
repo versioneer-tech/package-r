@@ -29,11 +29,7 @@ export class AuthPage {
 
 const test = base.extend<{ authPage: AuthPage }>({
   authPage: async ({ page }, use) => {
-    const authPage = new AuthPage(page);
-    await authPage.goto();
-    await authPage.loginAs();
-    await use(authPage);
-    // await authPage.logout();
+    await use(new AuthPage(page));
   },
 });
 

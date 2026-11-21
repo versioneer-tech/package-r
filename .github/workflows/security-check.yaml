@@ -1,0 +1,46 @@
+name: Check candidate security
+
+on:
+  workflow_call:
+    inputs:
+      candidate-id:
+        type: string
+        required: true
+    outputs:
+      artifact-id:
+        value: ${{ jobs.security.outputs.artifact-id }}
+
+jobs:
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10
+      - uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ inputs.candidate-id }}
+          path: dist/candidate
+          merge-multiple: true
+      - uses: actions/cache@v5
+        with:
+          path: build/trivy-cache
+          key: trivy-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: trivy-${{ runner.os }}-
+      - name: Scan candidate and apply security policy
+        run: make security
+      - name: Retain JSON reports and SBOMs
+        id: upload
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/security/
+          retention-days: 90
+          if-no-files-found: error

@@ -1,6 +1,7 @@
 package fileutils
 
 import (
+	"errors"
 	"io"
 	"os"
 	"path"
@@ -32,13 +33,17 @@ func MoveFile(fs afero.Fs, src, dst string) error {
 
 // CopyFile copies a file from source to dest and returns
 // an error if any.
-func CopyFile(fs afero.Fs, source, dest string) error {
+func CopyFile(fs afero.Fs, source, dest string) (err error) {
 	// Open the source file.
 	src, err := fs.Open(source)
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer func() {
+		if closeErr := src.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+	}()
 
 	// Makes the directory needed to create the dst
 	// file.
@@ -64,8 +69,8 @@ func CopyFile(fs afero.Fs, source, dest string) error {
 	if err != nil {
 		return err
 	}
-	if err := dst.Close(); err != nil {
-		return err
+	if closeErr := dst.Close(); closeErr != nil {
+		return closeErr
 	}
 	destinationOpen = false
 

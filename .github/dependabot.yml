@@ -1,0 +1,67 @@
+version: 2
+
+multi-ecosystem-groups:
+  python-tools:
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+
+updates:
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+    groups:
+      go-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+    groups:
+      frontend-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+    groups:
+      hooks:
+        patterns: ["*"]
+
+  # Keep the MkDocs pins in pyproject.toml and docs/requirements.txt together.
+  - package-ecosystem: uv
+    directory: /
+    patterns: ["*"]
+    multi-ecosystem-group: python-tools
+
+  - package-ecosystem: pip
+    directories: [/docs, /tests]
+    patterns: ["*"]
+    multi-ecosystem-group: python-tools

@@ -111,12 +111,16 @@ func handleImagePreview(
 }
 
 func createPreview(imgSvc ImgService, fileCache FileCache,
-	file *files.FileInfo, previewSize PreviewSize) ([]byte, error) {
+	file *files.FileInfo, previewSize PreviewSize) (preview []byte, err error) {
 	fd, err := file.Fs.Open(file.Path)
 	if err != nil {
 		return nil, err
 	}
-	defer fd.Close()
+	defer func() {
+		if closeErr := fd.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+	}()
 
 	var (
 		width   int
@@ -138,8 +142,8 @@ func createPreview(imgSvc ImgService, fileCache FileCache,
 	}
 
 	buf := &bytes.Buffer{}
-	if err := imgSvc.Resize(context.Background(), fd, width, height, buf, options...); err != nil {
-		return nil, err
+	if resizeErr := imgSvc.Resize(context.Background(), fd, width, height, buf, options...); resizeErr != nil {
+		return nil, resizeErr
 	}
 
 	go func() {

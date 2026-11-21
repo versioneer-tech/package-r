@@ -53,7 +53,12 @@ func (f *FileCache) Load(_ context.Context, key string) (value []byte, exist boo
 	if err != nil || !ok {
 		return nil, ok, err
 	}
-	defer r.Close()
+	defer func() {
+		if closeErr := r.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+			exist = false
+		}
+	}()
 
 	value, err = io.ReadAll(r)
 	if err != nil {

@@ -2,8 +2,10 @@ package http
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -43,14 +45,18 @@ var commandsHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *d
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	defer conn.Close()
+	defer func() {
+		if closeErr := conn.Close(); closeErr != nil && !errors.Is(closeErr, net.ErrClosed) {
+			log.Print("Cannot close command connection")
+		}
+	}()
 
 	var raw string
 
 	for {
-		_, msg, err := conn.ReadMessage()
-		if err != nil {
-			wsErr(conn, r, http.StatusInternalServerError, err)
+		_, msg, readErr := conn.ReadMessage()
+		if readErr != nil {
+			wsErr(conn, r, http.StatusInternalServerError, readErr)
 			return 0, nil
 		}
 
@@ -62,15 +68,15 @@ var commandsHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *d
 
 	command, err := runner.ParseCommand(d.settings, raw)
 	if err != nil {
-		if err := conn.WriteMessage(websocket.TextMessage, []byte(err.Error())); err != nil {
-			wsErr(conn, r, http.StatusInternalServerError, err)
+		if writeErr := conn.WriteMessage(websocket.TextMessage, []byte(err.Error())); writeErr != nil {
+			wsErr(conn, r, http.StatusInternalServerError, writeErr)
 		}
 		return 0, nil
 	}
 
 	if !d.server.EnableExec || !d.user.CanExecute(command[0]) {
-		if err := conn.WriteMessage(websocket.TextMessage, cmdNotAllowed); err != nil {
-			wsErr(conn, r, http.StatusInternalServerError, err)
+		if writeErr2 := conn.WriteMessage(websocket.TextMessage, cmdNotAllowed); writeErr2 != nil {
+			wsErr(conn, r, http.StatusInternalServerError, writeErr2)
 		}
 
 		return 0, nil

@@ -193,7 +193,7 @@ func (f *bucketCatalogFS) Chtimes(name string, atime, mtime time.Time) error {
 	return backend.Chtimes(child, atime, mtime)
 }
 
-func (f *bucketCatalogFS) resolve(op, name string) (afero.Fs, string, bool, error) {
+func (f *bucketCatalogFS) resolve(op, name string) (backend afero.Fs, child string, exact bool, err error) {
 	cleaned, err := cleanCatalogPath(name)
 	if err != nil {
 		return nil, "", false, err

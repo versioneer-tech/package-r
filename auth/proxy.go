@@ -83,16 +83,16 @@ func extractUnverifiedClaims(header string) (map[string]interface{}, bool) {
 	return claims, true
 }
 
-func (a ProxyAuth) strictJWTEnabled() bool {
+func (a *ProxyAuth) strictJWTEnabled() bool {
 	return strings.TrimSpace(a.JWTJwksURL) != ""
 }
 
 // UsesUnverifiedClaimMapping reports claim mapping without JWKS validation.
-func (a ProxyAuth) UsesUnverifiedClaimMapping() bool {
+func (a *ProxyAuth) UsesUnverifiedClaimMapping() bool {
 	return strings.HasPrefix(a.Mapper, ".") && !a.strictJWTEnabled()
 }
 
-func (a ProxyAuth) claimName() string {
+func (a *ProxyAuth) claimName() string {
 	return strings.TrimLeft(a.Mapper, ".")
 }
 
@@ -104,7 +104,7 @@ func bearerToken(value string) string {
 	return value
 }
 
-func (a ProxyAuth) allowedJWTAlgorithms() []string {
+func (a *ProxyAuth) allowedJWTAlgorithms() []string {
 	configured := strings.TrimSpace(a.JWTAlgorithms)
 	if configured == "" {
 		return []string{jwt.SigningMethodRS256.Alg()}
@@ -123,7 +123,7 @@ func (a ProxyAuth) allowedJWTAlgorithms() []string {
 	return algorithms
 }
 
-func (a ProxyAuth) clockSkew() (time.Duration, error) {
+func (a *ProxyAuth) clockSkew() (time.Duration, error) {
 	configured := strings.TrimSpace(a.JWTClockSkew)
 	if configured == "" {
 		return time.Minute, nil
@@ -136,7 +136,7 @@ func jwtValidationError(format string, args ...interface{}) (map[string]interfac
 	return nil, false
 }
 
-func (a ProxyAuth) extractVerifiedJWTClaims(header string) (map[string]interface{}, bool) {
+func (a *ProxyAuth) extractVerifiedJWTClaims(header string) (map[string]interface{}, bool) {
 	if strings.Count(header, ".") != 2 {
 		return jwtValidationError("Invalid JWT token shape in proxy auth header")
 	}
@@ -174,7 +174,7 @@ func (a ProxyAuth) extractVerifiedJWTClaims(header string) (map[string]interface
 	return claims, true
 }
 
-func (a ProxyAuth) jwksKeyfunc() jwt.Keyfunc {
+func (a *ProxyAuth) jwksKeyfunc() jwt.Keyfunc {
 	return func(token *jwt.Token) (interface{}, error) {
 		keyID, _ := token.Header["kid"].(string)
 		algorithm, _ := token.Header["alg"].(string)
@@ -186,37 +186,35 @@ func (a ProxyAuth) jwksKeyfunc() jwt.Keyfunc {
 	}
 }
 
-func (a ProxyAuth) rsaPublicKeyFromJWKS(keyID, algorithm string) (*rsa.PublicKey, error) {
+func (a *ProxyAuth) rsaPublicKeyFromJWKS(keyID, algorithm string) (signingKey *rsa.PublicKey, err error) {
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get(a.JWTJwksURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetch JWKS: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("fetch JWKS: status %d", resp.StatusCode)
 	}
 
 	var jwks jwksDocument
-	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
-		return nil, fmt.Errorf("decode JWKS: %w", err)
+	if decodeErr := json.NewDecoder(resp.Body).Decode(&jwks); decodeErr != nil {
+		return nil, fmt.Errorf("decode JWKS: %w", decodeErr)
 	}
 
 	var fallback *rsa.PublicKey
 	for _, key := range jwks.Keys {
-		if key.Kty != "RSA" {
-			continue
-		}
-		if key.Use != "" && key.Use != "sig" {
-			continue
-		}
-		if key.Alg != "" && algorithm != "" && key.Alg != algorithm {
+		if !key.matchesSigningAlgorithm(algorithm) {
 			continue
 		}
 
-		publicKey, err := rsaPublicKeyFromJWK(key)
-		if err != nil {
+		publicKey, keyErr := rsaPublicKeyFromJWK(&key)
+		if keyErr != nil {
 			continue
 		}
 		if keyID == "" && fallback == nil {
@@ -233,7 +231,12 @@ func (a ProxyAuth) rsaPublicKeyFromJWKS(keyID, algorithm string) (*rsa.PublicKey
 	return nil, fmt.Errorf("matching RSA signing key not found")
 }
 
-func rsaPublicKeyFromJWK(key jwkKey) (*rsa.PublicKey, error) {
+func (key *jwkKey) matchesSigningAlgorithm(algorithm string) bool {
+	return key.Kty == "RSA" && (key.Use == "" || key.Use == "sig") &&
+		(key.Alg == "" || algorithm == "" || key.Alg == algorithm)
+}
+
+func rsaPublicKeyFromJWK(key *jwkKey) (*rsa.PublicKey, error) {
 	modulusBytes, err := base64.RawURLEncoding.DecodeString(key.N)
 	if err != nil {
 		return nil, err
@@ -271,7 +274,7 @@ func rsaPublicKeyFromJWK(key jwkKey) (*rsa.PublicKey, error) {
 // case 3: "<static>" #ianything else
 //
 //	returns the static value
-func (a ProxyAuth) Extract(r *http.Request) (string, bool) {
+func (a *ProxyAuth) Extract(r *http.Request) (string, bool) {
 	header := r.Header.Get(a.Header)
 	if header == "" {
 		return "", false
@@ -297,7 +300,7 @@ func (a ProxyAuth) Extract(r *http.Request) (string, bool) {
 }
 
 // Auth authenticates the user via an HTTP header.
-func (a ProxyAuth) Auth(r *http.Request, usr users.Store, setting *settings.Settings, srv *settings.Server) (*users.User, error) {
+func (a *ProxyAuth) Auth(r *http.Request, usr users.Store, setting *settings.Settings, srv *settings.Server) (*users.User, error) {
 	if a.Header == "" {
 		log.Println("Missing auth.header config")
 		return nil, appErrors.ErrInvalidAuthMethod
@@ -317,7 +320,7 @@ func (a ProxyAuth) Auth(r *http.Request, usr users.Store, setting *settings.Sett
 	return user, err
 }
 
-func (a ProxyAuth) createUser(usr users.Store, setting *settings.Settings, username string) (*users.User, error) {
+func (a *ProxyAuth) createUser(usr users.Store, setting *settings.Settings, username string) (*users.User, error) {
 	const passwordSize = 32
 	randomPasswordBytes := make([]byte, passwordSize)
 	_, err := rand.Read(randomPasswordBytes)
@@ -353,6 +356,6 @@ func (a ProxyAuth) createUser(usr users.Store, setting *settings.Settings, usern
 }
 
 // LoginPage tells that proxy auth doesn't require a login page.
-func (a ProxyAuth) LoginPage() bool {
+func (a *ProxyAuth) LoginPage() bool {
 	return false
 }

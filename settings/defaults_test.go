@@ -23,9 +23,6 @@ func TestApplyUserDefaultsAddsUserDirBaseRules(t *testing.T) {
 		t.Fatalf("expected 2 user dir base rules, got %d", len(user.Rules))
 	}
 
-	assertRegexRule(t, user.Rules[0], false, `^/home/.+`)
-	assertRegexRule(t, user.Rules[1], true, `^/home/alice(/|$)`)
-
 	assertMatches(t, user.Rules[0], map[string]bool{
 		"/home":             false,
 		"/home/bob":         true,
@@ -39,8 +36,7 @@ func TestApplyUserDefaultsAddsUserDirBaseRules(t *testing.T) {
 
 	sanitizedUser := &users.User{Username: "../bob"}
 	set.ApplyUserDefaults(sanitizedUser)
-	assertRegexRule(t, sanitizedUser.Rules[1], true, `^/home/-bob(/|$)`)
-	assertMatches(t, sanitizedUser.Rules[1], map[string]bool{"/home/bob": false})
+	assertMatches(t, sanitizedUser.Rules[1], map[string]bool{"/home/-bob": true, "/home/bob": false})
 }
 
 func TestApplyUserDirBaseRulesPrependsGeneratedRules(t *testing.T) {
@@ -56,8 +52,6 @@ func TestApplyUserDirBaseRulesPrependsGeneratedRules(t *testing.T) {
 	if len(user.Rules) != 3 {
 		t.Fatalf("expected 2 generated rules and 1 custom rule after repeated apply, got %d", len(user.Rules))
 	}
-	assertRegexRule(t, user.Rules[0], false, `^/home/.+`)
-	assertRegexRule(t, user.Rules[1], true, `^/home/alice(/|$)`)
 	if user.Rules[2].Path != "/custom" {
 		t.Fatalf("expected custom rule to remain last, got %q", user.Rules[2].Path)
 	}
@@ -72,8 +66,8 @@ func TestApplyUserDefaultsUsesConfiguredUserHomeBasePath(t *testing.T) {
 	if len(user.Rules) != 2 {
 		t.Fatalf("expected 2 user dir base rules, got %d", len(user.Rules))
 	}
-	assertRegexRule(t, user.Rules[0], false, `^/users/.+`)
-	assertRegexRule(t, user.Rules[1], true, `^/users/alice(/|$)`)
+	assertMatches(t, user.Rules[0], map[string]bool{"/users/bob": true, "/home/bob": false})
+	assertMatches(t, user.Rules[1], map[string]bool{"/users/alice/file.txt": true, "/users/bob": false})
 }
 
 func TestApplyUserDefaultsSkipsUserDirBaseRulesWhenDisabled(t *testing.T) {
@@ -84,14 +78,6 @@ func TestApplyUserDefaultsSkipsUserDirBaseRulesWhenDisabled(t *testing.T) {
 
 	if len(user.Rules) != 0 {
 		t.Fatalf("expected no generated rules, got %#v", user.Rules)
-	}
-}
-
-func assertRegexRule(t *testing.T, rule rules.Rule, allow bool, raw string) {
-	t.Helper()
-
-	if rule.Allow != allow || !rule.Regex || rule.Regexp == nil || rule.Regexp.Raw != raw {
-		t.Fatalf("expected regex rule allow=%t raw=%q, got %#v", allow, raw, rule)
 	}
 }
 

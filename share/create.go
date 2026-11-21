@@ -23,7 +23,7 @@ type LinkOptions struct {
 	UserID uint
 }
 
-func NewLink(body CreateBody, opts LinkOptions) (*Link, error) {
+func NewLink(body *CreateBody, opts LinkOptions) (*Link, error) {
 	hash, err := resolveHash(body.Hash)
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func invalidExpiration(value string) error {
 	return fmt.Errorf("invalid expiration %q: use <number>d, <number>m, <number>H, or <number>y", value)
 }
 
-func getPasswordAuth(password string) (string, string, error) {
+func getPasswordAuth(password string) (passwordHash, token string, authErr error) {
 	if password == "" {
 		return "", "", nil
 	}

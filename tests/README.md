@@ -1,150 +1,101 @@
-# Test strategy
+# Tests
 
-packageR has Go unit tests, API integration tests, and browser tests. Lint,
-type checks, documentation builds, and release builds are separate checks.
+Run tests from the repository root. Go tests need a C compiler for DuckDB.
+Integration and browser tests use a temporary copy of `tests/data`, local
+rclone S3, and synthetic credentials. They do not use cloud accounts.
+
+| Command | Scope | CI |
+| --- | --- | --- |
+| `make test-unit` | Go unit tests | Yes |
+| `make test-race` | Race detection in authentication, cache, HTTP, logging, metrics, and rclone storage code | Yes |
+| `make test-tooling` | Secret scan boundaries and release security gates | Yes |
+| `make test-integration` | API operations through local rclone S3 | Yes |
+| `make test-frontend` | Playwright Chromium browser tests | No |
+| `make test-presign-load` | Timed public presign workloads | No |
+
+`make test` checks tools, then runs unit, API integration, and browser tests
+in that order. Use `make test-check` to check its prerequisites alone.
+Lint, documentation, build, and vulnerability checks are separate commands.
+See [release security checks](../SECURITY.md#release-checks) for
+`make vulncheck` and Trivy.
 
 ## Sentinel-2 fixture
 
-The integration and browser tests use a generated fixture that is
-excluded from Git. Before you run these tests, generate it with:
+API integration and browser tests need the generated Vienna fixture. Create
+it once:
 
 ```bash
-uv run \
-  --with pystac-client --with pystac --with requests \
-  --with stac-geoparquet --with pyarrow --with geopandas --with rasterio \
+uv run --no-project --with-requirements tests/requirements.txt \
   python scripts/download_sentinel2.py
 ```
 
-This command downloads approximately 150 MB of data clipped to Vienna. It
-selects scenes from February, May, and August 2026 in the Earth Search
-Sentinel-2 Collection 1 Level-2A catalog. It also downloads Vienna district
-boundaries from City of Vienna Open Government Data and dissolves them into a
-single city boundary.
+The script needs network access and writes `tests/data/vienna-s2l2a-26`.
+See the [catalog guide](../docs/how-to-guides/share-and-preview-data.md#publish-a-stac-compatible-parquet-catalog)
+for the source data and format.
 
-## Unit tests
+## Go unit and race tests
 
-Go unit tests are next to the packages that they test. They use temporary
-directories, memory filesystems, and small test doubles. They do not use
-external services.
-
-Run all unit tests:
-
-```bash
-make test-unit
-```
-
-#### Current public presign baseline
-
-`TestPublicSharePresignConcurrentHierarchy` is the synthetic baseline for
-concurrent password-protected public-share presign requests. Both workloads
-start downloads at deterministic random times from `t0` through `t0+30s` and
-must finish within 31 seconds. `w1000` sends 1,000 requests, and `w10000` sends
-10,000 requests. The test uses a real bcrypt password hash, a 20 ms simulated
-public-link operation, one warm-up request, and a 25 ms client retry delay after
-an HTTP 429 response. The warm-up also populates the successful-password cache.
-Client request counts and overall durations include retries.
-
-| Workload | Presign limit | Downloads | Client requests | HTTP 429 | Errors | Maximum active | Overall duration | Presign minimum | Presign average | Presign maximum |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `w1000` | 32 | 1,000 | 1,000 | 0 | 0 | 5 | 29.98 s | 20.16 ms | 20.92 ms | 31.31 ms |
-| `w10000` | 32 | 10,000 | 10,000 | 0 | 0 | 19 | 30.02 s | 20.03 ms | 20.78 ms | 31.31 ms |
-| `w1000` | 8 | 1,000 | 1,000 | 0 | 0 | 5 | 30.01 s | 20.11 ms | 21.15 ms | 51.53 ms |
-| `w10000` | 8 | 10,000 | 37,642 | 27,642 | 0 | 8 | 30.10 s | 20.04 ms | 20.82 ms | 71.51 ms |
-
-With limit 32, both workloads complete without retries. With limit 8, `w1000`
-also completes without retries. `w10000` receives 27,642 HTTP 429 responses and
-retries them. All downloads finish within 31 seconds, and no request fails.
-
-Run only this baseline with:
-
-```bash
-go test ./http -run '^TestPublicSharePresignConcurrentHierarchy$' -count=1 -v
-```
-
-Use a unit test when you can check behavior at a package boundary.
+`make test-race` runs the selected packages with `-race` and CGO enabled.
+It includes the public presign concurrency limit and password-cache tests.
+The timed load test is separate so host load does not affect unit or race
+results.
 
 ## API integration tests
 
-The integration harness is `tests/integration/run.bash`. It starts `rclone
-serve s3` and packageR on loopback addresses. packageR reads the test bucket
-with its embedded rclone VFS. The test uses `PACKAGE_R_ROOT=/` and an explicit
-`PACKAGE_R_BUCKETS` catalog to check service-root navigation without bucket
-discovery.
+`tests/integration/run.bash` starts rclone 1.74 or newer and packageR on
+loopback addresses. Set `RCLONE_BIN` if rclone is not on `PATH`. The Make
+target supplies the pinned STAC validator through uv when needed.
 
-The harness copies `tests/data` to a temporary bucket and does not change the
-source files. It checks:
+The harness checks:
 
-- user, settings, and sign-up management HTTP APIs are unavailable
-- `GET /api/shares` returns safe links, while share-management writes are
-  unavailable
-- S3 service-root and bucket listings work through the VFS
-- create, copy, rename, presigned read, and delete operations work
-- a two-chunk TUS upload works through the VFS write cache
-- TUS accepts `HEAD` and rejects its old `GET` alias
-- aborting a TUS upload removes its partial object
-- authenticated presigned URLs work without proxy-download audit records
-- password-protected public presigned URLs and temporary-token redirects work
-- runtime share creation is unavailable
-- public catalogs load through the VFS with the GeoJSON media type
-- the live catalog endpoint passes STAC 1.1 validation
-- catalog Collection and Item metadata and links are correct
-- explicit catalog asset mappings return the expected object
-- Prometheus metrics expose HTTP, authentication, upload, presign, rclone, and
-  VFS values without object paths
-- generated users can read and write their own home
-- generated users cannot read or write a sibling home
+- user, settings, sign-up, and share-management APIs are unavailable
+- the share list exposes safe links within the user's scope
+- service-root and bucket listings work with an explicit bucket catalog
+- create, copy, rename, delete, and presigned reads work through rclone VFS
+- TUS uploads can resume and abort, and use `HEAD` for offsets
+- public shares support passwords, temporary tokens, and presigned URLs
+- catalog routes return valid STAC Collections, Items, and mapped assets
+- metrics omit object paths
+- generated homes permit access to the owner's files and deny sibling homes
 
-Run the test with rclone 1.74 or newer:
-
-```bash
-make test-integration
-```
-
-Set `RCLONE_BIN` when rclone is not on `PATH`. The test uses fixed credentials
-and does not need cloud access. If `stac-check` is not on `PATH`, the Make
-target runs the pinned validator with `uv`.
-
-Use an integration test for behavior that needs rclone VFS, the S3 protocol,
-presigned URLs, or several API operations.
+The API harness selects free ports, waits for readiness, and stops its own
+processes. Both harnesses preserve the source fixture.
 
 ## Browser tests
 
-Browser tests use Playwright and Chromium. They start rclone, packageR, and
-Vite on loopback addresses. They cover login, personal settings, the read-only
-share list, public shares, previews, and other user workflows.
-
-To test opening generated STAC Browser links on localhost, make an existing
-[STAC Browser](https://github.com/radiantearth/stac-browser) checkout available,
-for example at `~/stac-browser`.
-
-```bash
-pnpm --prefix ~/stac-browser install
-pnpm --prefix ~/stac-browser start
-```
-
-The server listens on `http://localhost:8080`. Configure packageR with
-`http://localhost:8080/external/` as its STAC Browser URL. This local server is
-required for a manual end-to-end preview test because an HTTPS page cannot read
-the HTTP packageR endpoint on localhost.
-
-Install the Chromium runtime once, then run the suite:
+Playwright starts rclone, packageR, and Vite on loopback addresses. Tests
+cover login, settings, the share list, public shares, previews, and navigation.
+Install Chromium once:
 
 ```bash
 cd frontend
+pnpm install --frozen-lockfile
 pnpm exec playwright install chromium
 cd ..
 make test-frontend
 ```
 
-Use Playwright only for behavior that a user can see or control. Test backend
-rules with Go unit or API integration tests.
-
-## Run all tests
+Browser tests use a temporary config path and require their own servers. They
+refuse to reuse a running server. The default ports are `8888` for packageR
+and `5173` for Vite. If either port is in use, select free ports:
 
 ```bash
-make test
+PACKAGE_R_PORT=18888 PLAYWRIGHT_FRONTEND_PORT=15173 make test-frontend
 ```
 
-This command checks the required tools before it starts the tests. Run
-`make test-check` to check the tools without running tests. Use a focused
-target when you change only one part of the application.
+The screenshot tests maintain the images used by the documentation.
+
+For a manual STAC Browser preview, follow the
+[local browser setup](../docs/how-to-guides/share-and-preview-data.md#publish-a-stac-compatible-parquet-catalog).
+The automated tests do not require a separate STAC Browser checkout.
+
+## Presign load test
+
+`make test-presign-load` enables the `loadtest` build tag. It runs 1,000 and
+10,000 password-protected public presign requests with concurrency limits
+of 32 and 8. Request start times are spread across 30 seconds. A simulated
+object-store operation takes 20 ms; HTTP 429 responses retry after 25 ms.
+
+Run this test alone on an idle host. Each workload must finish within
+31 seconds without failed requests. The output reports latency, retries,
+and maximum active requests.

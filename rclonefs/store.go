@@ -91,7 +91,7 @@ func (s *userStore) setFileSystem(user *users.User) error {
 			}
 		}
 	}
-	userScope := filepath.Join("/", user.Scope)
+	userScope := filepath.Join(string(filepath.Separator), user.Scope)
 	rcloneAfero := newScopeFS(base, userScope)
 	user.Fs = afero.NewBasePathFs(rcloneAfero, userScope)
 	return nil

@@ -278,12 +278,16 @@ func TestService_Resize(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			svc := New(1)
 			source := test.source(t)
-			defer source.Close()
+			defer func() {
+				if closeErr := source.Close(); closeErr != nil {
+					t.Error(closeErr)
+				}
+			}()
 
 			buf := &bytes.Buffer{}
 			err := svc.Resize(context.Background(), source, test.width, test.height, buf, test.options...)
 			if (err != nil) != test.wantErr {
-				t.Fatalf("GetMarketSpecs() error = %v, wantErr %v", err, test.wantErr)
+				t.Fatalf("Resize() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if err != nil {
 				return

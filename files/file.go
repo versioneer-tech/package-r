@@ -81,8 +81,8 @@ func NewFileInfo(opts *FileOptions) (*FileInfo, error) {
 
 	if opts.Expand {
 		if file.IsDir {
-			if err := file.readListing(opts.Checker, opts.ReadHeader); err != nil {
-				return nil, err
+			if listingErr := file.readListing(opts.Checker, opts.ReadHeader); listingErr != nil {
+				return nil, listingErr
 			}
 			return file, nil
 		}
@@ -157,7 +157,7 @@ func stat(opts *FileOptions) (*FileInfo, error) {
 
 // Checksum checksums a given File for a given User, using a specific
 // algorithm. The checksums data is saved on File object.
-func (i *FileInfo) Checksum(algo string) error {
+func (i *FileInfo) Checksum(algo string) (err error) {
 	if i.IsDir {
 		return appErrors.ErrIsDirectory
 	}
@@ -170,7 +170,11 @@ func (i *FileInfo) Checksum(algo string) error {
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer func() {
+		if closeErr := reader.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+	}()
 
 	var h hash.Hash
 
@@ -293,26 +297,27 @@ func (i *FileInfo) detectType(modify, saveContent, readHeader bool) error {
 		i.Type = "parquet"
 		return nil
 	case IsMimeText(mimetype) && i.Size <= 10*1024*1024: // 10 MB
-		i.Type = "text"
-
-		if !modify {
-			i.Type = "textImmutable"
-		}
-
-		if saveContent {
-			afs := &afero.Afero{Fs: i.Fs}
-			content, err := afs.ReadFile(i.Path)
-			if err != nil {
-				return err
-			}
-
-			i.Content = string(content)
-		}
-		return nil
+		return i.readText(modify, saveContent)
 	default:
 		i.Type = "blob"
 	}
 
+	return nil
+}
+
+func (i *FileInfo) readText(modify, saveContent bool) error {
+	i.Type = "text"
+	if !modify {
+		i.Type = "textImmutable"
+	}
+	if saveContent {
+		afs := &afero.Afero{Fs: i.Fs}
+		content, err := afs.ReadFile(i.Path)
+		if err != nil {
+			return err
+		}
+		i.Content = string(content)
+	}
 	return nil
 }
 
@@ -349,7 +354,11 @@ func (i *FileInfo) readFirstBytes() []byte {
 		i.Type = "blob"
 		return nil
 	}
-	defer reader.Close()
+	defer func() {
+		if closeErr := reader.Close(); closeErr != nil {
+			log.Printf("close input file: %v", closeErr)
+		}
+	}()
 
 	buffer := make([]byte, 512)
 	n, err := reader.Read(buffer)

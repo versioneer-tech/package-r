@@ -171,12 +171,9 @@ func (s *Service) Resize(ctx context.Context, in io.Reader, width, height int, o
 		return err
 	}
 
-	switch config.resizeMode {
-	case ResizeModeFill:
+	if config.resizeMode == ResizeModeFill {
 		img = imaging.Fill(img, width, height, imaging.Center, config.quality.resampleFilter())
-	case ResizeModeFit:
-		fallthrough
-	default:
+	} else {
 		img = imaging.Fit(img, width, height, config.quality.resampleFilter())
 	}
 

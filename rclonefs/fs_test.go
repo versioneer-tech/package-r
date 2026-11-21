@@ -30,17 +30,17 @@ func TestAferoAdapterBrowseReadAndWrite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := io.WriteString(file, "object data"); err != nil {
-		t.Fatal(err)
+	if _, writeErr := file.WriteString("object data"); writeErr != nil {
+		t.Fatal(writeErr)
 	}
-	if info, err := file.Stat(); err != nil || info.Size() != int64(len("object data")) {
-		t.Fatalf("unexpected open-file stat: info=%v err=%v", info, err)
+	if info, statErr := file.Stat(); statErr != nil || info.Size() != int64(len("object data")) {
+		t.Fatalf("unexpected open-file stat: info=%v err=%v", info, statErr)
 	}
 	if got := file.Name(); got != "/reports/2026/data.txt" {
 		t.Fatalf("unexpected scoped file name %q", got)
 	}
-	if err := file.Close(); err != nil {
-		t.Fatal(err)
+	if closeErr := file.Close(); closeErr != nil {
+		t.Fatal(closeErr)
 	}
 
 	data, err := afero.ReadFile(userFS, "/reports/2026/data.txt")
@@ -55,15 +55,15 @@ func TestAferoAdapterBrowseReadAndWrite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := opened.Seek(7, io.SeekStart); err != nil {
-		t.Fatal(err)
+	if _, localErr := opened.Seek(7, io.SeekStart); localErr != nil {
+		t.Fatal(localErr)
 	}
 	tail, err := io.ReadAll(opened)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := opened.Close(); err != nil {
-		t.Fatal(err)
+	if closeErr2 := opened.Close(); closeErr2 != nil {
+		t.Fatal(closeErr2)
 	}
 	if string(tail) != "data" {
 		t.Fatalf("unexpected seek result %q", tail)

@@ -201,7 +201,10 @@ mkdir -p "$XDG_CACHE_HOME"
 
 build_backend_if_needed "$package_r_bin" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
 
-"$package_r_bin" config init \
+# Use a temporary config path to isolate the test from user settings.
+package_r=("$package_r_bin" --config "$tmp_dir/package-r.yaml")
+
+"${package_r[@]}" config init \
   --address="$PACKAGE_R_ADDRESS" \
   --port="$PACKAGE_R_PORT" \
   --root="$PACKAGE_R_ROOT" \
@@ -214,29 +217,29 @@ build_backend_if_needed "$package_r_bin" "${PACKAGE_R_PLAYWRIGHT_BUILD:-auto}"
   --perm.modify=true \
   --perm.rename=true \
   >"$backend_log" 2>&1
-"$package_r_bin" users add admin my-password \
+"${package_r[@]}" users add admin my-password \
   --perm.create=true \
   --perm.delete=true \
   --perm.modify=true \
   --perm.rename=true \
   >>"$backend_log" 2>&1
-"$package_r_bin" shares add admin vienna-s2l2a-26 /vienna-s2l2a-26 \
+"${package_r[@]}" shares add admin vienna-s2l2a-26 /vienna-s2l2a-26 \
   --catalog-name=vienna-s2l2a-26.parquet \
   >>"$backend_log" 2>&1
-"$package_r_bin" shares add admin protected-share \
+"${package_r[@]}" shares add admin protected-share \
   /vienna-s2l2a-26/S2B_T33UXP_20260218T100524_L2A \
   --password=my-share-password \
   >>"$backend_log" 2>&1
-"$package_r_bin" shares add admin sample-share /sample-files \
+"${package_r[@]}" shares add admin sample-share /sample-files \
   >>"$backend_log" 2>&1
-"$package_r_bin" shares add admin image-share /sample-files/sample.jpg \
+"${package_r[@]}" shares add admin image-share /sample-files/sample.jpg \
   >>"$backend_log" 2>&1
-"$package_r_bin" shares add admin text-share /sample-files/sample.txt \
+"${package_r[@]}" shares add admin text-share /sample-files/sample.txt \
   >>"$backend_log" 2>&1
-"$package_r_bin" shares add admin json-share /sample-files/sample.json \
+"${package_r[@]}" shares add admin json-share /sample-files/sample.json \
   >>"$backend_log" 2>&1
 
-"$package_r_bin" >>"$backend_log" 2>&1 &
+"${package_r[@]}" >>"$backend_log" 2>&1 &
 server_pid=$!
 wait_for_backend
 wait "$server_pid"

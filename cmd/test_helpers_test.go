@@ -42,7 +42,7 @@ func runPackageRCommandResult(t *testing.T, args ...string) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
-func newConfigTestDB(t *testing.T) (dbPath string, configPath string, rootPath string) {
+func newConfigTestDB(t *testing.T) (dbPath, configPath, rootPath string) {
 	t.Helper()
 
 	dir := t.TempDir()

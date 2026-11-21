@@ -115,7 +115,7 @@ func (m *Manager) fileSystem() (afero.Fs, error) {
 			bucketConfig := config
 			bucketConfig.SetBuckets("")
 			bucketConfig.SetRoot(bucket)
-			fileSystem, err := m.fileSystemLocked(bucketConfig)
+			fileSystem, err := m.fileSystemLocked(&bucketConfig)
 			if err != nil {
 				return nil, err
 			}
@@ -129,7 +129,7 @@ func (m *Manager) fileSystem() (afero.Fs, error) {
 		return catalog, nil
 	}
 
-	fileSystem, err := m.fileSystemLocked(config)
+	fileSystem, err := m.fileSystemLocked(&config)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +137,8 @@ func (m *Manager) fileSystem() (afero.Fs, error) {
 	return fileSystem, nil
 }
 
-func (m *Manager) fileSystemLocked(config objectstorage.Config) (*FS, error) {
-	if fileSystem, ok := m.files[config]; ok {
+func (m *Manager) fileSystemLocked(config *objectstorage.Config) (*FS, error) {
+	if fileSystem, ok := m.files[*config]; ok {
 		return fileSystem, nil
 	}
 	m.nextID++
@@ -147,7 +147,7 @@ func (m *Manager) fileSystemLocked(config objectstorage.Config) (*FS, error) {
 	if err != nil {
 		return nil, err
 	}
-	m.files[config] = fileSystem
+	m.files[*config] = fileSystem
 	return fileSystem, nil
 }
 
@@ -168,7 +168,7 @@ func (m *Manager) Close() error {
 }
 
 // NewS3 creates an afero adapter at the S3 service root or one bucket.
-func NewS3(ctx context.Context, name string, config objectstorage.Config) (*FS, error) {
+func NewS3(ctx context.Context, name string, config *objectstorage.Config) (*FS, error) {
 	if err := config.ValidateFilesystem(); err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func newRcloneContext(ctx context.Context) (context.Context, error) {
 	return ctx, nil
 }
 
-func s3ConfigValues(config objectstorage.Config) configmap.Simple {
+func s3ConfigValues(config *objectstorage.Config) configmap.Simple {
 	provider := "AWS"
 	if config.Endpoint != "" {
 		provider = "Other"
@@ -244,7 +244,7 @@ func (d optionDefaults) Get(key string) (string, bool) {
 	if option == nil {
 		return "", false
 	}
-	copy := option.Copy()
-	copy.Value = nil
-	return copy.String(), true
+	clonedOption := option.Copy()
+	clonedOption.Value = nil
+	return clonedOption.String(), true
 }

@@ -18,7 +18,7 @@ const defaultSTACVersion = "1.1.0"
 
 func tryParseJSON(val interface{}) interface{} {
 	s, ok := val.(string)
-	if !ok || len(s) == 0 || (s[0] != '{' && s[0] != '[') {
+	if !ok || s == "" || (s[0] != '{' && s[0] != '[') {
 		return val
 	}
 	var parsed interface{}
@@ -417,8 +417,8 @@ func collectionSTACVersion(result map[string]interface{}, items []map[string]int
 	return defaultSTACVersion
 }
 
-func collectionExtent(items []map[string]interface{}) ([]float64, []interface{}) {
-	spatial := []float64{-180, -90, 180, 90}
+func collectionExtent(items []map[string]interface{}) (spatial []float64, temporal []interface{}) {
+	spatial = []float64{-180, -90, 180, 90}
 	var minTime, maxTime time.Time
 	hasSpatial := false
 
@@ -450,7 +450,7 @@ func collectionExtent(items []map[string]interface{}) ([]float64, []interface{})
 		}
 	}
 
-	temporal := []interface{}{nil, nil}
+	temporal = []interface{}{nil, nil}
 	if !minTime.IsZero() {
 		temporal[0] = minTime.Format(time.RFC3339Nano)
 	}
@@ -492,7 +492,7 @@ func numericBBox(value interface{}) ([]float64, bool) {
 }
 
 //nolint:gocyclo
-func QueryCatalogParquet(ctx context.Context, options QueryOptions) (result map[string]interface{}, err error) {
+func QueryCatalogParquet(ctx context.Context, options *QueryOptions) (result map[string]interface{}, err error) {
 	started := time.Now()
 	defer func() {
 		elapsed := time.Since(started)
@@ -518,7 +518,11 @@ FROM read_parquet(?)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer func() {
+		if closeErr := conn.Close(); closeErr != nil {
+			err = errors.Join(err, errors.New("close catalog connection: "+redactCatalogURL(closeErr.Error(), options.CatalogURL)))
+		}
+	}()
 
 	queryStarted := time.Now()
 	rows, err := conn.QueryContext(ctx, query, args...)
@@ -539,7 +543,11 @@ FROM read_parquet(?)
 		"duckdb execute-query duration=%s error=<nil>",
 		queryElapsed,
 	)
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			err = errors.Join(err, errors.New("close catalog rows: "+redactCatalogURL(closeErr.Error(), options.CatalogURL)))
+		}
+	}()
 
 	cols, err := rows.Columns()
 	if err != nil {
@@ -587,7 +595,7 @@ FROM read_parquet(?)
 			delete(entry, "bbox")
 		}
 
-		if geomStr, ok := entry["geometry"].(string); ok && (len(geomStr) > 0 && geomStr[0] == '{') {
+		if geomStr, ok := entry["geometry"].(string); ok && (geomStr != "" && geomStr[0] == '{') {
 			var geomObj map[string]interface{}
 			if err := json.Unmarshal([]byte(geomStr), &geomObj); err == nil {
 				entry["geometry"] = geomObj

@@ -31,14 +31,14 @@ func TestConfigInitStoresBucketCatalog(t *testing.T) {
 		"--database", dbPath,
 		"config", "init",
 		"--root", rootPath,
-		"--buckets=xyz-data,xyz-archive",
+		"--buckets=test-data,test-archive",
 	)
 
 	server, err := openTestStorage(t, dbPath).Settings.GetServer()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if server.Buckets != "xyz-data,xyz-archive" {
+	if server.Buckets != "test-data,test-archive" {
 		t.Fatalf("unexpected bucket catalog %q", server.Buckets)
 	}
 }

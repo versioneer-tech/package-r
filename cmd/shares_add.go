@@ -54,7 +54,7 @@ var sharesAddCmd = &cobra.Command{
 			UserID: owner.ID,
 		}
 
-		link, err := share.NewLink(body, opts)
+		link, err := share.NewLink(&body, opts)
 		checkErr(err)
 
 		existingByHash, err := d.store.Share.GetByHash(args[1])

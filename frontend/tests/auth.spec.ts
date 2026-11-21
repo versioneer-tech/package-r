@@ -32,9 +32,9 @@ test("login supports browser password managers", async ({ authPage, page }) => {
         store: async (credential: TestPasswordCredential) => {
           (
             window as typeof window & {
-              xyzStoredCredential?: { id: string; password: string };
+              testStoredCredential?: { id: string; password: string };
             }
-          ).xyzStoredCredential = {
+          ).testStoredCredential = {
             id: credential.id,
             password: credential.password,
           };
@@ -64,9 +64,9 @@ test("login supports browser password managers", async ({ authPage, page }) => {
         () =>
           (
             window as typeof window & {
-              xyzStoredCredential?: { id: string; password: string };
+              testStoredCredential?: { id: string; password: string };
             }
-          ).xyzStoredCredential
+          ).testStoredCredential
       )
     )
     .toEqual({ id: "admin", password: "my-password" });

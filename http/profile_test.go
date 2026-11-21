@@ -43,31 +43,16 @@ func TestProfilePatchUpdatesOnlyTheAuthenticatedUserPreferences(t *testing.T) {
 	}
 }
 
-func TestProfilePatchRejectsUserManagementFields(t *testing.T) {
-	root, store, user := newPresignTestStorage(t)
-	token := newTestAuthToken(t, store, user)
-	handler := handle(profilePatchHandler, "", store, &settings.Server{Root: root})
-	req := httptest.NewRequest(http.MethodPatch, "http://localhost:8888/api/profile", strings.NewReader(`{
-		"perm":{"create":true}
-	}`))
-	req.Header.Set("X-Auth", token)
-	recorder := httptest.NewRecorder()
-
-	handler.ServeHTTP(recorder, req)
-	if recorder.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d", recorder.Code)
-	}
-}
-
-func TestProfilePatchRejectsInvalidPreferences(t *testing.T) {
+func TestProfilePatchRejectsInvalidUpdatesWithoutStoringChanges(t *testing.T) {
 	root, store, user := newPresignTestStorage(t)
 	token := newTestAuthToken(t, store, user)
 	handler := handle(profilePatchHandler, "", store, &settings.Server{Root: root})
 
 	for name, body := range map[string]string{
-		"empty":        `{}`,
-		"view mode":    `{"viewMode":"tiles"}`,
-		"sorting mode": `{"sorting":{"by":"random","asc":true}}`,
+		"empty":           `{}`,
+		"view mode":       `{"locale":"de","viewMode":"tiles"}`,
+		"sorting mode":    `{"locale":"de","sorting":{"by":"random","asc":true}}`,
+		"user management": `{"locale":"de","perm":{"create":true}}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPatch, "http://localhost:8888/api/profile", strings.NewReader(body))
@@ -77,6 +62,13 @@ func TestProfilePatchRejectsInvalidPreferences(t *testing.T) {
 			handler.ServeHTTP(recorder, req)
 			if recorder.Code != http.StatusBadRequest {
 				t.Fatalf("expected status 400, got %d", recorder.Code)
+			}
+			stored, err := store.Users.Get(root, user.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if stored.Locale != user.Locale || stored.Perm != user.Perm {
+				t.Fatal("rejected update changed stored preferences or permissions")
 			}
 		})
 	}

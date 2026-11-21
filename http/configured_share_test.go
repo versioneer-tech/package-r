@@ -13,16 +13,16 @@ import (
 
 func TestConfiguredShareGetsReturnsSafeLinksForUserScope(t *testing.T) {
 	_, store, user := newPresignTestStorage(t)
-	user.Scope = "/team/xyz"
+	user.Scope = "/team/alice"
 	if err := store.Users.Update(user, "Scope"); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Share.Save(&share.Link{
-		Hash:        "xyz-share",
-		Path:        "/team/xyz/public",
+		Hash:        "test-share",
+		Path:        "/team/alice/public",
 		UserID:      user.ID,
 		Description: "configured share",
-		CatalogURL:  "/team/xyz/public/catalog.parquet",
+		CatalogURL:  "/team/alice/public/catalog.parquet",
 		AssetMappings: []share.CatalogAssetMapping{{
 			From: "s3://data/",
 			To:   ".",
@@ -62,11 +62,11 @@ func TestConfiguredShareGetsReturnsSafeLinksForUserScope(t *testing.T) {
 	if len(links) != 1 {
 		t.Fatalf("expected one configured share, got %d", len(links))
 	}
-	if links[0].Hash != "xyz-share" || links[0].URL != "/share/xyz-share/" {
+	if links[0].Hash != "test-share" || links[0].URL != "/share/test-share/" {
 		t.Fatalf("unexpected configured share: %#v", links[0])
 	}
-	if links[0].Source != "my-bucket" || links[0].Path != "/team/xyz/public" ||
-		links[0].Catalog != "/team/xyz/public/catalog.parquet" ||
+	if links[0].Source != "my-bucket" || links[0].Path != "/team/alice/public" ||
+		links[0].Catalog != "/team/alice/public/catalog.parquet" ||
 		len(links[0].AssetMappings) != 1 || !links[0].PasswordProtected {
 		t.Fatalf("configured share fields are missing: %#v", links[0])
 	}
@@ -74,11 +74,11 @@ func TestConfiguredShareGetsReturnsSafeLinksForUserScope(t *testing.T) {
 
 func TestConfiguredSharesForUserAppliesRules(t *testing.T) {
 	links := []*share.Link{
-		{Hash: "allowed", Path: "/team/xyz/public"},
-		{Hash: "denied", Path: "/team/xyz/private"},
+		{Hash: "allowed", Path: "/team/alice/public"},
+		{Hash: "denied", Path: "/team/alice/private"},
 	}
 
-	configured := configuredSharesForUser(links, "my-bucket", "/team/xyz", func(requestPath string) bool {
+	configured := configuredSharesForUser(links, "my-bucket", "/team/alice", func(requestPath string) bool {
 		return requestPath != "/private"
 	})
 	if len(configured) != 1 || configured[0].Hash != "allowed" {

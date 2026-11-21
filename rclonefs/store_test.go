@@ -30,9 +30,6 @@ func TestWrappedStoreAppliesContainedBasePath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := user.Fs.(*afero.BasePathFs); !ok {
-		t.Fatalf("expected BasePathFs, got %T", user.Fs)
-	}
 	data, err := afero.ReadFile(user.Fs, "/report.txt")
 	if err != nil {
 		t.Fatal(err)
@@ -57,6 +54,9 @@ func TestWrappedStoreAppliesContainedBasePath(t *testing.T) {
 func TestWrappedStoreSupportsNestedShareScopeAndGets(t *testing.T) {
 	base := afero.NewMemMapFs()
 	if err := afero.WriteFile(base, "/team/alice/shared/note.txt", []byte("note"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := afero.WriteFile(base, "/team/bob/shared/note.txt", []byte("bob note"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	original := &fakeUserStore{
@@ -86,8 +86,10 @@ func TestWrappedStoreSupportsNestedShareScopeAndGets(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, item := range all {
-		if _, ok := item.Fs.(*afero.BasePathFs); !ok {
-			t.Fatalf("expected user %d to have BasePathFs, got %T", item.ID, item.Fs)
+		content, readErr := afero.ReadFile(item.Fs, "/shared/note.txt")
+		want := map[string]string{"alice": "note", "bob": "bob note"}[item.Username]
+		if readErr != nil || string(content) != want {
+			t.Fatalf("user %s read %q, err=%v; want %q", item.Username, content, readErr, want)
 		}
 	}
 }
@@ -166,15 +168,15 @@ type fakeUserStore struct {
 }
 
 func (s *fakeUserStore) Get(string, interface{}) (*users.User, error) {
-	copy := *s.user
-	return &copy, nil
+	clonedUser := *s.user
+	return &clonedUser, nil
 }
 
 func (s *fakeUserStore) Gets(string) ([]*users.User, error) {
 	result := make([]*users.User, 0, len(s.all))
 	for _, user := range s.all {
-		copy := *user
-		result = append(result, &copy)
+		clonedUser := *user
+		result = append(result, &clonedUser)
 	}
 	return result, nil
 }

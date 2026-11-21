@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"text/tabwriter"
@@ -26,11 +26,15 @@ var usersCmd = &cobra.Command{
 }
 
 func printUsers(usrs []*users.User) {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "ID\tUsername\tScope\tLocale\tV. Mode\tS.Click\tCreate\tRename\tModify\tDelete")
+	checkErr(writeUsers(os.Stdout, usrs))
+}
+
+func writeUsers(output io.Writer, usrs []*users.User) error {
+	w := &tableWriter{Writer: tabwriter.NewWriter(output, 0, 0, 2, ' ', 0)}
+	w.printf("ID\tUsername\tScope\tLocale\tV. Mode\tS.Click\tCreate\tRename\tModify\tDelete\n")
 
 	for _, u := range usrs {
-		fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\t%t\t%t\t%t\t%t\t%t\t\n",
+		w.printf("%d\t%s\t%s\t%s\t%s\t%t\t%t\t%t\t%t\t%t\t\n",
 			u.ID,
 			u.Username,
 			u.Scope,
@@ -44,7 +48,7 @@ func printUsers(usrs []*users.User) {
 		)
 	}
 
-	w.Flush()
+	return w.flush()
 }
 
 func parseUsernameOrID(arg string) (username string, id uint) {

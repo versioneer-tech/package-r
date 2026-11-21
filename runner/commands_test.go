@@ -178,7 +178,7 @@ func TestParseWindowsCommand(t *testing.T) {
 }
 
 func TestSplitCommandAndArgs(t *testing.T) {
-	// force linux parsing. It's more robust and covers error cases
+	// Use Linux parsing on every host.
 	runtimeGoos = osLinux
 	defer func() {
 		runtimeGoos = runtime.GOOS
@@ -242,7 +242,6 @@ func TestSplitCommandAndArgs(t *testing.T) {
 		errorSuffix := fmt.Sprintf(" Command to parse: [%s]", test.input)
 		actualCommand, actualArgs, actualErr := SplitCommandAndArgs(test.input)
 
-		// test if error matches expectation
 		if test.expectedErrContent != "" {
 			if actualErr == nil {
 				t.Errorf(errorPrefix+"Expected error with content [%s], found no error."+errorSuffix, test.expectedErrContent)
@@ -253,16 +252,13 @@ func TestSplitCommandAndArgs(t *testing.T) {
 			t.Errorf(errorPrefix+"Expected no error, found [%v]."+errorSuffix, actualErr)
 		}
 
-		// test if command matches
 		if test.expectedCommand != actualCommand {
 			t.Errorf(errorPrefix+"Expected command: [%s], actual: [%s]."+errorSuffix, test.expectedCommand, actualCommand)
 		}
 
-		// test if arguments match
 		if len(test.expectedArgs) != len(actualArgs) {
 			t.Errorf(errorPrefix+"Wrong number of arguments! Expected [%v], actual [%v]."+errorSuffix, test.expectedArgs, actualArgs)
 		} else {
-			// test args only if the count matches.
 			for j, actualArg := range actualArgs {
 				expectedArg := test.expectedArgs[j]
 				if actualArg != expectedArg {
@@ -278,7 +274,7 @@ func ExampleSplitCommandAndArgs() {
 	var command string
 	var args []string
 
-	// just for the test - change GOOS and reset it at the end of the test
+	// Restore the host parser after the example.
 	runtimeGoos = osWindows
 	defer func() {
 		runtimeGoos = runtime.GOOS
@@ -289,7 +285,6 @@ func ExampleSplitCommandAndArgs() {
 
 	fmt.Printf("Windows: %s: %s [%s]\n", commandLine, command, strings.Join(args, ","))
 
-	// set GOOS to linux
 	runtimeGoos = osLinux
 
 	commandLine = `mkdir -p /path/with\ space`

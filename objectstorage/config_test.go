@@ -122,13 +122,13 @@ func TestLoadRoot(t *testing.T) {
 
 func TestLoadBuckets(t *testing.T) {
 	t.Setenv("PACKAGE_R_ROOT", "/")
-	t.Setenv("PACKAGE_R_BUCKETS", "xyz-data, xyz-archive")
+	t.Setenv("PACKAGE_R_BUCKETS", "test-data, test-archive")
 
 	config := Load()
 	if err := config.ValidateRoot(); err != nil {
 		t.Fatal(err)
 	}
-	if got := config.ConfiguredBuckets(); len(got) != 2 || got[0] != "xyz-data" || got[1] != "xyz-archive" {
+	if got := config.ConfiguredBuckets(); len(got) != 2 || got[0] != "test-data" || got[1] != "test-archive" {
 		t.Fatalf("unexpected configured buckets: %#v", got)
 	}
 }
@@ -140,12 +140,12 @@ func TestValidateRootBucketCatalog(t *testing.T) {
 		wantErr error
 	}{
 		{name: "discovery root"},
-		{name: "configured service root", config: Config{Buckets: "xyz-data,xyz-archive"}},
-		{name: "direct bucket", config: Config{Bucket: "xyz-data"}},
-		{name: "catalog with direct bucket", config: Config{Bucket: "xyz-data", Buckets: "xyz-data"}, wantErr: ErrBucketsNeedServiceRoot},
-		{name: "empty entry", config: Config{Buckets: "xyz-data,,xyz-archive"}, wantErr: ErrInvalidBuckets},
-		{name: "duplicate", config: Config{Buckets: "xyz-data,xyz-data"}, wantErr: ErrInvalidBuckets},
-		{name: "invalid name", config: Config{Buckets: "xyz-data,../xyz-archive"}, wantErr: ErrInvalidBuckets},
+		{name: "configured service root", config: Config{Buckets: "test-data,test-archive"}},
+		{name: "direct bucket", config: Config{Bucket: "test-data"}},
+		{name: "catalog with direct bucket", config: Config{Bucket: "test-data", Buckets: "test-data"}, wantErr: ErrBucketsNeedServiceRoot},
+		{name: "empty entry", config: Config{Buckets: "test-data,,test-archive"}, wantErr: ErrInvalidBuckets},
+		{name: "duplicate", config: Config{Buckets: "test-data,test-data"}, wantErr: ErrInvalidBuckets},
+		{name: "invalid name", config: Config{Buckets: "test-data,../test-archive"}, wantErr: ErrInvalidBuckets},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := test.config.ValidateRoot()
@@ -157,13 +157,13 @@ func TestValidateRootBucketCatalog(t *testing.T) {
 }
 
 func TestValidateUserDir(t *testing.T) {
-	if err := (Config{}).ValidateUserDir(false); err != nil {
+	if err := (&Config{}).ValidateUserDir(false); err != nil {
 		t.Fatal(err)
 	}
-	if err := (Config{Bucket: "reports"}).ValidateUserDir(true); err != nil {
+	if err := (&Config{Bucket: "reports"}).ValidateUserDir(true); err != nil {
 		t.Fatal(err)
 	}
-	if err := (Config{}).ValidateUserDir(true); !errors.Is(err, ErrUserDirNeedsBucket) {
+	if err := (&Config{}).ValidateUserDir(true); !errors.Is(err, ErrUserDirNeedsBucket) {
 		t.Fatalf("expected %v, got %v", ErrUserDirNeedsBucket, err)
 	}
 }

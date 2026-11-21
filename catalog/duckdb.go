@@ -40,8 +40,8 @@ func InitDuckDB() {
 			return
 		}
 		extensionDir := filepath.Join(cacheDir, "package-r", "duckdb-extensions")
-		if err := os.MkdirAll(extensionDir, 0o700); err != nil {
-			dbErr = fmt.Errorf("create DuckDB extension cache: %w", err)
+		if mkdirErr := os.MkdirAll(extensionDir, 0o700); mkdirErr != nil {
+			dbErr = fmt.Errorf("create DuckDB extension cache: %w", mkdirErr)
 			return
 		}
 

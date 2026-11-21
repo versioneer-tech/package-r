@@ -14,7 +14,7 @@ is not the source of the stored data.
 
 For hosted deployments, use a separate process to prepare the database before
 packageR starts. The database does not need a backup or a persistent volume.
-The [Kubernetes guide](kubernetes.md) shows an init container and an
+The [Kubernetes guide](kubernetes.md) shows init containers and an
 `emptyDir` volume.
 
 ## Defaults

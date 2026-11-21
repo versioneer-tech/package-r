@@ -1,33 +1,20 @@
-<h1><img src="frontend/public/img/logo.png" height="48" alt="packageR logo" /> packageR</h1>
+# <img src="frontend/public/img/logo.png" height="48" alt="packageR logo" /> packageR
 
-[![Tests](https://github.com/versioneer-tech/package-r/actions/workflows/pr.yaml/badge.svg?branch=main&event=push)](https://github.com/versioneer-tech/package-r/actions/workflows/pr.yaml)
+[![CI & Trivy](https://img.shields.io/github/actions/workflow/status/versioneer-tech/package-r/pr.yaml?branch=main&event=push&label=CI%20%26%20Trivy)](https://github.com/versioneer-tech/package-r/actions/workflows/pr.yaml?query=branch%3Amain+event%3Apush)
 [![Latest release](https://img.shields.io/github/v/release/versioneer-tech/package-r)](https://github.com/versioneer-tech/package-r/releases/latest)
 [![Go version](https://img.shields.io/github/go-mod/go-version/versioneer-tech/package-r)](go.mod)
+[![Dependabot configured](https://img.shields.io/badge/Dependabot-configured-0366d6?logo=dependabot)](.github/dependabot.yml)
 [![License](https://img.shields.io/github/license/versioneer-tech/package-r)](LICENSE)
-
-> [!NOTE]
-> packageR uses an embedded rclone VFS. It does not require an external FUSE
-> mount.
 
 packageR publishes a prefix of S3-compatible objects as a public package.
 Recipients can open it in a browser without an account. An optional share
 password controls access.
 
-The Go service also provides a web interface for object storage. It can browse
-objects and create time-limited download URLs. Production does not need a
-separate rclone service.
-
-packageR previews JSON, Markdown, PDF, common image formats, and cloud-native
-formats such as Cloud Optimized GeoTIFF (COG).
-
-packageR provides:
-
-- public, browser-accessible packages for configured object prefixes, with no
-  recipient login and an optional share password
-- directory navigation and common object operations
-- uploads, downloads, and access rules
-- presigned GET URLs for authenticated files and public shares
-- STAC-compatible Parquet catalogs exposed as public STAC JSON
+The web interface supports directory navigation, uploads, downloads, and
+object operations. It previews JSON, Markdown, PDF, common image formats,
+and Cloud Optimized GeoTIFF (COG). Parquet catalogs are exposed as public
+STAC JSON. Authenticated users and public shares can request time-limited
+download URLs.
 
 All sessions use one S3 identity. Its storage policy sets the maximum access.
 packageR can reduce access with user scopes, path rules, and action
@@ -47,22 +34,17 @@ tar -xzf package-r.tar.gz
 ./package-r version
 ```
 
-Create the initial user with explicit permissions and add a public share. This
-example publishes the `data` bucket root:
-
-The OpenAerialMap sample images are licensed under
-[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Use an existing bucket named `data`, or replace that name below. Create the
+initial user with explicit permissions and publish the bucket root:
 
 ```bash
-./package-r config init
+./package-r config init --root=data
 ./package-r users add admin my-password \
   --perm.create=true \
   --perm.rename=true \
   --perm.modify=true \
   --perm.delete=true
-./package-r shares add admin my-share /data \
-  --description="Open aerial imagery sample" \
-  --catalog-name=openaerialmap-assets.parquet
+./package-r shares add admin my-share /
 
 AWS_ACCESS_KEY_ID=my-access-key \
 AWS_SECRET_ACCESS_KEY=my-secret-key \
@@ -90,24 +72,47 @@ for an init-container example.
 Local development uses `rclone serve s3` as a disposable S3-compatible API.
 Production does not need this process.
 
+Use Go, a C compiler, Node.js, pnpm, uv, and Python 3.11 or newer.
+Go checks need CGO for DuckDB. Install the hooks once per checkout, then run
+the shared lint and documentation checks:
+
+```bash
+make hooks
+make check
+make docs
+```
+
+Hooks run Go and frontend linters, file validation, markdownlint, Hadolint,
+and Gitleaks. Secret checks scan staged file contents and redact findings.
+Commit messages use Conventional Commits, such as `fix: handle empty catalogs`.
+The push hook checks the commit messages in the pushed range.
+
+CI runs the same lint commands, Go unit and race tests, local rclone API tests,
+documentation checks, govulncheck, and Trivy. Playwright and timed load tests
+run through explicit local commands. Hooks do not run tests or build the app.
+
+Dependabot checks Docker images daily. It checks Go, frontend, Actions, hooks,
+and Python support dependencies weekly.
+
+See [the test guide](tests/README.md) for test commands and fixture setup, and
+[release security checks](SECURITY.md#release-checks) for scans,
+SBOMs, and the publication gate.
+
 ### Use VS Code
 
-Open **Run and Debug** and start **run packageR**. The launch configuration:
-
-1. Starts local S3 on `127.0.0.1:19100`.
-2. Builds the development backend.
-3. Bootstraps `.vscode/package-r.db` and shares `/vienna-s2l2a-26` as
-   `vienna-s2l2a-26`. The share contains the generated Sentinel-2 catalog and
-   its assets.
-4. Starts packageR on `127.0.0.1:8888` under the Go debugger.
-5. Opens `http://localhost:8888` when the server is ready.
+Generate the Sentinel-2 fixture with the command in the test guide. Open
+**Run and Debug** and start **run packageR**. It starts local S3, builds the
+backend, prepares `.vscode/package-r.db`, and shares `vienna-s2l2a-26`. It then
+starts the Go debugger and opens `http://localhost:8888`.
 
 The VS Code launch configuration allows cross-origin requests from all origins
 for local development. Production CORS remains disabled unless it is configured
 explicitly.
 
 Stop the debug session to stop its local S3 server. Rclone output is in
-`.vscode/local-s3.log`, and cache data is below `.vscode/cache`.
+`.vscode/local-s3.log`, and cache data is below `.vscode/cache`. If startup
+fails, check that log, the task output, and ports `19100` (S3), `19101`
+(rclone control), and `8888` (packageR).
 
 To control local S3 without VS Code, use:
 
@@ -116,61 +121,12 @@ To control local S3 without VS Code, use:
 ./scripts/local_s3.sh stop
 ```
 
-`serve` stays in the foreground. The `dev` command is for the VS Code task and
-also stays active so that VS Code can manage its lifetime.
-
-### Run tests
-
-Run the Go unit tests and local integration tests:
-
-```bash
-make test-unit
-make test-integration
-```
-
-The catalog tests require the generated Sentinel-2 fixture. See
-[tests/README.md](tests/README.md#sentinel-2-fixture) for the download command.
-
-The integration harness starts `rclone serve s3` on a loopback address. It
-copies `tests/data` into a temporary test bucket and does not need cloud
-credentials.
-
-Run the local-only frontend tests with Playwright and Chromium:
-
-```bash
-make test-frontend
-```
-
-See [tests/README.md](tests/README.md) for the complete test strategy.
-
-Each integration harness selects free ports, starts its dependencies, waits
-for readiness, and stops the processes that it owns.
-
-### Build the documentation
-
-Build all pages and fail on warnings:
-
-```bash
-uv run mkdocs build --strict
-```
-
-You can also use `make docs`. The first run creates `.venv` and installs the
-locked dependencies from `pyproject.toml`.
-
-### Troubleshoot startup
-
-If packageR does not open on port `8888`, check `.vscode/local-s3.log` and the
-VS Code task output. Confirm that ports `19100`, `19101`, and `8888` are free.
-Stop a previous local S3 process with:
-
-```bash
-./scripts/local_s3.sh stop
-```
-
-The launch fails if port `19100` has a different server or if the rclone
-control endpoint on port `19101` is not available.
+`serve` stays in the foreground.
 
 ## Thanks
+
+The OpenAerialMap sample images are licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 packageR is based on the now-deprecated
 [File Browser](https://github.com/filebrowser/filebrowser) project and still

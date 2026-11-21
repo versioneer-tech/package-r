@@ -24,18 +24,18 @@ import (
 
 func TestRawGetRequiresPermissionAndLogsDelivery(t *testing.T) {
 	store := afero.NewMemMapFs()
-	if err := afero.WriteFile(store, "/xyz.txt", []byte("xyz"), 0644); err != nil {
+	if err := afero.WriteFile(store, "/test.txt", []byte("test"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	d := &data{
 		settings: &settings.Settings{},
 		server:   &settings.Server{},
 		user: &users.User{
-			Username: "xyz-user",
+			Username: "test-user",
 			Fs:       store,
 		},
 	}
-	req := httptest.NewRequest(http.MethodGet, "/xyz.txt", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "/test.txt", http.NoBody)
 	var output bytes.Buffer
 	previousOutput := log.Writer()
 	log.SetOutput(&output)
@@ -55,23 +55,26 @@ func TestRawGetRequiresPermissionAndLogsDelivery(t *testing.T) {
 	if status != 0 || err != nil {
 		t.Fatalf("expected permitted raw read, status=%d err=%v", status, err)
 	}
-	if recorder.Body.String() != "xyz" {
+	if recorder.Body.String() != "test" {
 		t.Fatalf("unexpected body %q", recorder.Body.String())
 	}
-	if !strings.Contains(output.String(), `[DOWNLOAD] user="xyz-user" path="/xyz.txt" delivery=package_r`) {
+	if !strings.Contains(output.String(), `[DOWNLOAD] user="test-user" path="/test.txt" delivery=package_r`) {
 		t.Fatalf("missing download audit log: %s", output.String())
 	}
 }
 
 func TestRawDirectoryArchives(t *testing.T) {
-	for _, algorithm := range []string{"zip", "tar", "targz", "tarbz2", "tarxz", "tarlz4", "tarsz"} {
+	for algorithm, extension := range map[string]string{
+		"zip": ".zip", "tar": ".tar", "targz": ".tar.gz", "tarbz2": ".tar.bz2",
+		"tarxz": ".tar.xz", "tarlz4": ".tar.lz4", "tarsz": ".tar.sz",
+	} {
 		t.Run(algorithm, func(t *testing.T) {
 			store := afero.NewMemMapFs()
-			content := strings.Repeat("xyz first", 1024)
+			content := strings.Repeat("test first", 1024)
 			for name, content := range map[string]string{
-				"/xyz/first.txt":         content,
-				"/xyz/nested/second.txt": "xyz second",
-				"/xyz/blocked/third.txt": "xyz blocked",
+				"/test/first.txt":         content,
+				"/test/nested/second.txt": "test second",
+				"/test/blocked/third.txt": "test blocked",
 			} {
 				if err := store.MkdirAll(path.Dir(name), 0755); err != nil {
 					t.Fatal(err)
@@ -80,30 +83,26 @@ func TestRawDirectoryArchives(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if err := store.MkdirAll("/xyz/empty", 0755); err != nil {
+			if err := store.MkdirAll("/test/empty", 0755); err != nil {
 				t.Fatal(err)
 			}
 			d := &data{
 				settings: &settings.Settings{},
-				user:     &users.User{Fs: store, Rules: []rules.Rule{{Path: "/xyz/blocked", Allow: false}}},
+				user:     &users.User{Fs: store, Rules: []rules.Rule{{Path: "/test/blocked", Allow: false}}},
 			}
-			r := httptest.NewRequest("GET", "/xyz?algo="+algorithm, nil)
+			r := httptest.NewRequest("GET", "/test?algo="+algorithm, http.NoBody)
 			w := httptest.NewRecorder()
-			status, err := rawDirHandler(w, r, d, &files.FileInfo{Path: "/xyz", Name: "xyz"})
+			status, err := rawDirHandler(w, r, d, &files.FileInfo{Path: "/test", Name: "test"})
 			if err != nil || status != 0 {
 				t.Fatalf("status=%d err=%v", status, err)
 			}
 			if algorithm != "tar" && w.Body.Len() >= len(content) {
 				t.Fatalf("archive did not compress the input: %d bytes", w.Body.Len())
 			}
-			extension, _, err := parseQueryAlgorithm(r)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got := w.Header().Get("Content-Disposition"); !strings.Contains(got, "xyz"+extension) {
+			if got := w.Header().Get("Content-Disposition"); !strings.Contains(got, "test"+extension) {
 				t.Fatalf("unexpected disposition: %s", got)
 			}
-			format, input, err := archives.Identify(r.Context(), "xyz"+extension, bytes.NewReader(w.Body.Bytes()))
+			format, input, err := archives.Identify(r.Context(), "test"+extension, bytes.NewReader(w.Body.Bytes()))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -118,19 +117,23 @@ func TestRawDirectoryArchives(t *testing.T) {
 					got[name] = ""
 					return nil
 				}
-				reader, err := file.Open()
-				if err != nil {
-					return err
+				reader, localErr := file.Open()
+				if localErr != nil {
+					return localErr
 				}
-				defer reader.Close()
-				content, err := io.ReadAll(reader)
+				defer func() {
+					if closeErr := reader.Close(); closeErr != nil {
+						t.Error(closeErr)
+					}
+				}()
+				content, localErr := io.ReadAll(reader)
 				got[name] = string(content)
-				return err
+				return localErr
 			})
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := map[string]string{"first.txt": content, "nested": "", "nested/second.txt": "xyz second", "empty": ""}
+			want := map[string]string{"first.txt": content, "nested": "", "nested/second.txt": "test second", "empty": ""}
 			if !reflect.DeepEqual(got, want) {
 				t.Fatalf("archive contents: got %v, want %v", got, want)
 			}
@@ -140,17 +143,17 @@ func TestRawDirectoryArchives(t *testing.T) {
 
 func TestCollectArchiveFilesRejectsCancellationAndOutsidePaths(t *testing.T) {
 	store := afero.NewMemMapFs()
-	if err := afero.WriteFile(store, "/xyz.txt", []byte("xyz"), 0644); err != nil {
+	if err := afero.WriteFile(store, "/test.txt", []byte("test"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	d := &data{settings: &settings.Settings{}, user: &users.User{Fs: store}}
 	var entries []archives.FileInfo
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if err := collectArchiveFiles(ctx, d, "/xyz.txt", "/", &entries); !errors.Is(err, context.Canceled) {
+	if err := collectArchiveFiles(ctx, d, "/test.txt", "/", &entries); !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected cancellation, got %v", err)
 	}
-	if err := collectArchiveFiles(context.Background(), d, "/xyz.txt", "/other", &entries); err == nil {
+	if err := collectArchiveFiles(context.Background(), d, "/test.txt", "/other", &entries); err == nil {
 		t.Fatal("expected outside path to fail")
 	}
 	if len(entries) != 0 {

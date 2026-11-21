@@ -1,34 +1,26 @@
-version: 2
+version: "2"
 
 run:
   timeout: 5m
+  allow-serial-runners: true
 
 linters:
   enable:
     - bodyclose
     - dogsled
     - dupl
-    # - errcheck
+    - errcheck
     - errorlint
     - exhaustive
-    # - funlen
     - gocheckcompilerdirectives
-    # - gochecknoinits
-    # - goconst
     - gocritic
     - gocyclo
     - godox
     - goprintffuncname
-    # - gosec
     - govet
     - ineffassign
-    # - lll
-    # - misspell
-    # - mnd
     - nakedret
-    # - nolintlint
     - prealloc
-    # - revive
     - rowserrcheck
     - staticcheck
     - testifylint
@@ -36,64 +28,35 @@ linters:
     - unparam
     - unused
     - whitespace
-  disable:
-    - errcheck
-
-linters-settings:
-  dupl:
-    threshold: 100
-
-  exhaustive:
-    default-signifies-exhaustive: false
-
-  funlen:
-    lines: 100
-    statements: 50
-
-  goconst:
-    min-len: 4
-    min-occurrences: 10
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport
-      - ifElseChain
-      - octalLiteral
-      - whyNoLint
-      - wrapperFunc
-
-  gocyclo:
-    min-complexity: 15
-
-  govet:
-    enable:
-      - nilness
-      - shadow
-
-issues:
-  exclude-dirs:
-    - frontend/
-  exclude-rules:
-    - path: cmd/.*\.go
-      linters:
-        - gochecknoinits
-    - path: .*_test\.go
-      linters:
-        - lll
-        - gochecknoinits
-        - gocyclo
-        - funlen
-        - dupl
-        - scopelint
-    - text: "Auther"
-      linters:
-        - misspell
-    - text: "strconv.Parse"
-      linters:
-        - gomnd
+  settings:
+    dupl:
+      threshold: 100
+    exhaustive:
+      default-signifies-exhaustive: false
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - dupImport
+        - ifElseChain
+        - octalLiteral
+        - whyNoLint
+        - wrapperFunc
+    gocyclo:
+      min-complexity: 15
+    govet:
+      enable:
+        - nilness
+        - shadow
+  exclusions:
+    paths:
+      - frontend/
+    rules:
+      - path: .*_test\.go
+        linters:
+          - gocyclo
+          - dupl

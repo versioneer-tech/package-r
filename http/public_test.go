@@ -8,12 +8,13 @@ import (
 	"testing"
 
 	"github.com/asdine/storm/v3"
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/versioneer-tech/package-r/files"
 	"github.com/versioneer-tech/package-r/settings"
 	"github.com/versioneer-tech/package-r/share"
 	"github.com/versioneer-tech/package-r/storage/bolt"
 	"github.com/versioneer-tech/package-r/users"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func TestPublicShareBypassesGeneratedUserDirBaseRules(t *testing.T) {
@@ -148,7 +149,11 @@ func TestPublicShareSTACBrowserURLUsesRequestSchemeAndBaseURL(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", recorder.Code)
 	}
 	result := recorder.Result()
-	defer result.Body.Close()
+	defer func() {
+		if closeErr := result.Body.Close(); closeErr != nil {
+			t.Error(closeErr)
+		}
+	}()
 	var file struct {
 		STACBrowserURL string `json:"stacBrowserURL"`
 	}
@@ -238,7 +243,11 @@ func TestPublicShareDoesNotReturnSTACBrowserURLWithoutCatalog(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", recorder.Code)
 	}
 	result := recorder.Result()
-	defer result.Body.Close()
+	defer func() {
+		if closeErr := result.Body.Close(); closeErr != nil {
+			t.Error(closeErr)
+		}
+	}()
 	var file struct {
 		STACBrowserURL string `json:"stacBrowserURL"`
 	}
@@ -311,31 +320,31 @@ func TestAuthenticateShareRequest(t *testing.T) {
 	}
 }
 
-func TestSharePasswordCacheStoresSuccessfulAuthenticationOnly(t *testing.T) {
+func TestSharePasswordCacheRejectsInvalidAndChangedPasswords(t *testing.T) {
 	t.Parallel()
-
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte("my-password"), bcrypt.MinCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte("test-password"), bcrypt.MinCost)
 	if err != nil {
 		t.Fatal(err)
 	}
-	link := &share.Link{PasswordHash: string(passwordHash), Token: "test-token"}
+	link := &share.Link{PasswordHash: string(hash), Token: "test-token"}
 	cache := newSharePasswordCache()
-
-	valid := newHTTPRequest(t, func(r *http.Request) { r.Header.Set("X-SHARE-PASSWORD", "my-password") })
-	if status, err := cache.authenticate(valid, link); status != 0 || err != nil {
-		t.Fatalf("expected successful authentication, got status=%d err=%v", status, err)
+	authenticate := func(password string, want int) {
+		t.Helper()
+		request := newHTTPRequest(t, func(r *http.Request) { r.Header.Set("X-SHARE-PASSWORD", password) })
+		if status, authErr := cache.authenticate(request, link); status != want || authErr != nil {
+			t.Fatalf("authentication status=%d err=%v; want %d", status, authErr, want)
+		}
 	}
-	if len(cache.verified) != 1 {
-		t.Fatalf("expected one cached password, got %d", len(cache.verified))
+	authenticate("test-password", 0)
+	authenticate("wrong-password", http.StatusUnauthorized)
+	authenticate("wrong-password", http.StatusUnauthorized)
+	hash, err = bcrypt.GenerateFromPassword([]byte("new-password"), bcrypt.MinCost)
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	invalid := newHTTPRequest(t, func(r *http.Request) { r.Header.Set("X-SHARE-PASSWORD", "wrong-password") })
-	if status, err := cache.authenticate(invalid, link); status != http.StatusUnauthorized || err != nil {
-		t.Fatalf("expected status 401, got status=%d err=%v", status, err)
-	}
-	if len(cache.verified) != 1 {
-		t.Fatalf("expected invalid password not to be cached, got %d entries", len(cache.verified))
-	}
+	link.PasswordHash = string(hash)
+	authenticate("test-password", http.StatusUnauthorized)
+	authenticate("new-password", 0)
 }
 
 func newHTTPRequest(t *testing.T, requestModifiers ...func(*http.Request)) *http.Request {

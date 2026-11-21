@@ -131,10 +131,6 @@ The root response is a STAC `Collection` that links to each matching Item. A
 path below the share returns a STAC `Feature` or `FeatureCollection`. Internal
 asset links become public package URLs.
 
-packageR serves this endpoint dynamically. It uses DuckDB to query the Parquet
-catalog and renders the matching rows as STAC JSON when a client requests
-`/api/public/catalog`.
-
 Use the absolute endpoint URL in a STAC Browser. Set the public browser's
 external-catalog URL when you prepare the database:
 
@@ -174,6 +170,3 @@ Open the link to inspect the Item, its Vienna footprint, metadata, and assets in
 the configured STAC Browser.
 
 ![Vienna Sentinel-2 Item in STAC Browser](../imgs/screenshots/vienna-s2l2a-26-stac-browser.png)
-
-See the [HTTP API](../reference-guides/http-api.md#public-catalogs) for the
-response contract and limits.

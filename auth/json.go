@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"os"
@@ -40,10 +41,10 @@ func (a JSONAuth) Auth(r *http.Request, usr users.Store, _ *settings.Settings, s
 
 	// If ReCaptcha is enabled, check the code.
 	if a.ReCaptcha != nil && a.ReCaptcha.Secret != "" {
-		ok, err := a.ReCaptcha.Ok(cred.ReCaptcha)
+		ok, verifyErr := a.ReCaptcha.Ok(cred.ReCaptcha)
 
-		if err != nil {
-			return nil, err
+		if verifyErr != nil {
+			return nil, verifyErr
 		}
 
 		if !ok {
@@ -74,7 +75,7 @@ type ReCaptcha struct {
 }
 
 // Ok checks if a reCaptcha responde is correct.
-func (r *ReCaptcha) Ok(response string) (bool, error) {
+func (r *ReCaptcha) Ok(response string) (valid bool, err error) {
 	body := url.Values{}
 	body.Set("secret", r.Secret)
 	body.Add("response", response)
@@ -89,7 +90,11 @@ func (r *ReCaptcha) Ok(response string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return false, nil

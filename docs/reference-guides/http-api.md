@@ -96,6 +96,14 @@ curl -fsS \
 | `POST` | `/api/login` | Authenticate with the configured method and return a packageR session token. |
 | `POST` | `/api/renew` | Replace a valid packageR session token. |
 
+## Profile
+
+`PATCH /api/profile` updates the signed-in user's display preferences and
+returns `204 No Content`. Send `X-Auth` and a JSON object with one or more
+fields from the OpenAPI `ProfileUpdate` schema. Empty updates, invalid values,
+and user-management fields such as permissions return `400 Bad Request`
+without changing stored preferences.
+
 ## Resources
 
 Resource paths are below the authenticated identity's scope and the configured
@@ -176,6 +184,8 @@ authenticated resource. With `presign=true` and `follow=true`, the response is
 a `307 Temporary Redirect` to object storage. Public shares do not provide a
 packageR download or directory archive endpoint.
 
+Use `GET` for presign requests. `HEAD` with `presign=true` is rejected.
+
 ## Public catalogs
 
 For a share with a Parquet catalog, use these paths to get the complete catalog
@@ -186,11 +196,14 @@ or the entries below a package path:
 /api/public/catalog/{hash}/{path}
 ```
 
-The route accepts `GET` and `HEAD`. For a protected share, send
-`X-SHARE-PASSWORD` with each request. One matching row returns a STAC
-`Feature`. Zero or multiple rows return a versioned `FeatureCollection` with a
-`links` array.
-Responses use the `application/geo+json` media type.
+Both routes accept `GET` and `HEAD`. For a protected share, send
+`X-SHARE-PASSWORD` with each request.
+
+| Request | Response | Media type |
+| --- | --- | --- |
+| Catalog root | STAC `Collection` with links to its Items | `application/json` |
+| Path with one matching row | STAC `Feature` | `application/geo+json` |
+| Path with zero or multiple matching rows | STAC `FeatureCollection` | `application/geo+json` |
 
 The Parquet catalog does not need full STAC GeoParquet compliance. Each row
 must contain:
@@ -217,6 +230,9 @@ stay inside the share.
 Catalog queries have these requirements:
 
 - The catalog must be inside the shared tree
+- The catalog file must not exceed 256 MiB
+- Up to four catalog queries run at once per process; other requests wait for
+  a slot or request cancellation
 - DuckDB reads a signed URL with HTTP range requests and does not stage the
   catalog on local disk
 - The internal catalog URL is valid for at most 15 minutes

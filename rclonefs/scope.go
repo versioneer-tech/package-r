@@ -20,7 +20,7 @@ type scopeFS struct {
 var _ afero.Fs = (*scopeFS)(nil)
 
 func newScopeFS(base afero.Fs, root string) afero.Fs {
-	return &scopeFS{base: base, root: filepath.Clean(filepath.Join("/", root))}
+	return &scopeFS{base: base, root: filepath.Clean(filepath.Join(string(filepath.Separator), root))}
 }
 
 func (s *scopeFS) Name() string {
@@ -117,7 +117,7 @@ func (s *scopeFS) Chtimes(name string, atime, mtime time.Time) error {
 func (s *scopeFS) check(op, name string) error {
 	absolute := filepath.Clean(name)
 	if !filepath.IsAbs(absolute) {
-		absolute = filepath.Join("/", absolute)
+		absolute = filepath.Join(string(filepath.Separator), absolute)
 	}
 	relative, err := filepath.Rel(s.root, absolute)
 	if err != nil {

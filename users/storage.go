@@ -39,6 +39,8 @@ type Storage struct {
 	mux     sync.RWMutex
 }
 
+var _ Store = (*Storage)(nil)
+
 // NewStorage creates a users storage from a backend.
 func NewStorage(back StorageBackend) *Storage {
 	return &Storage{
@@ -69,8 +71,8 @@ func (s *Storage) Gets(baseScope string) ([]*User, error) {
 	}
 
 	for _, user := range users {
-		if err := user.Clean(baseScope); err != nil {
-			return nil, err
+		if cleanErr := user.Clean(baseScope); cleanErr != nil {
+			return nil, cleanErr
 		}
 	}
 

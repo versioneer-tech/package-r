@@ -18,36 +18,36 @@ func TestBucketCatalogRoutesObjectsAndProtectsRoots(t *testing.T) {
 		t.Fatal(err)
 	}
 	catalog, err := newBucketCatalogFS(map[string]afero.Fs{
-		"xyz-data":    data,
-		"xyz-archive": archive,
+		"test-data":    data,
+		"test-archive": archive,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	contents, err := afero.ReadFile(catalog, "/xyz-data/report.txt")
+	contents, err := afero.ReadFile(catalog, "/test-data/report.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if string(contents) != "data" {
 		t.Fatalf("unexpected object contents %q", contents)
 	}
-	if err := afero.WriteFile(catalog, "/xyz-archive/new.txt", []byte("new"), 0o644); err != nil {
+	if err := afero.WriteFile(catalog, "/test-archive/new.txt", []byte("new"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if exists, err := afero.Exists(archive, "/new.txt"); err != nil || !exists {
 		t.Fatalf("write did not reach selected bucket: exists=%t err=%v", exists, err)
 	}
-	if _, err := catalog.Open("/xyz-missing/report.txt"); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := catalog.Open("/test-missing/report.txt"); !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("expected missing bucket error, got %v", err)
 	}
-	if _, err := catalog.Open("/xyz-data/report\x00.txt"); !errors.Is(err, fs.ErrInvalid) {
+	if _, err := catalog.Open("/test-data/report\x00.txt"); !errors.Is(err, fs.ErrInvalid) {
 		t.Fatalf("expected invalid path error, got %v", err)
 	}
-	if err := catalog.Remove("/xyz-data"); !errors.Is(err, fs.ErrPermission) {
+	if err := catalog.Remove("/test-data"); !errors.Is(err, fs.ErrPermission) {
 		t.Fatalf("expected bucket root removal to be denied, got %v", err)
 	}
-	if err := catalog.Rename("/xyz-data/report.txt", "/xyz-archive/report.txt"); !errors.Is(err, ErrCrossBucketRename) {
+	if err := catalog.Rename("/test-data/report.txt", "/test-archive/report.txt"); !errors.Is(err, ErrCrossBucketRename) {
 		t.Fatalf("expected cross-bucket rename error, got %v", err)
 	}
 }

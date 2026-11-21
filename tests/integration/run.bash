@@ -199,7 +199,7 @@ if [[ ! -f "${FIXTURE_DIR}/${CATALOG_PATH}" || \
   printf '%s\n' \
     'Sentinel-2 test data is not materialized.' \
     'Run scripts/download_sentinel2.py before running the integration tests.' \
-    'It downloads about 200 MB of Vienna data from February, May, and August 2026 from the' \
+    'It downloads Vienna data from February, May, and August 2026 from the' \
     'Earth Search Sentinel-2 Collection 1 Level-2A catalog:' \
     'https://earth-search.aws.element84.com/v1' >&2
   exit 1
@@ -302,7 +302,7 @@ if [[ "${share_management_status}" != "404" ]]; then
 fi
 signup_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -X POST \
   -H 'Content-Type: application/json' \
-  --data '{"username":"xyz","password":"my-password"}' \
+  --data '{"username":"test-user","password":"my-password"}' \
   "${package_r_url}/api/signup")"
 if [[ "${signup_status}" != "404" ]]; then
   printf 'Expected /api/signup to return 404, got %s\n' "${signup_status}" >&2
@@ -316,39 +316,39 @@ curl_test -fsS -H "${auth_header}" "${package_r_url}/api/resources/${BUCKET}/" |
 log "Checking VFS create, copy, rename, read, and delete"
 printf 'packageR rclone integration\n' >"${tmp_dir}/payload.txt"
 curl_test -fsS -X POST -H "${auth_header}" \
-  "${package_r_url}/api/resources/${BUCKET}/xyz/" >/dev/null
+  "${package_r_url}/api/resources/${BUCKET}/test-objects/" >/dev/null
 curl_test -fsS -X POST -H "${auth_header}" \
   --data-binary "@${tmp_dir}/payload.txt" \
-  "${package_r_url}/api/resources/${BUCKET}/xyz/created.txt" >/dev/null
+  "${package_r_url}/api/resources/${BUCKET}/test-objects/created.txt" >/dev/null
 curl_test -fsS -X PATCH -H "${auth_header}" \
-  "${package_r_url}/api/resources/${BUCKET}/xyz/created.txt?action=copy&destination=%2F${BUCKET}%2Fxyz%2Fcopied.txt" >/dev/null
+  "${package_r_url}/api/resources/${BUCKET}/test-objects/created.txt?action=copy&destination=%2F${BUCKET}%2Ftest-objects%2Fcopied.txt" >/dev/null
 curl_test -fsS -X PATCH -H "${auth_header}" \
-  "${package_r_url}/api/resources/${BUCKET}/xyz/copied.txt?action=rename&destination=%2F${BUCKET}%2Fxyz%2Frenamed.txt" >/dev/null
+  "${package_r_url}/api/resources/${BUCKET}/test-objects/copied.txt?action=rename&destination=%2F${BUCKET}%2Ftest-objects%2Frenamed.txt" >/dev/null
 renamed_url="$(
 	curl_test -fsS -H "${auth_header}" \
-    "${package_r_url}/api/resources/${BUCKET}/xyz/renamed.txt?presign=true" |
+    "${package_r_url}/api/resources/${BUCKET}/test-objects/renamed.txt?presign=true" |
     json_field presignedURL
 )"
 fetch_and_compare "${renamed_url}" "${tmp_dir}/payload.txt" "${tmp_dir}/renamed.txt"
-backing_dir="${tmp_dir}/rclone/${BUCKET}/xyz"
+backing_dir="${tmp_dir}/rclone/${BUCKET}/test-objects"
 cmp "${tmp_dir}/payload.txt" "${backing_dir}/created.txt"
 cmp "${tmp_dir}/payload.txt" "${backing_dir}/renamed.txt"
 [[ ! -e "${backing_dir}/copied.txt" ]]
 
 curl_test -fsS -X DELETE -H "${auth_header}" \
-  "${package_r_url}/api/resources/${BUCKET}/xyz/created.txt" >/dev/null
+  "${package_r_url}/api/resources/${BUCKET}/test-objects/created.txt" >/dev/null
 curl_test -fsS -X DELETE -H "${auth_header}" \
-  "${package_r_url}/api/resources/${BUCKET}/xyz/renamed.txt" >/dev/null
+  "${package_r_url}/api/resources/${BUCKET}/test-objects/renamed.txt" >/dev/null
 curl_test -fsS -X DELETE -H "${auth_header}" \
-  "${package_r_url}/api/resources/${BUCKET}/xyz/" >/dev/null
+  "${package_r_url}/api/resources/${BUCKET}/test-objects/" >/dev/null
 missing_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -H "${auth_header}" \
-  "${package_r_url}/api/resources/${BUCKET}/xyz/renamed.txt")"
+  "${package_r_url}/api/resources/${BUCKET}/test-objects/renamed.txt")"
 [[ "${missing_status}" == "404" ]]
 [[ ! -e "${backing_dir}/created.txt" ]]
 [[ ! -e "${backing_dir}/renamed.txt" ]]
 
 log "Checking two-chunk TUS upload through the VFS write cache"
-tus_path="/${BUCKET}/xyz/chunked.txt"
+tus_path="/${BUCKET}/test-objects/chunked.txt"
 printf 'first chunk\n' >"${tmp_dir}/chunk-one.txt"
 printf 'second chunk\n' >"${tmp_dir}/chunk-two.txt"
 first_chunk_size="$(wc -c <"${tmp_dir}/chunk-one.txt" | tr -d ' ')"
@@ -385,7 +385,7 @@ curl_test -fsS -X DELETE -H "${auth_header}" \
   "${package_r_url}/api/resources${tus_path}" >/dev/null
 
 log "Checking that TUS abort removes a partial upload"
-aborted_tus_path="/${BUCKET}/xyz/aborted.txt"
+aborted_tus_path="/${BUCKET}/test-objects/aborted.txt"
 curl_test -fsS -X POST -H "${auth_header}" \
   -H "Upload-Length: ${upload_size}" \
   "${package_r_url}/api/tus${aborted_tus_path}" >/dev/null
@@ -403,7 +403,7 @@ aborted_head_status="$(curl_test -sS -o /dev/null -w '%{http_code}' -I \
 [[ ! -e "${backing_dir}/aborted.txt" ]]
 
 curl_test -fsS -X DELETE -H "${auth_header}" \
-  "${package_r_url}/api/resources/${BUCKET}/xyz/" >/dev/null
+  "${package_r_url}/api/resources/${BUCKET}/test-objects/" >/dev/null
 
 log "Checking authenticated and public rclone presigned URLs"
 authenticated_url="$(

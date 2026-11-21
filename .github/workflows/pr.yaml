@@ -20,6 +20,41 @@ env:
   RCLONE_RELEASE_VERSION: "1.75.1"
 
 jobs:
+  lint_files:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.x"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10
+
+      - name: Cache hook tools
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml', 'go.mod', 'uv.lock') }}
+
+      - name: Run file checks
+        run: make lint-files
+
+      - name: Test hook boundaries
+        run: make test-tooling
+
   lint_backend:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -50,7 +85,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: latest
+          package_json_file: frontend/package.json
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -63,34 +98,29 @@ jobs:
         run: make lint-frontend
 
   build:
+    # DuckDB needs CGO. Keep the older runner ABI for the release binary.
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
+    outputs:
+      artifact-id: ${{ steps.candidate.outputs.artifact-id }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
         with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6
+          persist-credentials: false
+      - uses: ./.github/actions/build-candidate
+        id: candidate
         with:
-          version: latest
+          version: snapshot-${{ github.sha }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22.x"
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Build the production binary
-        run: make build
+  security:
+    needs: build
+    permissions:
+      contents: read
+    uses: ./.github/workflows/security-check.yaml
+    with:
+      candidate-id: ${{ needs.build.outputs.artifact-id }}
 
   unit:
     runs-on: ubuntu-24.04
@@ -166,6 +196,26 @@ jobs:
       - name: Run local rclone API integration tests
         run: make test-integration
 
+  race:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: make test-race
+
+  go_vulnerabilities:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/go-vulnerabilities.yaml
+
   docs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -179,13 +229,9 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-          cache: pip
-          cache-dependency-path: docs/requirements.txt
 
-      - name: Install documentation dependencies
-        run: pip install -r docs/requirements.txt
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10
 
       - name: Build documentation
-        run: |
-          openapi-spec-validator docs/reference-guides/openapi.yaml
-          mkdocs build --strict
+        run: make docs

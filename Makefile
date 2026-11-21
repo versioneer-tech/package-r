@@ -31,19 +31,31 @@ build-backend-dev: ## Build backend with filesystem frontend assets for local/de
 # ------------------------------------------------------------------------------
 
 .PHONY: test
-test: ## Check prerequisites and run all tests
+test: ## Run unit, API integration, and browser tests
 	$Q bash tests/check-tools.bash
 	$Q $(MAKE) --no-print-directory test-unit
 	$Q $(MAKE) --no-print-directory test-integration
 	$Q $(MAKE) --no-print-directory test-frontend
 
 .PHONY: test-check
-test-check: ## Check tools required by the full test suite
+test-check: ## Check tools required by make test
 	$Q bash tests/check-tools.bash
 
 .PHONY: test-unit
 test-unit: ## Run Go unit tests
 	$Q $(go) test -v ./...
+
+.PHONY: test-race
+test-race: ## Check shared HTTP, storage, authentication, and telemetry code for races
+	$Q CGO_ENABLED=1 $(go) test -race ./auth ./diskcache ./http ./logging ./metrics ./rclonefs
+
+.PHONY: test-presign-load
+test-presign-load: ## Run the timed public presign workloads
+	$Q CGO_ENABLED=1 $(go) test -tags loadtest ./http -run '^TestPublicSharePresignConcurrentHierarchy$$' -count=1 -v
+
+.PHONY: test-tooling
+test-tooling: ## Check secret scan boundaries and release security gates
+	$Q uv run --locked --group tooling python -m unittest discover -s scripts/tests -v
 
 .PHONY: test-integration
 test-integration: ## Run API integration tests with local rclone S3
@@ -62,12 +74,59 @@ test-frontend: ## Run frontend Playwright tests
 
 .PHONY: docs
 docs: ## Build documentation with strict validation
-	$Q uv run openapi-spec-validator docs/reference-guides/openapi.yaml
-	$Q uv run mkdocs build --strict
+	$Q uv run --locked openapi-spec-validator docs/reference-guides/openapi.yaml
+	$Q uv run --locked mkdocs build --strict
+
+.PHONY: candidate
+candidate: build ## Build the binary, OCI image, and dependency scan inputs
+	$Q mkdir -p dist/candidate
+	$Q docker buildx build --pull --platform linux/amd64 --provenance=false --sbom=false \
+		--label "org.opencontainers.image.name=package-r" \
+		--label "org.opencontainers.image.created=$$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+		--label "org.opencontainers.image.source=https://github.com/versioneer-tech/package-r" \
+		--label "org.opencontainers.image.revision=$$(git rev-parse HEAD)" \
+		--label "org.opencontainers.image.version=$(VERSION)" \
+		--output type=oci,dest=dist/candidate/image.tar .
+	$Q uv run --locked --group tooling python scripts/security.py prepare \
+		--source . --candidate dist/candidate --version '$(VERSION)' --commit "$$(git rev-parse HEAD)"
+
+.PHONY: security
+security: $(trivy) ## Scan the existing candidate and enforce the release policy
+	$Q uv run --locked --group tooling python scripts/security.py scan \
+		--candidate dist/candidate --reports build/security --trivy $(trivy)
+
+.PHONY: security-verify
+security-verify: ## Check that the candidate matches its successful scan
+	$Q uv run --locked --group tooling python scripts/security.py verify \
+		--candidate dist/candidate --reports build/security
+
+.PHONY: vulncheck
+vulncheck: $(govulncheck) ## Check Go source for calls to known vulnerable code
+	$Q mkdir -p build/security
+	$Q set -o pipefail; CGO_ENABLED=1 $(govulncheck) ./... 2>&1 | tee build/security/govulncheck.txt
+
+.PHONY: security-rescan
+security-rescan: $(trivy) ## Scan a published release and its dependency manifests
+	$Q uv run --locked --group tooling python scripts/security.py rescan \
+		--source build/release-source --image '$(RELEASE_IMAGE)' \
+		--binary build/release-metadata/linux-amd64-package-r.tar.gz \
+		--manifest build/release-metadata/security-manifest.json \
+		--reports build/security --trivy $(trivy)
 
 # ------------------------------------------------------------------------------
 # Lint Targets
 # ------------------------------------------------------------------------------
+
+.PHONY: hooks
+hooks: ## Install commit and push hooks
+	$Q uv run --locked --group tooling pre-commit install
+
+.PHONY: check
+check: lint-files lint ## Run CI lint checks without tests or builds
+
+.PHONY: lint-files
+lint-files: ## Check file syntax, whitespace, Markdown, Dockerfiles, and secrets
+	$Q uv run --locked --group tooling pre-commit run --all-files --hook-stage manual
 
 .PHONY: lint
 lint: lint-frontend lint-backend ## Run all linters
@@ -77,12 +136,28 @@ lint-frontend: ## Run frontend linters
 	$Q cd frontend && pnpm install --frozen-lockfile && pnpm run lint && pnpm run typecheck
 
 .PHONY: lint-backend
-lint-backend: | $(golangci-lint) ## Run backend linters
+lint-backend: fmt-check | $(golangci-lint) ## Check Go formatting and run backend linters
+	$Q $(golangci-lint) config verify
 	$Q $(golangci-lint) run -v
+
+go_sources = git ls-files -z --cached --others --exclude-standard -- '*.go' ':!:vendor/**' | \
+	while IFS= read -r -d '' source; do \
+		if [[ -f "$$source" ]]; then printf '%s\0' "$$source"; fi; \
+	done
+
+.PHONY: fmt-check
+fmt-check: $(goimports) ## Check Go formatting and imports
+	$Q set -euo pipefail; \
+	files="$$( $(go_sources) | xargs -0 $(goimports) -local $(MODULE) -l)"; \
+	if [[ -n "$$files" ]]; then \
+		printf 'Run make fmt to format these files:\n%s\n' "$$files"; \
+		exit 1; \
+	fi
 
 .PHONY: fmt
 fmt: $(goimports) ## Format Go source files
-	$Q $(goimports) -local $(MODULE) -w $$(find . -type f -name '*.go' -not -path "./vendor/*")
+	$Q set -euo pipefail; \
+	$(go_sources) | xargs -0 $(goimports) -local $(MODULE) -w
 
 # ------------------------------------------------------------------------------
 # Clean Targets
