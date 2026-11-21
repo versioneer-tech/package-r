@@ -1,11 +1,23 @@
+import { existsSync, readFileSync } from "node:fs";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { AuthPage } from "./fixtures/auth";
+
+const osRelease = existsSync("/etc/os-release")
+  ? readFileSync("/etc/os-release", "utf8")
+  : "";
+const ubuntu24 =
+  /^ID="?ubuntu"?$/m.test(osRelease) &&
+  /^VERSION_ID="?24\.04"?$/m.test(osRelease);
+if (!ubuntu24) {
+  console.warn(
+    "WARNING: Skipping screenshot tests: Ubuntu 24.04 is required. Use the pinned Playwright CI container."
+  );
+}
 
 const dataset = "vienna-s2l2a-26";
 const itemId = "S2B_T33UXP_20260218T100524_L2A";
 const publicShare = dataset;
 const publicSampleShare = "sample-share";
-const backendBaseURL = `http://127.0.0.1:${process.env.PACKAGE_R_PORT || "8888"}`;
 const screenshotBackendBaseURL = "http://127.0.0.1:8888";
 const overviewPath = `${dataset}/${itemId}/overview.tif`;
 const greenPath = `${dataset}/${itemId}/green.tif`;
@@ -32,9 +44,16 @@ const stableScreenshotStyle = `
 async function prepareStableScreenshot(page: Page) {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.addInitScript((content) => {
-    const style = document.createElement("style");
-    style.textContent = content;
-    document.documentElement.appendChild(style);
+    const addStyle = () => {
+      const style = document.createElement("style");
+      style.textContent = content;
+      document.documentElement.appendChild(style);
+    };
+    if (document.documentElement) {
+      addStyle();
+    } else {
+      document.addEventListener("DOMContentLoaded", addStyle, { once: true });
+    }
   }, stableScreenshotStyle);
   await page.addStyleTag({ content: stableScreenshotStyle });
 }
@@ -239,12 +258,16 @@ test.describe("packageR use-case UI", () => {
   });
 
   test("renders authenticated shared data listing", async ({ page }) => {
+    test.skip(!ubuntu24, "Screenshot tests require Ubuntu 24.04");
+    const pageErrors: string[] = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
     await prepareStableScreenshot(page);
     await loginAsInitialUser(page);
 
     await page.goto("/files/");
 
     await expect(page.getByLabel(dataset)).toBeVisible();
+    expect(pageErrors).toEqual([]);
     await normalizeRelativeTimes(page);
     await expect(page.locator("#listing").first()).toHaveScreenshot(
       "authenticated-public-listing.png",
@@ -303,9 +326,7 @@ test.describe("packageR use-case UI", () => {
       new RegExp(`/share/${publicShare}/$`)
     );
     await expect(settings).toContainText(publicShare);
-    await expect(settings).toContainText(
-      `/${dataset}/${dataset}.parquet`
-    );
+    await expect(settings).toContainText(`/${dataset}/${dataset}.parquet`);
     await expect(settings).toContainText("No");
     for (const heading of [
       "Name",
@@ -345,6 +366,7 @@ test.describe("packageR use-case UI", () => {
   });
 
   test("renders authenticated image preview", async ({ page }) => {
+    test.skip(!ubuntu24, "Screenshot tests require Ubuntu 24.04");
     await prepareStableScreenshot(page);
     await loginAsInitialUser(page);
 
@@ -383,6 +405,7 @@ test.describe("packageR use-case UI", () => {
   });
 
   test("renders public share directory listing", async ({ page }) => {
+    test.skip(!ubuntu24, "Screenshot tests require Ubuntu 24.04");
     await prepareStableScreenshot(page);
 
     await page.goto(`/share/${publicShare}/`);
@@ -413,7 +436,9 @@ test.describe("packageR use-case UI", () => {
     );
 
     await page.getByLabel(itemId).dblclick();
-    await expect(page).toHaveURL(new RegExp(`/share/${publicShare}/${itemId}/$`));
+    await expect(page).toHaveURL(
+      new RegExp(`/share/${publicShare}/${itemId}/$`)
+    );
     await expect(page.getByLabel("rgb.tif")).toBeVisible();
 
     for (const name of ["product_metadata.xml", "tileinfo_metadata.json"]) {
@@ -430,6 +455,7 @@ test.describe("packageR use-case UI", () => {
   test("previews a public file and creates a presigned URL", async ({
     page,
   }) => {
+    test.skip(!ubuntu24, "Screenshot tests require Ubuntu 24.04");
     await prepareStableScreenshot(page);
 
     const infoBox = await openPublicShareOverview(page);
@@ -635,6 +661,7 @@ test.describe("packageR use-case UI", () => {
   });
 
   test("shows public share STAC Browser URL", async ({ page }) => {
+    test.skip(!ubuntu24, "Screenshot tests require Ubuntu 24.04");
     await prepareStableScreenshot(page);
 
     const infoBox = await openPublicShareOverview(page);
@@ -687,9 +714,7 @@ test.describe("packageR use-case UI", () => {
       .locator("p", { hasText: "STAC Browser URL:" })
       .getByRole("link", { name: "Show" })
       .click();
-    await expect(infoBox).toContainText(
-      `/api/public/catalog/${publicShare}`
-    );
+    await expect(infoBox).toContainText(`/api/public/catalog/${publicShare}`);
     await page.getByRole("button", { name: "OK", exact: true }).click();
 
     await page.goto(`/share/${publicShare}/${itemId}/`);
@@ -709,6 +734,7 @@ test.describe("packageR use-case UI", () => {
   test("shows authenticated file info with rclone presigned URL", async ({
     page,
   }) => {
+    test.skip(!ubuntu24, "Screenshot tests require Ubuntu 24.04");
     await prepareStableScreenshot(page);
     await loginAsInitialUser(page);
 

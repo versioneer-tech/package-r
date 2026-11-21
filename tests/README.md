@@ -2,7 +2,7 @@
 
 ## Tests
 
-Run this from the repository root on Ubuntu 24.04:
+Run this from the repository root:
 
 ```bash
 make setup-tests && make test
@@ -100,8 +100,10 @@ PACKAGE_R_PORT=18888 PLAYWRIGHT_FRONTEND_PORT=15173 make test-frontend
 ```
 
 Screenshot tests maintain the images used by the documentation. CI uses
-Playwright's Ubuntu 24.04 (`noble`) container for consistent system fonts.
-Other systems can produce different fonts and text wrapping. Follow
+Playwright's pinned Ubuntu 24.04 (`noble`) container. Use the same container
+to compare or update these images. On other operating systems, the six
+screenshot tests are skipped with a warning; the other browser tests still run.
+Follow
 Playwright's [rendering environment guidance](https://playwright.dev/docs/test-snapshots)
 for consistent comparisons. After an intended visual change, update the images
 in the CI environment and review the diff:

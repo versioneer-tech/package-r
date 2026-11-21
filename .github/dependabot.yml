@@ -31,6 +31,9 @@ updates:
       interval: weekly
     commit-message:
       prefix: chore
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       frontend-minor-patch:
         update-types: [minor, patch]
