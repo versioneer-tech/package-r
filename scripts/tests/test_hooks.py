@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -35,7 +36,8 @@ class SecretCheckTests(unittest.TestCase):
                     "linked-directory/ignored.txt",
                 ],
                 cwd=root,
-                env={"PATH": str(root)},
+                # CI's Python needs its library path in child processes.
+                env={**os.environ, "PATH": str(root)},
                 capture_output=True,
                 text=True,
                 check=False,
