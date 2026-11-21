@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../imgs/favicon.ico">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -654,6 +654,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Profile
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#resources" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -912,6 +923,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Profile
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#resources" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1071,6 +1093,12 @@ for the required proxy settings.</p>
 </tr>
 </tbody>
 </table>
+<h2 id="profile">Profile</h2>
+<p><code>PATCH /api/profile</code> updates the signed-in user's display preferences and
+returns <code>204 No Content</code>. Send <code>X-Auth</code> and a JSON object with one or more
+fields from the OpenAPI <code>ProfileUpdate</code> schema. Empty updates, invalid values,
+and user-management fields such as permissions return <code>400 Bad Request</code>
+without changing stored preferences.</p>
 <h2 id="resources">Resources</h2>
 <p>Resource paths are below the authenticated identity's scope and the configured
 storage root.</p>
@@ -1202,21 +1230,44 @@ asset mappings, and whether the share has a password.</p>
 <span class="w">  </span>-H<span class="w"> </span><span class="s1">'X-SHARE-PASSWORD: my-password'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="s2">"</span><span class="nv">$PACKAGE_R_URL</span><span class="s2">/api/public/share/my-share/"</span>
 </code></pre></div>
-<p>Public file metadata supports the same checksum and presign query values as an
-authenticated resource. With <code>presign=true</code> and <code>follow=true</code>, the response is
-a <code>307 Temporary Redirect</code> to object storage. Public shares do not provide a
-packageR download or directory archive endpoint.</p>
+<p>Public file metadata accepts the <a href="#resources">checksum and presign query values</a>.
+Use <code>GET</code> for presign requests; <code>HEAD</code> with
+<code>presign=true</code> is rejected. Public shares do not provide a packageR download
+or directory archive endpoint.</p>
 <h2 id="public-catalogs">Public catalogs</h2>
 <p>For a share with a Parquet catalog, use these paths to get the complete catalog
 or the entries below a package path:</p>
 <div class="highlight"><pre><span></span><code>/api/public/catalog/{hash}
 /api/public/catalog/{hash}/{path}
 </code></pre></div>
-<p>The route accepts <code>GET</code> and <code>HEAD</code>. For a protected share, send
-<code>X-SHARE-PASSWORD</code> with each request. One matching row returns a STAC
-<code>Feature</code>. Zero or multiple rows return a versioned <code>FeatureCollection</code> with a
-<code>links</code> array.
-Responses use the <code>application/geo+json</code> media type.</p>
+<p>Both routes accept <code>GET</code> and <code>HEAD</code>. For a protected share, send
+<code>X-SHARE-PASSWORD</code> with each request.</p>
+<table>
+<thead>
+<tr>
+<th>Request</th>
+<th>Response</th>
+<th>Media type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Catalog root</td>
+<td>STAC <code>Collection</code> with links to its Items</td>
+<td><code>application/json</code></td>
+</tr>
+<tr>
+<td>Path with one matching row</td>
+<td>STAC <code>Feature</code></td>
+<td><code>application/geo+json</code></td>
+</tr>
+<tr>
+<td>Path with zero or multiple matching rows</td>
+<td>STAC <code>FeatureCollection</code></td>
+<td><code>application/geo+json</code></td>
+</tr>
+</tbody>
+</table>
 <p>The Parquet catalog does not need full STAC GeoParquet compliance. Each row
 must contain:</p>
 <ol>
@@ -1230,8 +1281,8 @@ packageR moves flattened Item metadata into <code>properties</code>, supplies th
 version and required empty link arrays, and derives missing geometry from
 <code>bbox</code> when possible.</p>
 <p>packageR checks all assets when it selects rows. Matching <code>href</code> values become
-public share URLs with <code>?presign&amp;followRedirect</code>. Other absolute URLs stay
-unchanged. <a href="../../architecture/0002-publish-parquet-catalogs-as-stac/">ADR-002</a>
+public share URLs that redirect to presigned object URLs. Other absolute URLs
+stay unchanged. <a href="../../architecture/0002-publish-parquet-catalogs-as-stac/">ADR-002</a>
 defines the matching rules.</p>
 <p>Asset mappings map nonstandard URL prefixes to paths inside a share. Each
 mapping contains <code>from</code> and <code>to</code> strings. The <code>to</code> path must be relative and
@@ -1239,6 +1290,9 @@ stay inside the share.</p>
 <p>Catalog queries have these requirements:</p>
 <ul>
 <li>The catalog must be inside the shared tree</li>
+<li>The catalog file must not exceed 256 MiB</li>
+<li>Up to four catalog queries run at once per process; other requests wait for
+  a slot or request cancellation</li>
 <li>DuckDB reads a signed URL with HTTP range requests and does not stage the
   catalog on local disk</li>
 <li>The internal catalog URL is valid for at most 15 minutes</li>
@@ -1317,10 +1371,10 @@ stay inside the share.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

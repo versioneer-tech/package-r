@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../imgs/favicon.ico">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -891,13 +891,17 @@
 need an account. Operators define packages before startup. Users can open the
 links in the web interface, but cannot change them.</p>
 <h2 id="package-an-object-prefix">Package an object prefix</h2>
-<p>Use the share command to map a public name to an object path. When
-<code>PACKAGE_R_ROOT</code> selects one bucket, the path is a prefix in that bucket:</p>
+<p>Run the share command before startup, after you create the database and owner
+account. These examples use the owner <code>admin</code> with scope <code>/</code> and one bucket
+in <code>PACKAGE_R_ROOT</code>. The share path is relative to that scope:</p>
 <div class="highlight"><pre><span></span><code>./package-r<span class="w"> </span>shares<span class="w"> </span>add<span class="w"> </span>admin<span class="w"> </span>public<span class="w"> </span>/deliverables/26-06<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--description<span class="o">=</span><span class="s2">"June 2026 deliverables"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--expiration<span class="o">=</span>30d
-./package-r<span class="w"> </span>shares<span class="w"> </span>add<span class="w"> </span>admin<span class="w"> </span>f4ae91c8d2<span class="w"> </span>/reports/report.tif
+./package-r<span class="w"> </span>shares<span class="w"> </span>add<span class="w"> </span>admin<span class="w"> </span>report<span class="w"> </span>/reports/report.tif
 </code></pre></div>
+<p>On a server at <code>https://packages.example.org</code>, these links are
+<code>https://packages.example.org/share/public/</code> and
+<code>https://packages.example.org/share/report/</code>.</p>
 <p>A prefix package lets a public visitor navigate below the configured path. A
 single-object package opens that object. The visitor cannot navigate above the
 configured path.</p>
@@ -915,7 +919,7 @@ open the package.</p>
 <p><img alt="Public share directory" src="../../imgs/screenshots/vienna-s2l2a-26-directory.png" /></p>
 <h2 id="protect-a-package-with-a-share-password">Protect a package with a share password</h2>
 <p>Pass the password when you add the share:</p>
-<div class="highlight"><pre><span></span><code>./package-r<span class="w"> </span>shares<span class="w"> </span>add<span class="w"> </span>admin<span class="w"> </span>f4ae91c8d2<span class="w"> </span>/reports/report.tif<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>./package-r<span class="w"> </span>shares<span class="w"> </span>add<span class="w"> </span>admin<span class="w"> </span>report<span class="w"> </span>/reports/report.tif<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--password<span class="o">=</span>my-password
 </code></pre></div>
 <p>The browser asks for the password before it opens the package. API clients send
@@ -925,9 +929,9 @@ write them to logs.</p>
 <p>Authenticated files and public shares use the same browser interface. Public
 shares are read-only and do not show upload, change, delete, download, or
 directory archive actions.</p>
-<p>Open a supported file to preview it through a presigned URL. Select <strong>Info</strong>,
-then select <strong>Show</strong> next to <strong>Presigned URL</strong> to display the direct S3 GET
-URL. The file does not pass through packageR.</p>
+<p>To download a file, select <strong>Info</strong>, then <strong>Show</strong> next to <strong>Presigned URL</strong>.
+Open the displayed link to read the file directly from S3. Supported viewers
+also use presigned URLs for previews.</p>
 <p><img alt="Public file links" src="../../imgs/screenshots/vienna-s2l2a-26-presign.png" /></p>
 <p>The API can also return a <code>307 Temporary Redirect</code> to the direct URL. See the
 <a href="../../reference-guides/http-api/#public-shares">HTTP API</a>.</p>
@@ -935,21 +939,14 @@ URL. The file does not pass through packageR.</p>
 <p>Open a TIFF or GeoTIFF object from the file list or public share. The viewer
 uses the presigned URL and byte-range requests to load the required image
 parts.</p>
-<p>If the viewer does not load, check:</p>
-<ul>
-<li>S3 CORS access for the packageR origin</li>
-<li><code>GET</code>, <code>HEAD</code>, and the <code>Range</code> request header</li>
-<li>exposed range and object metadata response headers</li>
-<li>HTTP <code>206 Partial Content</code> support in each storage proxy</li>
-</ul>
+<p>If the viewer does not load, ask the operator to check
+<a href="../configuration/#browser-access">object-storage CORS and range requests</a>.</p>
 <p><img alt="Authenticated image preview" src="../../imgs/screenshots/authenticated-image-preview.png" /></p>
 <h2 id="publish-a-stac-compatible-parquet-catalog">Publish a STAC-compatible Parquet catalog</h2>
 <p>The <code>vienna-s2l2a-26</code> example contains three Sentinel-2 Collection 1 Level-2A
-scenes from <a href="https://earth-search.aws.element84.com/v1/">Earth Search by Element 84</a>.
-The preparation script downloads the source COG ranges for February, May, and
-August 2026, clips them to Vienna, builds an RGB COG for each date, and writes
-the assets and metadata to one STAC catalog in Parquet format. This catalog also
-follows the <a href="https://github.com/radiantearth/stac-geoparquet-spec/blob/main/stac-geoparquet-spec.md">STAC GeoParquet specification</a>.</p>
+scenes from <a href="https://earth-search.aws.element84.com/v1/">Earth Search by Element 84</a>,
+clipped to Vienna. Its catalog follows the
+<a href="https://github.com/radiantearth/stac-geoparquet-spec/blob/main/stac-geoparquet-spec.md">STAC GeoParquet specification</a>.</p>
 <p>Place the Parquet catalog inside the shared directory. Each row needs <code>id</code>,
 STAC time data, and an <code>assets</code> JSON object with <code>href</code> values. The
 <a href="../../reference-guides/http-api/#public-catalogs">HTTP API</a> lists all supported
@@ -958,16 +955,13 @@ fields and limits.</p>
 HTTP(S), and <code>s3://</code> paths that identify an object inside the share. External
 URLs stay unchanged. See <a href="../../architecture/0002-publish-parquet-catalogs-as-stac/">ADR-002</a>
 for the matching rules.</p>
-<p>Set the relative catalog path when you add the share. If an asset URI does not
-match the storage path, add an asset mapping to that share:</p>
+<p>Set the relative catalog path when you add the share:</p>
 <div class="highlight"><pre><span></span><code>./package-r<span class="w"> </span>shares<span class="w"> </span>add<span class="w"> </span>admin<span class="w"> </span>vienna-s2l2a-26<span class="w"> </span>/vienna-s2l2a-26<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--catalog-name<span class="o">=</span>vienna-s2l2a-26.parquet<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--asset-mappings<span class="o">=</span><span class="s1">'[{"from":"s3://data/","to":"."}]'</span>
+<span class="w">  </span>--catalog-name<span class="o">=</span>vienna-s2l2a-26.parquet
 </code></pre></div>
-<p>In this example, <code>s3://data/item.tif</code> maps to <code>item.tif</code> at the share root.
-Keep the trailing slash in <code>s3://data/</code> so that the prefix does not also match
-similar bucket names. The <code>to</code> value must be relative and stay inside the
-share. Most catalogs do not need an asset mapping.</p>
+<p>Use <code>--asset-mappings</code> only when asset URLs do not match paths inside the
+share. <a href="../../architecture/0002-publish-parquet-catalogs-as-stac/#decision">ADR-002</a>
+shows the JSON format and a mapping example.</p>
 <p>If <code>--catalog-name</code> is empty or omitted, the share has no catalog endpoint.</p>
 <p>For the Vienna share, request the STAC Collection:</p>
 <div class="highlight"><pre><span></span><code>/api/public/catalog/vienna-s2l2a-26
@@ -975,30 +969,10 @@ share. Most catalogs do not need an asset mapping.</p>
 <p>Add a path below the share to select matching catalog entries:</p>
 <div class="highlight"><pre><span></span><code>/api/public/catalog/vienna-s2l2a-26/S2B_T33UXP_20260218T100524_L2A/
 </code></pre></div>
-<p>The root response is a STAC <code>Collection</code> that links to each matching Item. A
-path below the share returns a STAC <code>Feature</code> or <code>FeatureCollection</code>. Internal
-asset links become public package URLs.</p>
-<p>packageR serves this endpoint dynamically. It uses DuckDB to query the Parquet
-catalog and renders the matching rows as STAC JSON when a client requests
-<code>/api/public/catalog</code>.</p>
-<p>Use the absolute endpoint URL in a STAC Browser. Set the public browser's
-external-catalog URL when you prepare the database:</p>
-<div class="highlight"><pre><span></span><code>./package-r<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--stac-browser-url<span class="o">=</span>http://localhost:8080/external/
-</code></pre></div>
-<p>Also allow the browser origin to read the public catalog endpoint:</p>
-<div class="highlight"><pre><span></span><code>PACKAGE_R_CORS_ALLOWED_ORIGINS=http://localhost:8080
-</code></pre></div>
-<p>Serve packageR through HTTPS when you use an HTTPS STAC Browser. Web browsers
-block an HTTPS page from reading an HTTP catalog, including a catalog on
-<code>localhost</code>. For local development, make an existing STAC Browser checkout
-available at <code>~/stac-browser</code>. This path can be a symbolic link. Install its
-dependencies once:</p>
-<div class="highlight"><pre><span></span><code>pnpm<span class="w"> </span>--prefix<span class="w"> </span>~/stac-browser<span class="w"> </span>install
-</code></pre></div>
-<p>Start it with <code>pnpm --prefix ~/stac-browser start</code> and configure packageR with
-<code>http://localhost:8080/external/</code>. The repository's VS Code compound launch
-starts this local checkout together with packageR.</p>
+<p>Use the absolute endpoint URL in a STAC Browser. Operators can
+<a href="../configuration/#catalogs">configure STAC Browser links</a> in packageR.
+Use HTTPS for both services in a hosted deployment to avoid
+<a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Mixed_content">mixed-content errors</a>.</p>
 <p>Open the public share and select <strong>Info</strong> to get the Collection preview link.
 Open an acquisition directory and select <strong>Info</strong> to get its Item preview link.
 For a file, the link appears above the presigned object URL. In each case,
@@ -1007,8 +981,6 @@ select <strong>Show</strong> next to <strong>STAC Browser URL</strong>.</p>
 <p>Open the link to inspect the Item, its Vienna footprint, metadata, and assets in
 the configured STAC Browser.</p>
 <p><img alt="Vienna Sentinel-2 Item in STAC Browser" src="../../imgs/screenshots/vienna-s2l2a-26-stac-browser.png" /></p>
-<p>See the <a href="../../reference-guides/http-api/#public-catalogs">HTTP API</a> for the
-response contract and limits.</p>
 
 
 
@@ -1083,10 +1055,10 @@ response contract and limits.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

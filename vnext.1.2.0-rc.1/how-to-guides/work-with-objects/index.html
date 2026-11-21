@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../imgs/favicon.ico">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -909,31 +909,20 @@
 
 
 <h1 id="work-with-objects">Work with objects</h1>
-<p>This guide covers common browser tasks. Available buttons depend on your
-permissions.</p>
+<p>Available actions depend on your permissions.</p>
 <h2 id="sign-in">Sign in</h2>
-<p>The deployment uses one of these sign-in methods:</p>
-<ul>
-<li>a packageR username and password</li>
-<li>single sign-on through a trusted reverse proxy</li>
-</ul>
-<p>With proxy sign-in, the proxy supplies your identity. Do not send the identity
-header directly from an untrusted client.</p>
+<p>Use the account supplied by your operator. Some deployments use single
+sign-on through a reverse proxy.</p>
 <h2 id="browse-storage">Browse storage</h2>
-<p>The first page shows the configured storage root.</p>
-<ul>
-<li>In service-root mode, the first-level directories are S3 buckets</li>
-<li>In bucket mode, <code>/</code> is the root of one S3 bucket</li>
-</ul>
-<p>Use the directory list or breadcrumb path to navigate. packageR prevents a
-user scope from escaping its configured root.</p>
+<p>The first page lists buckets or the contents of one bucket, depending on the
+deployment. Use the directory list or breadcrumb path to navigate.</p>
 <h2 id="inspect-and-download-an-object">Inspect and download an object</h2>
 <p>Open a file to use its viewer. Use <strong>Info</strong> to see its name, size,
 modification time, type, checksums, and presigned URL when available.</p>
-<p>Open <strong>Info</strong> and select <strong>Show</strong> next to <strong>Presigned URL</strong>. The browser then
-reads the object from storage instead of streaming it through packageR. The
-URL is valid for at most seven days. Treat it as a temporary credential. Do
-not put it in logs or source code.</p>
+<p>Select <strong>Show</strong> next to <strong>Presigned URL</strong> to display the link. Open the link
+to read the object directly from storage. The URL is valid for at most seven
+days. Anyone with the URL can read the object until it expires. Do not put it
+in logs or source code.</p>
 <p><img alt="File information with a presigned URL" src="../../imgs/screenshots/authenticated-file-info-presign.png" /></p>
 <h2 id="upload-data">Upload data</h2>
 <p>Use <strong>Upload</strong> to select files or folders. You can also drag files into the
@@ -952,9 +941,8 @@ the object to S3. Contact the operator if the cache is full or not writable.</p>
 <p>S3 does not have a filesystem rename operation. A rename or move can copy the
 data and then delete the source. Large operations can take time and add
 storage request costs.</p>
-<p>If an action is not available, your account does not have that permission. A
-<code>403 Forbidden</code> response can also come from your scope, a path rule, or the S3
-policy.</p>
+<p>If an action is not available, ask the operator to check your permissions.
+A <code>403 Forbidden</code> response can also come from the storage policy.</p>
 <h2 id="supported-previews">Supported previews</h2>
 <p>The built-in viewers support common text, image, audio, and video formats.
 packageR also previews TIFF, GeoTIFF, and COG files. It does not provide a
@@ -1035,10 +1023,10 @@ public shares, direct object URLs, and STAC catalog responses.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

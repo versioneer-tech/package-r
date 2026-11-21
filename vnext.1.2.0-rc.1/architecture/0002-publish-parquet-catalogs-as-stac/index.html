@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../imgs/favicon.ico">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -917,8 +917,9 @@ path.</p>
 <p>For each returned row, packageR supplies or normalizes required STAC Item
 fields. It moves flattened metadata into <code>properties</code>, supplies
 <code>stac_version</code>, normalizes geometry and bounding boxes when possible, and adds
-links. One match produces a STAC <code>Feature</code>. Zero or multiple matches produce a
-STAC <code>FeatureCollection</code>. Responses use <code>application/geo+json</code>.</p>
+links. The catalog root returns a STAC <code>Collection</code> as <code>application/json</code>.
+A path with one match returns a STAC <code>Feature</code>; zero or multiple matches return
+a STAC <code>FeatureCollection</code>. Path responses use <code>application/geo+json</code>.</p>
 <p>The catalog file must be inside the share. packageR checks the file through the
 scoped rclone VFS and gives DuckDB a short-lived signed read URL. DuckDB uses
 HTTP range requests. Catalog size, query concurrency, and signed-URL lifetime
@@ -1012,10 +1013,10 @@ resolve inside the share or through an explicit mapping.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

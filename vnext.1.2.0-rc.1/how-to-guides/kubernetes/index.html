@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../imgs/favicon.ico">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -799,16 +799,13 @@
 
 
 <h1 id="run-packager-on-kubernetes">Run packageR on Kubernetes</h1>
-<p>The packageR container starts the application directly. Prepare its runtime
-database before the main container starts. The preferred packageR deployment
-model keeps runtime state ephemeral and treats shares like other
-configuration, with an init container creating them during the bootstrap
-phase. An init container and an <code>emptyDir</code> volume make this setup explicit:</p>
+<p>The runtime image has no shell. Prepare the database with direct packageR
+commands in separate init containers. They share an <code>emptyDir</code> volume:</p>
 <ol>
-<li>The init container creates a new database, users, and public shares.</li>
+<li>The init containers create the database, users, and public shares.</li>
 <li>The main container reads the prepared database and starts packageR.</li>
-<li>Kubernetes discards the database when it replaces the Pod. The next init
-   container creates it again from the deployment configuration.</li>
+<li>Kubernetes discards the database when it replaces the Pod. The new Pod
+   creates it again from the deployment configuration.</li>
 </ol>
 <p>Keep passwords and object-storage credentials in Kubernetes Secrets. Prefer a
 workload identity when the object-storage service supports it. Pin the image
@@ -822,6 +819,8 @@ example:</p>
 <li><code>aws-access-key-id</code></li>
 <li><code>aws-secret-access-key</code></li>
 </ul>
+<p>Replace <code>my-bucket</code> and the region with your storage settings. Use the same
+image tag or digest in all containers.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -842,39 +841,56 @@ example:</p>
 <span class="w">        </span><span class="nt">runAsGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
 <span class="w">        </span><span class="nt">fsGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
 <span class="w">      </span><span class="nt">initContainers</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prepare-database</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configure</span>
 <span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/versioneer-tech/package-r:latest</span>
-<span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"/bin/sh"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"-ec"</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"/package-r"</span><span class="p p-Indicator">]</span>
 <span class="w">          </span><span class="nt">args</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">              </span><span class="no">database=/state/package-r.db</span>
-<span class="w">              </span><span class="no">work_database=/state/package-r.db.new</span>
-<span class="w">              </span><span class="no">rm -f "$work_database"</span>
-<span class="w">              </span><span class="no">export PACKAGE_R_DATABASE="$work_database"</span>
-
-<span class="w">              </span><span class="no">/package-r config init \</span>
-<span class="w">                </span><span class="no">--address=0.0.0.0 \</span>
-<span class="w">                </span><span class="no">--root=my-bucket \</span>
-<span class="w">                </span><span class="no">--stac-browser-url=https://stac-browser.example/external/</span>
-
-<span class="w">              </span><span class="no">/package-r users add admin "$ADMIN_PASSWORD" \</span>
-<span class="w">                </span><span class="no">--perm.create=true \</span>
-<span class="w">                </span><span class="no">--perm.delete=true \</span>
-<span class="w">                </span><span class="no">--perm.modify=true \</span>
-<span class="w">                </span><span class="no">--perm.rename=true</span>
-
-<span class="w">              </span><span class="no">/package-r shares add admin public / \</span>
-<span class="w">                </span><span class="no">--password="$SHARE_PASSWORD" \</span>
-<span class="w">                </span><span class="no">--catalog-name=openaerialmap-assets.parquet \</span>
-<span class="w">                </span><span class="no">--asset-mappings='[{"from":"s3://data/","to":"."}]'</span>
-
-<span class="w">              </span><span class="no">mv "$work_database" "$database"</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">init</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--address=0.0.0.0</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--root=my-bucket</span>
 <span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PACKAGE_R_DATABASE</span>
+<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/state/package-r.db</span>
+<span class="w">          </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">state</span>
+<span class="w">              </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/state</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create-admin</span>
+<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/versioneer-tech/package-r:latest</span>
+<span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"/package-r"</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">users</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">add</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$(ADMIN_PASSWORD)</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--perm.create=true</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--perm.delete=true</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--perm.modify=true</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--perm.rename=true</span>
+<span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PACKAGE_R_DATABASE</span>
+<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/state/package-r.db</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ADMIN_PASSWORD</span>
 <span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
 <span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
 <span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">package-r-secrets</span>
 <span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin-password</span>
+<span class="w">          </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">state</span>
+<span class="w">              </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/state</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create-share</span>
+<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/versioneer-tech/package-r:latest</span>
+<span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"/package-r"</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shares</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">add</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">public</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--password=$(SHARE_PASSWORD)</span>
+<span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PACKAGE_R_DATABASE</span>
+<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/state/package-r.db</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SHARE_PASSWORD</span>
 <span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
 <span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
@@ -895,8 +911,6 @@ example:</p>
 <span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"8888"</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PACKAGE_R_ROOT</span>
 <span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-bucket</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PACKAGE_R_CORS_ALLOWED_ORIGINS</span>
-<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://viewer.example.org</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">XDG_CACHE_HOME</span>
 <span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/cache</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWS_REGION</span>
@@ -945,17 +959,21 @@ example:</p>
 <span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8888</span>
 <span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
 </code></pre></div>
-<p>The main container can update runtime state in the database. These changes
-last for the life of the Pod only. A replacement Pod gets a new database from
-its init container and existing login sessions end. Run one replica because
-each Pod has its own database and session-signing key.</p>
-<p>An empty <code>--password</code> value creates an unprotected share. An empty or omitted
-<code>--catalog-name</code> value creates a share without a catalog endpoint. Use a
-relative catalog path inside the shared prefix. Use <code>--asset-mappings</code> only
-when catalog asset URLs do not match paths in that share.</p>
+<p>Kubernetes expands <code>$(ADMIN_PASSWORD)</code> and <code>$(SHARE_PASSWORD)</code> in the command
+arguments. No shell is needed.</p>
+<p>For a local check after the Pod is ready, forward the Service port:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>port-forward<span class="w"> </span>service/package-r<span class="w"> </span><span class="m">8888</span>:8888
+</code></pre></div>
+<p>Open <code>http://127.0.0.1:8888</code> and sign in as <code>admin</code>. The password-protected
+package is at <code>http://127.0.0.1:8888/share/public/</code>.</p>
+<p>Run one replica because each Pod has its own database and session-signing
+key. Replacing the Pod ends existing login sessions and resets display
+preferences.</p>
 <p>Change the bucket, paths, authentication, permissions, and share definitions
-in the init-container command. Do not add bootstrap logic to the main
-container. See <a href="../configuration/">Configuration</a> for the available settings.</p>
+in the init-container commands. Do not add bootstrap logic to the main
+container. See <a href="../configuration/">Configuration</a> for the available settings
+and <a href="../share-and-preview-data/#publish-a-stac-compatible-parquet-catalog">catalog setup</a>
+to add a Parquet catalog to the share.</p>
 <p>An Ingress normally forwards packageR CORS response headers unchanged. Route
 <code>OPTIONS</code> requests to packageR, and configure CORS in only one layer to avoid
 duplicate or conflicting headers. CORS for presigned object-storage URLs must
@@ -1034,10 +1052,10 @@ still be configured on the object-storage service.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

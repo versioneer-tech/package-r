@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../imgs/favicon.ico">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -524,6 +524,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Object storage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-directories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache directories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storage-root" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage root
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#browser-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Browser access
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -903,6 +953,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Object storage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-directories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache directories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storage-root" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage root
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#browser-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Browser access
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1009,23 +1109,22 @@
 
 
 <h1 id="configuration">Configuration</h1>
-<p>packageR reads server options from command-line flags, <code>PACKAGE_R_</code>
-environment variables, or its configuration file. Application settings are
-stored in the packageR database and managed with <code>package-r config</code>.
+<p>Server options use this order of priority: command-line flags, <code>PACKAGE_R_</code>
+environment variables, configuration file, database settings, then defaults.
+Use <code>package-r config init</code> to create a database and <code>package-r config set</code>
+to change an existing database. Run these commands before you start the server.
 Object-storage credentials belong to the process and are not stored in the
 database or user records.</p>
 <h2 id="runtime-state">Runtime state</h2>
-<p>packageR is stateless. Object data stays in object storage. The local Bolt
-database is a runtime cache for settings, user records, and public shares. It
-is not the source of the stored data.</p>
-<p>For hosted deployments, use a separate process to prepare the database before
-packageR starts. The database does not need a backup or a persistent volume.
-The <a href="../kubernetes/">Kubernetes guide</a> shows an init container and an
-<code>emptyDir</code> volume.</p>
+<p>Object data stays in object storage. The local Bolt database holds settings,
+user records, public shares, and the session-signing key.</p>
+<p>For hosted deployments, keep the initial settings, users, and shares in the
+deployment configuration. Use a separate process to create the database from
+that configuration before packageR starts. The <a href="../kubernetes/">Kubernetes guide</a>
+uses init containers and an <code>emptyDir</code> volume for this purpose.</p>
+<p>Re-creating the database ends login sessions and resets stored display
+preferences. It does not change objects in storage.</p>
 <h2 id="defaults">Defaults</h2>
-<p>packageR listens on <code>127.0.0.1:8888</code> and uses <code>/tmp/package-r.db</code> by default.
-Create the database and its first user before you start the server. JSON
-username/password authentication is the default.</p>
 <table>
 <thead>
 <tr>
@@ -1084,8 +1183,6 @@ and, when applicable, the port. For example:</p>
 <p>packageR handles browser preflight requests and allows the methods and headers
 used by its API. It does not enable credentialed cookie requests. Configure
 CORS separately on object storage when browsers open presigned URLs directly.</p>
-<p>With empty AWS values, packageR uses the ambient AWS credential chain and AWS
-S3. Storage requests fail if that chain does not provide usable credentials.</p>
 <h2 id="object-storage">Object storage</h2>
 <p>These values configure rclone VFS and presigned links.</p>
 <table>
@@ -1166,9 +1263,10 @@ S3. Storage requests fail if that chain does not provide usable credentials.</p>
 </tr>
 </tbody>
 </table>
+<h3 id="credentials">Credentials</h3>
 <p>Choose one credential mode:</p>
 <ul>
-<li>For workload identity, leave <code>AWS_ACCESS_KEY_ID</code> and
+<li>For workload identity or a shared credential file, leave <code>AWS_ACCESS_KEY_ID</code> and
   <code>AWS_SECRET_ACCESS_KEY</code> unset. rclone uses its S3 credential chain. This can
   use AWS IRSA, a container identity, an instance identity, or a shared
   credential file.</li>
@@ -1178,13 +1276,10 @@ S3. Storage requests fail if that chain does not provide usable credentials.</p>
 <p>Startup fails when only one static key variable is set. Do not put projected
 tokens or static credentials in packageR configuration, logs, or the Bolt
 database.</p>
-<p>The service keeps process-owned rclone VFS instances. An explicit bucket
-catalog uses one instance for each configured bucket. User settings cannot
-change the endpoint, credentials, root, or bucket catalog. The credential
-provider refreshes temporary credentials when the selected identity method
-supports refresh.</p>
-<p>Directory listings use the server modification time returned by S3. This
-avoids a separate metadata request for each listed object.</p>
+<p>User settings cannot change the endpoint, credentials, root, or bucket
+catalog. The credential provider refreshes temporary credentials when the
+selected identity method supports refresh.</p>
+<h3 id="cache-directories">Cache directories</h3>
 <p>Chunked and seek-based uploads use the rclone VFS write cache. Set
 <code>XDG_CACHE_HOME</code> to choose its parent directory. For example,
 <code>XDG_CACHE_HOME=/var/cache/package-r</code> places the VFS cache below
@@ -1197,6 +1292,10 @@ catalog query downloads the extension if it is not cached. A writable
 temporary volume is sufficient. A persistent volume avoids downloading it
 again after each restart. Catalog storage must support ranged <code>GET</code> requests
 and may receive <code>HEAD</code> requests.</p>
+<h3 id="storage-root">Storage root</h3>
+<p>With <code>PACKAGE_R_ROOT=my-bucket</code>, <code>/</code> in packageR is the root of <code>my-bucket</code>.
+packageR needs <code>s3:ListBucket</code> and the required object permissions for that
+bucket. Leave <code>PACKAGE_R_BUCKETS</code> empty in this mode.</p>
 <p>With <code>PACKAGE_R_ROOT=/</code> and an empty <code>PACKAGE_R_BUCKETS</code>, the top-level entries
 come from S3 bucket discovery. The credentials need permission to list
 buckets. On AWS, this is <code>s3:ListAllMyBuckets</code>.</p>
@@ -1210,11 +1309,7 @@ S3 bucket discovery. Opening and listing a configured bucket still needs its
 bucket-list permission, such as AWS <code>s3:ListBucket</code>. Object actions need the
 matching provider permissions. Bucket names must be unique. packageR rejects
 a rename between buckets because each bucket has a separate backend.</p>
-<p>With <code>PACKAGE_R_ROOT=my-bucket</code>, <code>/</code> in packageR is the root of <code>my-bucket</code>.
-packageR does not need permission to list all buckets. It still needs
-<code>s3:ListBucket</code> and the required object permissions for <code>my-bucket</code>. Leave
-<code>PACKAGE_R_BUCKETS</code> empty in this mode. packageR rejects a bucket catalog with
-a direct bucket root because other catalog entries would not be reachable.</p>
+<h3 id="browser-access">Browser access</h3>
 <p>Browser COG previews use presigned object URLs. Configure S3 CORS for the
 packageR and viewer origins. Allow <code>GET</code>, <code>HEAD</code>, and the <code>Range</code> request
 header. Expose <code>Accept-Ranges</code>, <code>Content-Range</code>, <code>Content-Length</code>, and <code>ETag</code>.
@@ -1303,19 +1398,18 @@ to start when user-directory mode is enabled and <code>PACKAGE_R_ROOT=/</code>.<
    delete.</li>
 </ol>
 <h2 id="catalogs">Catalogs</h2>
-<p>Set a catalog name on each share with <code>package-r shares add --catalog-name</code>.
-Use <code>--asset-mappings</code> on the same command if that share needs URL-to-path
-mappings. Without <code>--catalog-name</code>, the share has no catalog.</p>
+<p>Set a catalog path on each share with <code>package-r shares add --catalog-name</code>.
+The path must be relative and stay inside the share. Without this option,
+the share has no catalog endpoint. See the
+<a href="../share-and-preview-data/#publish-a-stac-compatible-parquet-catalog">catalog setup guide</a>
+for an example and optional asset mappings.</p>
 <p>Set the optional STAC Browser URL when you prepare the database:</p>
 <div class="highlight"><pre><span></span><code>./package-r<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--stac-browser-url<span class="o">=</span>http://localhost:8080/external/
+<span class="w">  </span>--stac-browser-url<span class="o">=</span>https://stac-browser.example/external/
 </code></pre></div>
-<p>The default is empty. packageR does not add a STAC Browser link unless you set
-this option.</p>
-<p>Catalog names and mapping targets must stay inside the shared path. Absolute
-names and parent-path escapes are invalid. Most catalogs do not need asset
-mappings.</p>
-<p>See the <a href="../../reference-guides/http-api/">HTTP API</a> for route behavior.</p>
+<p>The default is empty. Set this option to add <strong>STAC Browser URL</strong> links to the
+<strong>Info</strong> dialog. Allow the browser origin in both
+<code>PACKAGE_R_CORS_ALLOWED_ORIGINS</code> and the object-storage CORS settings.</p>
 
 
 
@@ -1390,10 +1484,10 @@ mappings.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "search.suggest", "toc.follow", "toc.permalink"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

@@ -461,13 +461,17 @@ paths:
     get:
       tags: [Catalogs]
       operationId: getPublicCatalog
-      summary: Get a public STAC catalog
+      summary: Get a public STAC Collection
       security:
         - {}
         - SharePassword: []
       responses:
         "200":
-          $ref: "#/components/responses/STACResponse"
+          description: A STAC Collection with links to its Items.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/STACCollection"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -840,6 +844,33 @@ components:
           type: integer
         height:
           type: integer
+
+    STACCollection:
+      type: object
+      required: [type, stac_version, id, description, license, extent, links]
+      properties:
+        type:
+          const: Collection
+        stac_version:
+          type: string
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        license:
+          type: string
+        extent:
+          type: object
+          required: [spatial, temporal]
+          description: Spatial bounding boxes and temporal intervals for the catalog Items.
+          additionalProperties: true
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/STACLink"
+      additionalProperties: true
 
     STACFeature:
       type: object
