@@ -22,6 +22,9 @@ example:
 - `aws-access-key-id`
 - `aws-secret-access-key`
 
+Replace `my-bucket` and the region with your storage settings. Use the same
+image tag or digest in all containers.
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -51,7 +54,6 @@ spec:
             - init
             - --address=0.0.0.0
             - --root=my-bucket
-            - --stac-browser-url=https://stac-browser.example/external/
           env:
             - name: PACKAGE_R_DATABASE
               value: /state/package-r.db
@@ -91,8 +93,6 @@ spec:
             - public
             - /
             - --password=$(SHARE_PASSWORD)
-            - --catalog-name=openaerialmap-assets.parquet
-            - '--asset-mappings=[{"from":"s3://data/","to":"."}]'
           env:
             - name: PACKAGE_R_DATABASE
               value: /state/package-r.db
@@ -116,8 +116,6 @@ spec:
               value: "8888"
             - name: PACKAGE_R_ROOT
               value: my-bucket
-            - name: PACKAGE_R_CORS_ALLOWED_ORIGINS
-              value: https://viewer.example.org
             - name: XDG_CACHE_HOME
               value: /cache
             - name: AWS_REGION
@@ -170,17 +168,24 @@ spec:
 Kubernetes expands `$(ADMIN_PASSWORD)` and `$(SHARE_PASSWORD)` in the command
 arguments. No shell is needed.
 
-Run one replica because each Pod has its own database and session-signing
-key. Replacing the Pod ends existing login sessions.
+For a local check after the Pod is ready, forward the Service port:
 
-An empty `--password` value creates an unprotected share. An empty or omitted
-`--catalog-name` value creates a share without a catalog endpoint. Use a
-relative catalog path inside the shared prefix. Use `--asset-mappings` only
-when catalog asset URLs do not match paths in that share.
+```bash
+kubectl port-forward service/package-r 8888:8888
+```
+
+Open `http://127.0.0.1:8888` and sign in as `admin`. The password-protected
+package is at `http://127.0.0.1:8888/share/public/`.
+
+Run one replica because each Pod has its own database and session-signing
+key. Replacing the Pod ends existing login sessions and resets display
+preferences.
 
 Change the bucket, paths, authentication, permissions, and share definitions
 in the init-container commands. Do not add bootstrap logic to the main
-container. See [Configuration](configuration.md) for the available settings.
+container. See [Configuration](configuration.md) for the available settings
+and [catalog setup](share-and-preview-data.md#publish-a-stac-compatible-parquet-catalog)
+to add a Parquet catalog to the share.
 
 An Ingress normally forwards packageR CORS response headers unchanged. Route
 `OPTIONS` requests to packageR, and configure CORS in only one layer to avoid

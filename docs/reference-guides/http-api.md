@@ -180,8 +180,8 @@ curl -fsS \
 ```
 
 Public file metadata supports the same checksum and presign query values as an
-authenticated resource. With `presign=true` and `follow=true`, the response is
-a `307 Temporary Redirect` to object storage. Public shares do not provide a
+authenticated resource. With `presign=true` and `followRedirect=true`, the
+response is a `307 Temporary Redirect` to object storage. Public shares do not provide a
 packageR download or directory archive endpoint.
 
 Use `GET` for presign requests. `HEAD` with `presign=true` is rejected.
@@ -219,8 +219,8 @@ version and required empty link arrays, and derives missing geometry from
 `bbox` when possible.
 
 packageR checks all assets when it selects rows. Matching `href` values become
-public share URLs with `?presign&followRedirect`. Other absolute URLs stay
-unchanged. [ADR-002](../architecture/0002-publish-parquet-catalogs-as-stac.md)
+public share URLs that redirect to presigned object URLs. Other absolute URLs
+stay unchanged. [ADR-002](../architecture/0002-publish-parquet-catalogs-as-stac.md)
 defines the matching rules.
 
 Asset mappings map nonstandard URL prefixes to paths inside a share. Each

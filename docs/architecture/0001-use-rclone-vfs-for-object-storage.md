@@ -22,7 +22,7 @@ packageR embeds rclone in the Go process.
 - An explicit bucket catalog creates a synthetic service root without S3
   bucket discovery and routes each bucket to its own backend
 - An adapter exposes rclone VFS as the inherited `afero.Fs` interface
-- One VFS instance holds the process storage configuration
+- The VFS instances use the same process storage configuration
 - A user scope selects a path below the backend root
 - Object operations use the scoped VFS
 - Presigned GET URLs use `PublicLink` from the same rclone backend

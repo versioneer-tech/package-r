@@ -103,7 +103,7 @@ SBOMs, and the publication gate.
 ### Use VS Code
 
 Generate the Sentinel-2 fixture with the command in the test guide. Open
-**Run and Debug** and start **run packageR**. It starts local S3, builds the
+**Run and Debug** and start **PackageR**. It starts local S3, builds the
 backend, prepares `.vscode/package-r.db`, and shares `vienna-s2l2a-26`. It then
 starts the Go debugger and opens `http://localhost:8888`.
 
@@ -124,6 +124,20 @@ To control local S3 without VS Code, use:
 ```
 
 `serve` stays in the foreground.
+
+### Use a local STAC Browser
+
+Make an existing STAC Browser checkout available at `~/stac-browser`.
+This path can be a symbolic link. Install its dependencies once:
+
+```bash
+pnpm --prefix ~/stac-browser install
+```
+
+Start **PackageR & STAC Browser** in VS Code to run both services. This launch
+sets the local browser URL to `http://localhost:8080/external/`. See the
+[catalog guide](https://package-r.versioneer.at/latest/how-to-guides/share-and-preview-data/#publish-a-stac-compatible-parquet-catalog)
+for the public catalog endpoints and preview links.
 
 ## Thanks
 

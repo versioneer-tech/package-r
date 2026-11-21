@@ -5,33 +5,23 @@ permissions.
 
 ## Sign in
 
-The deployment uses one of these sign-in methods:
-
-- a packageR username and password
-- single sign-on through a trusted reverse proxy
-
-With proxy sign-in, the proxy supplies your identity. Do not send the identity
-header directly from an untrusted client.
+Use the account supplied by your operator. Some deployments use single
+sign-on through a reverse proxy.
 
 ## Browse storage
 
-The first page shows the configured storage root.
-
-- In service-root mode, the first-level directories are S3 buckets
-- In bucket mode, `/` is the root of one S3 bucket
-
-Use the directory list or breadcrumb path to navigate. packageR prevents a
-user scope from escaping its configured root.
+The first page lists buckets or the contents of one bucket, depending on the
+deployment. Use the directory list or breadcrumb path to navigate.
 
 ## Inspect and download an object
 
 Open a file to use its viewer. Use **Info** to see its name, size,
 modification time, type, checksums, and presigned URL when available.
 
-Open **Info** and select **Show** next to **Presigned URL**. The browser then
-reads the object from storage instead of streaming it through packageR. The
-URL is valid for at most seven days. Treat it as a temporary credential. Do
-not put it in logs or source code.
+Select **Show** next to **Presigned URL** to display the link. Open the link
+to read the object directly from storage. The URL is valid for at most seven
+days. Anyone with the URL can read the object until it expires. Do not put it
+in logs or source code.
 
 ![File information with a presigned URL](../imgs/screenshots/authenticated-file-info-presign.png)
 
@@ -57,9 +47,8 @@ S3 does not have a filesystem rename operation. A rename or move can copy the
 data and then delete the source. Large operations can take time and add
 storage request costs.
 
-If an action is not available, your account does not have that permission. A
-`403 Forbidden` response can also come from your scope, a path rule, or the S3
-policy.
+If an action is not available, ask the operator to check your permissions.
+A `403 Forbidden` response can also come from the storage policy.
 
 ## Supported previews
 

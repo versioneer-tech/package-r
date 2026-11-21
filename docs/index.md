@@ -14,8 +14,8 @@ formats such as Cloud Optimized GeoTIFF (COG).
 packageR connects to object storage directly:
 
 ```text
-Browser -> packageR API -> embedded rclone VFS -> S3-compatible storage
-                         -> presigned GET URL
+Object operations: Browser -> packageR API -> rclone VFS -> object storage
+Previews and downloads: Browser -> object storage (presigned URL)
 ```
 
 Use packageR to:

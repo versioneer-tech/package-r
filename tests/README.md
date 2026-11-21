@@ -102,7 +102,7 @@ PACKAGE_R_PORT=18888 PLAYWRIGHT_FRONTEND_PORT=15173 make test-frontend
 The screenshot tests maintain the images used by the documentation.
 
 For a manual STAC Browser preview, follow the
-[local browser setup](../docs/how-to-guides/share-and-preview-data.md#publish-a-stac-compatible-parquet-catalog).
+[local browser setup](../README.md#use-a-local-stac-browser).
 The automated tests do not require a separate STAC Browser checkout.
 
 ## Presign load test

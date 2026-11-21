@@ -1,21 +1,24 @@
 # Configuration
 
-packageR reads server options from command-line flags, `PACKAGE_R_`
-environment variables, or its configuration file. Application settings are
-stored in the packageR database and managed with `package-r config`.
+Server options use this order of priority: command-line flags, `PACKAGE_R_`
+environment variables, configuration file, database settings, then defaults.
+Use `package-r config init` to create a database and `package-r config set`
+to change an existing database. Run these commands before you start the server.
 Object-storage credentials belong to the process and are not stored in the
 database or user records.
 
 ## Runtime state
 
-packageR is stateless. Object data stays in object storage. The local Bolt
-database is a runtime cache for settings, user records, and public shares. It
-is not the source of the stored data.
+Object data stays in object storage. The local Bolt database holds settings,
+user records, public shares, and the session-signing key.
 
-For hosted deployments, use a separate process to prepare the database before
-packageR starts. The database does not need a backup or a persistent volume.
-The [Kubernetes guide](kubernetes.md) shows init containers and an
-`emptyDir` volume.
+For hosted deployments, keep the initial settings, users, and shares in the
+deployment configuration. Use a separate process to create the database from
+that configuration before packageR starts. The [Kubernetes guide](kubernetes.md)
+uses init containers and an `emptyDir` volume for this purpose.
+
+Re-creating the database ends login sessions and resets stored display
+preferences. It does not change objects in storage.
 
 ## Defaults
 
@@ -45,9 +48,6 @@ packageR handles browser preflight requests and allows the methods and headers
 used by its API. It does not enable credentialed cookie requests. Configure
 CORS separately on object storage when browsers open presigned URLs directly.
 
-With empty AWS values, packageR uses the ambient AWS credential chain and AWS
-S3. Storage requests fail if that chain does not provide usable credentials.
-
 ## Object storage
 
 These values configure rclone VFS and presigned links.
@@ -66,9 +66,11 @@ These values configure rclone VFS and presigned links.
 | `AWS_REGION` | Empty | Service dependent | S3 region. The credential provider can supply it. |
 | `XDG_CACHE_HOME` | Platform user cache directory | No | Parent directory for the rclone VFS and DuckDB caches. |
 
+### Credentials
+
 Choose one credential mode:
 
-- For workload identity, leave `AWS_ACCESS_KEY_ID` and
+- For workload identity or a shared credential file, leave `AWS_ACCESS_KEY_ID` and
   `AWS_SECRET_ACCESS_KEY` unset. rclone uses its S3 credential chain. This can
   use AWS IRSA, a container identity, an instance identity, or a shared
   credential file.
@@ -85,8 +87,7 @@ change the endpoint, credentials, root, or bucket catalog. The credential
 provider refreshes temporary credentials when the selected identity method
 supports refresh.
 
-Directory listings use the server modification time returned by S3. This
-avoids a separate metadata request for each listed object.
+### Cache directories
 
 Chunked and seek-based uploads use the rclone VFS write cache. Set
 `XDG_CACHE_HOME` to choose its parent directory. For example,
@@ -101,6 +102,12 @@ catalog query downloads the extension if it is not cached. A writable
 temporary volume is sufficient. A persistent volume avoids downloading it
 again after each restart. Catalog storage must support ranged `GET` requests
 and may receive `HEAD` requests.
+
+### Storage root
+
+With `PACKAGE_R_ROOT=my-bucket`, `/` in packageR is the root of `my-bucket`.
+packageR needs `s3:ListBucket` and the required object permissions for that
+bucket. Leave `PACKAGE_R_BUCKETS` empty in this mode.
 
 With `PACKAGE_R_ROOT=/` and an empty `PACKAGE_R_BUCKETS`, the top-level entries
 come from S3 bucket discovery. The credentials need permission to list
@@ -120,11 +127,7 @@ bucket-list permission, such as AWS `s3:ListBucket`. Object actions need the
 matching provider permissions. Bucket names must be unique. packageR rejects
 a rename between buckets because each bucket has a separate backend.
 
-With `PACKAGE_R_ROOT=my-bucket`, `/` in packageR is the root of `my-bucket`.
-packageR does not need permission to list all buckets. It still needs
-`s3:ListBucket` and the required object permissions for `my-bucket`. Leave
-`PACKAGE_R_BUCKETS` empty in this mode. packageR rejects a bucket catalog with
-a direct bucket root because other catalog entries would not be reachable.
+### Browser access
 
 Browser COG previews use presigned object URLs. Configure S3 CORS for the
 packageR and viewer origins. Allow `GET`, `HEAD`, and the `Range` request
@@ -222,22 +225,19 @@ packageR applies these access controls in order:
 
 ## Catalogs
 
-Set a catalog name on each share with `package-r shares add --catalog-name`.
-Use `--asset-mappings` on the same command if that share needs URL-to-path
-mappings. Without `--catalog-name`, the share has no catalog.
+Set a catalog path on each share with `package-r shares add --catalog-name`.
+The path must be relative and stay inside the share. Without this option,
+the share has no catalog endpoint. See the
+[catalog setup guide](share-and-preview-data.md#publish-a-stac-compatible-parquet-catalog)
+for an example and optional asset mappings.
 
 Set the optional STAC Browser URL when you prepare the database:
 
 ```bash
 ./package-r config set \
-  --stac-browser-url=http://localhost:8080/external/
+  --stac-browser-url=https://stac-browser.example/external/
 ```
 
-The default is empty. packageR does not add a STAC Browser link unless you set
-this option.
-
-Catalog names and mapping targets must stay inside the shared path. Absolute
-names and parent-path escapes are invalid. Most catalogs do not need asset
-mappings.
-
-See the [HTTP API](../reference-guides/http-api.md) for route behavior.
+The default is empty. Set this option to add **STAC Browser URL** links to the
+**Info** dialog. Allow the browser origin in both
+`PACKAGE_R_CORS_ALLOWED_ORIGINS` and the object-storage CORS settings.

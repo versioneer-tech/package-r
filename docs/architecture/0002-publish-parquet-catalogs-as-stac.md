@@ -62,8 +62,9 @@ path.
 For each returned row, packageR supplies or normalizes required STAC Item
 fields. It moves flattened metadata into `properties`, supplies
 `stac_version`, normalizes geometry and bounding boxes when possible, and adds
-links. One match produces a STAC `Feature`. Zero or multiple matches produce a
-STAC `FeatureCollection`. Responses use `application/geo+json`.
+links. The catalog root returns a STAC `Collection` as `application/json`.
+A path with one match returns a STAC `Feature`; zero or multiple matches return
+a STAC `FeatureCollection`. Path responses use `application/geo+json`.
 
 The catalog file must be inside the share. packageR checks the file through the
 scoped rclone VFS and gives DuckDB a short-lived signed read URL. DuckDB uses

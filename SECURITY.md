@@ -21,7 +21,7 @@ Do not include live credentials, tokens, presigned URLs, or private data.
 
 ## Release checks
 
-Pull requests and release tags use the same candidate build and security check.
+Code changes and release tags use the same candidate build and security check.
 The build runs on Ubuntu 22.04 with CGO enabled for DuckDB.
 
 The runtime image uses Distroless C++ for Debian 13. It includes the C and C++
@@ -58,7 +58,7 @@ The source lockfile is unchanged.
 
 ### Go source checks
 
-PR and main-branch CI run `make vulncheck`. The daily security workflow also
+Full Tests workflow runs use `make vulncheck`. The daily security workflow also
 runs it against the default branch. It uses the pinned govulncheck release
 to find calls to known vulnerable Go code, with CGO enabled. Calls to vulnerable
 symbols and scanner errors fail the job. The text report is retained for
