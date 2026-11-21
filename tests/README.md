@@ -2,7 +2,7 @@
 
 ## Tests
 
-Run this from the repository root:
+Run this from the repository root on Linux:
 
 ```bash
 make setup-tests && make test
@@ -17,15 +17,18 @@ update.
 
 Install these tools before setup:
 
-- Go and a C/C++ toolchain. DuckDB needs CGO.
+- glibc 2.38 or newer and libstdc++ with `GLIBCXX_3.4.32` support.
+- Go, a C/C++ toolchain, and binutils. DuckDB needs CGO.
 - Node.js and pnpm, as specified in `frontend/package.json`.
 - Python 3.11 or newer, uv, and jq.
 - rclone 1.76 or newer. Set `RCLONE_BIN` to an absolute path if it is not on `PATH`.
 
-`make test-check` checks the tools and launches headless Chromium. A missing
-Playwright package, browser, or system library stops `make test` before the
-suites or services start. If you set `PLAYWRIGHT_BROWSERS_PATH`, use the same
-value for setup and tests.
+`make test-check` checks the C/C++ libraries and tools, then launches headless
+Chromium. An old or missing library, Playwright package, or browser
+stops `make test` before the suites or services start. Individual suites can
+run on other systems. They build against the host's libraries and do not prove
+that the prebuilt release binary can run there. If you set
+`PLAYWRIGHT_BROWSERS_PATH`, use the same value for setup and tests.
 
 ### Test suites
 
@@ -35,7 +38,7 @@ also run on its own:
 
 | Command | Checks |
 | --- | --- |
-| `make test-check` | Required tools and a headless Chromium launch |
+| `make test-check` | C/C++ library versions, required tools, and a headless Chromium launch |
 | `make test-tooling` | Repository tools, hooks, CI selection, and release gates |
 | `make test-unit` | All Go unit tests |
 | `make test-race` | Race detection in authentication, cache, HTTP, logging, metrics, and rclone storage code |

@@ -24,8 +24,50 @@ configuration, public packages, the HTTP API, and architecture decisions.
 
 ## Download and run
 
-The prebuilt Linux AMD64 binary needs Ubuntu 24.04 or compatible C/C++ libraries.
-Download and unpack the latest release:
+### Connect to S3
+
+For an existing S3 service, set its connection details in the terminal where
+you will start packageR:
+
+```bash
+export AWS_ACCESS_KEY_ID='<your-access-key>'
+export AWS_SECRET_ACCESS_KEY='<your-secret-key>'
+export AWS_REGION='<your-region>'
+export AWS_ENDPOINT_URL='https://<your-s3-endpoint>'
+```
+
+For AWS S3, run `unset AWS_ENDPOINT_URL`. The examples use a bucket named
+`data`; replace that name with your bucket.
+
+Or start local S3 storage. Install [rclone](https://rclone.org/downloads/)
+1.76 and run this in a separate terminal:
+
+```bash
+mkdir -p local-s3/data
+rclone serve s3 ./local-s3 \
+  --addr 127.0.0.1:19100 \
+  --auth-key my-access-key,my-secret-key \
+  --config /dev/null
+```
+
+Keep rclone running. The `local-s3/data` directory is the `data` bucket.
+Put files there to make them available to packageR.
+
+In the packageR terminal, set the local connection details:
+
+```bash
+export AWS_ACCESS_KEY_ID=my-access-key
+export AWS_SECRET_ACCESS_KEY=my-secret-key
+export AWS_REGION=us-east-1
+export AWS_ENDPOINT_URL=http://127.0.0.1:19100
+```
+
+### Binary
+
+The Linux AMD64 binary is built on Ubuntu 24.04. It needs glibc 2.38 or newer
+and libstdc++ with `GLIBCXX_3.4.32` support. Use [Docker](#docker) on other hosts.
+
+Download and unpack the latest stable release:
 
 ```bash
 curl -fL -o package-r.tar.gz \
@@ -34,8 +76,8 @@ tar -xzf package-r.tar.gz
 ./package-r version
 ```
 
-Use an existing bucket named `data`, or replace that name below. Create the
-initial user with explicit permissions and publish the bucket root:
+Create the initial user with explicit permissions and publish the `data`
+bucket root:
 
 ```bash
 ./package-r config init --root=data
@@ -46,24 +88,47 @@ initial user with explicit permissions and publish the bucket root:
   --perm.delete=true
 ./package-r shares add admin my-share /
 
-AWS_ACCESS_KEY_ID=my-access-key \
-AWS_SECRET_ACCESS_KEY=my-secret-key \
-AWS_REGION=us-east-1 \
-  ./package-r
+./package-r
 ```
-
-If the AWS variables are already exported, run `./package-r` without repeating
-them. Replace the example values, and add `AWS_ENDPOINT_URL` for another
-S3-compatible service.
 
 Open `http://127.0.0.1:8888` and sign in with the initial account created above.
 The public package is available without an account at
 `http://127.0.0.1:8888/share/my-share/`.
 
-We also provide a container image at
-`ghcr.io/versioneer-tech/package-r:latest`. Its entrypoint starts packageR
-directly and expects an initialized database. For hosted deployments, prepare
-the database in a separate process before the application starts. See the
+### Docker
+
+The image includes the required libraries. Use the same image and volume for
+setup and startup. The volume keeps the database and caches between runs.
+
+This Linux example uses [host networking](https://docs.docker.com/engine/network/drivers/host/)
+so packageR and the browser can reach S3 at the same address. Signed download
+URLs also use this address.
+
+```bash
+image=ghcr.io/versioneer-tech/package-r:latest
+docker pull "$image"
+docker volume create package-r-state
+
+docker run --rm -v package-r-state:/home/package-r "$image" \
+  --database=/home/package-r/package-r.db config init --root=data
+docker run --rm -v package-r-state:/home/package-r "$image" \
+  --database=/home/package-r/package-r.db users add admin my-password \
+  --perm.create=true --perm.rename=true --perm.modify=true --perm.delete=true
+docker run --rm -v package-r-state:/home/package-r "$image" \
+  --database=/home/package-r/package-r.db shares add admin my-share /
+
+docker run --rm --name package-r \
+  --network host \
+  -v package-r-state:/home/package-r \
+  -e PACKAGE_R_DATABASE=/home/package-r/package-r.db \
+  -e PACKAGE_R_ADDRESS=127.0.0.1 -e PACKAGE_R_ROOT=data \
+  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN \
+  -e AWS_REGION -e AWS_ENDPOINT_URL \
+  "$image"
+```
+
+The browser and public-share URLs are the same as in the binary setup.
+For hosted deployments, see the
 [Kubernetes operator guide](https://package-r.versioneer.at/latest/how-to-guides/kubernetes/)
 for an init-container example.
 

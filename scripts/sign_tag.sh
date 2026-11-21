@@ -2,7 +2,7 @@
 set -euo pipefail
 
 missing=()
-for command_name in git gpg pnpm; do
+for command_name in git gpg pnpm python3; do
   if ! command -v "${command_name}" >/dev/null 2>&1; then
     missing+=("${command_name}")
   fi
@@ -51,6 +51,10 @@ if git rev-parse --verify --quiet "refs/tags/${release_tag}" >/dev/null; then
   exit 1
 fi
 
+release_notes="$(python3 scripts/release_notes.py "${release_tag}")"
+readonly release_notes
+printf 'Release notes from CHANGELOG.md:\n\n%s\n\n' "${release_notes}"
+
 if [[ "$(git rev-list --count "${base_ref}..HEAD")" == '0' ]]; then
   printf 'No local commits to lint after origin/main.\n'
 else
@@ -74,7 +78,8 @@ if [[ ! "${reply}" =~ ^[Yy]$ ]]; then
   exit 0
 fi
 
-git tag --sign --message "Release ${release_tag}" "${release_tag}"
+git tag --sign --cleanup=verbatim \
+  --message "Release ${release_tag}" --message "${release_notes}" "${release_tag}"
 
 printf 'Created %s locally.\n' "${release_tag}"
 if [[ "$(git rev-parse HEAD)" != "$(git rev-parse "${base_ref}")" ]]; then

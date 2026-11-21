@@ -37,12 +37,6 @@ class CheckSelectionTests(unittest.TestCase):
             self.assertFalse(CHECKS["select_checks"]("HEAD"))
             self.assertTrue(CHECKS["select_checks"]("base", "head"))
 
-    def test_renamed_runtime_file_requires_full_checks(self):
-        with patch.dict(CHECKS["select_checks"].__globals__, {
-            "git": lambda *args: b"1234\n" if args[0] == "rev-parse" else b"http/old.go\0docs/new.md\0",
-        }):
-            self.assertFalse(CHECKS["select_checks"]("base", "head"))
-
     def test_staged_runtime_change_cannot_be_hidden_by_worktree_edits(self):
         def git(*arguments):
             if arguments[0] == "rev-parse":

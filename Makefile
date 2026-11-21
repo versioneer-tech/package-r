@@ -51,7 +51,7 @@ setup-tests: ## Install frontend test dependencies and download missing test dat
 	fi
 
 .PHONY: test-check
-test-check: ## Check tools required by make test
+test-check: ## Check C/C++ libraries, tools, and Chromium required by make test
 	$Q bash tests/check-tools.bash
 
 .PHONY: test-unit

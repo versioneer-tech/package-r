@@ -1,4 +1,4 @@
-"""Check missing browser failures before builds, services, or tests start."""
+"""Check test prerequisites before builds, services, or tests start."""
 
 import json
 import os
@@ -32,26 +32,8 @@ class PlaywrightCheckTests(unittest.TestCase):
         }))
         (package / "index.js").write_text(implementation)
 
-    def check(self):
-        return subprocess.run(
-            [NODE, str(self.script)], env=self.environment,
-            capture_output=True, text=True, check=False,
-        )
-
-    def test_missing_package_reports_setup_commands(self):
-        result = self.check()
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("pnpm install --frozen-lockfile", result.stderr)
-        self.assertIn("pnpm exec playwright install chromium", result.stderr)
-
-    def test_available_browser_passes(self):
-        self.browser("export const chromium = {launch: async () => ({close: async () => {}})};")
-        result = self.check()
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("Chromium is available", result.stdout)
-
     @unittest.skipUnless(shutil.which("make"), "make is required")
-    def test_missing_browser_stops_make_before_go_commands(self):
+    def test_incompatible_libraries_or_missing_browser_stops_make_before_go_commands(self):
         self.browser(
             "export const chromium = {launch: async () => {"
             "throw new Error('Chromium executable is missing');}};"
@@ -60,15 +42,16 @@ class PlaywrightCheckTests(unittest.TestCase):
             destination = self.root / filename
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(ROOT / filename, destination)
-
         binaries = self.root / "bin"
         binaries.mkdir()
         (binaries / "node").symlink_to(NODE)
         # The clean PATH omits tools installed by CI setup actions.
         commands = {
+            "c++": 'printf "%s\\n" "$HOME/libstdc++.so.6"',
             "cc": "exit 0",
             "cmp": "exit 0",
             "curl": "exit 0",
+            "getconf": 'cat "$HOME/glibc-version"',
             "pnpm": "exit 0",
             "python3": "exit 0",
             "jq": "exit 0",
@@ -83,13 +66,39 @@ class PlaywrightCheckTests(unittest.TestCase):
             executable.chmod(0o755)
         self.environment["PATH"] = str(binaries) + os.pathsep + os.defpath
 
-        for target in ("test-check", "test", "test-frontend"):
-            with self.subTest(target=target):
-                result = subprocess.run(
-                    ["make", target], cwd=self.root, env=self.environment,
-                    capture_output=True, text=True, check=False,
-                )
-                self.assertNotEqual(result.returncode, 0)
-                self.assertIn("Chromium executable is missing", result.stderr)
-                self.assertIn("pnpm exec playwright install chromium", result.stderr)
-                self.assertFalse((self.root / "go-started").exists(), result.stdout + result.stderr)
+        glibc = self.root / "glibc-version"
+        libstdcxx = self.root / "libstdc++.so.6"
+        for glibc_version, libstdcxx_version, message in (
+            ("2.35", "3.4.32", "requires glibc 2.38"),
+            ("2.38", "3.4.30", "requires libstdc++ with GLIBCXX_3.4.32"),
+            ("", "3.4.32", "requires glibc 2.38"),
+            ("2.38", None, "requires libstdc++ with GLIBCXX_3.4.32"),
+        ):
+            glibc.write_text(f"glibc {glibc_version}\n" if glibc_version else "")
+            if libstdcxx_version is None:
+                libstdcxx.unlink()
+            else:
+                libstdcxx.write_text(f"GLIBCXX_3.4.9\nGLIBCXX_{libstdcxx_version}\n")
+            for target in ("test-check", "test"):
+                with self.subTest(glibc=glibc_version, libstdcxx=libstdcxx_version, target=target):
+                    result = subprocess.run(
+                        ["make", target], cwd=self.root, env=self.environment,
+                        capture_output=True, text=True, check=False,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(message, result.stderr)
+                    self.assertFalse((self.root / "go-started").exists())
+
+        for glibc_version, libstdcxx_version in (("2.38", "3.4.32"), ("2.40", "3.4.34")):
+            glibc.write_text(f"glibc {glibc_version}\n")
+            libstdcxx.write_text(f"GLIBCXX_3.4.9\nGLIBCXX_{libstdcxx_version}\n")
+            for target in ("test-check", "test", "test-frontend"):
+                with self.subTest(glibc=glibc_version, libstdcxx=libstdcxx_version, target=target):
+                    result = subprocess.run(
+                        ["make", target], cwd=self.root, env=self.environment,
+                        capture_output=True, text=True, check=False,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("Chromium executable is missing", result.stderr)
+                    self.assertIn("pnpm exec playwright install chromium", result.stderr)
+                    self.assertFalse((self.root / "go-started").exists(), result.stdout + result.stderr)

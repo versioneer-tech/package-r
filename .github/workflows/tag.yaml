@@ -113,6 +113,10 @@ jobs:
           merge-multiple: true
       - name: Verify the checked artifacts
         run: make security-verify
+      - name: Prepare release notes
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: python3 scripts/release_notes.py "$RELEASE_VERSION" > dist/release-notes.md
       - name: Install image copy tool
         run: |
           sudo apt-get update
@@ -156,7 +160,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          options=(--verify-tag --title "${GITHUB_REF_NAME}" --generate-notes)
+          options=(--verify-tag --title "${GITHUB_REF_NAME}" --generate-notes
+            --notes-file dist/release-notes.md)
           if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
             options+=(--prerelease)
           else

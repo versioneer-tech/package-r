@@ -78,8 +78,8 @@ The action uploads this directory and returns its GitHub artifact ID. Later
 jobs download that exact upload. The artifact ID identifies the upload; the
 image digest identifies the image contents.
 
-The standalone binary needs compatible glibc and libstdc++ libraries on the
-host. Use Ubuntu 24.04 or a system with compatible C and C++ libraries.
+The standalone binary needs the host libraries listed in
+[README.md](README.md#binary).
 
 The runtime image uses Distroless C++ for Debian 13. It includes the C and C++
 libraries for DuckDB and runs as UID 1000 and GID 100, without a shell or
@@ -158,12 +158,28 @@ A pushed release tag starts this sequence:
 5. Copy the checked OCI archive to the registry without rebuilding it.
    Require the registry to preserve its image manifest digest.
 6. Create the GitHub release with the binary archive, security manifest,
-   three SBOMs, and an archive of the scan records.
+   three SBOMs, an archive of the scan records, and notes from `CHANGELOG.md`.
 7. Build and publish versioned documentation.
 
 The image receives the release tag and an additional `-amd64` tag. Stable
 releases also update the `latest` image and documentation aliases. RC releases
 are marked as prereleases and do not update those aliases.
+
+Release notes start with the matching `## vnext.X.Y.Z` CHANGELOG section,
+followed by GitHub's generated notes and comparison link. RC tags use an exact
+RC section if present, otherwise the base version's section. A missing or
+empty section stops publication.
+
+To create a signed stable tag from a clean `main` checkout:
+
+```sh
+scripts/sign_tag.sh vnext.1.2.0
+```
+
+The helper checks and shows the release notes, then includes them in the signed
+tag. GPG can ask for the key's passphrase. Push `main` if needed, wait for the
+full Tests run to pass, then push the tag as shown by the helper. CI publishes
+the GitHub notes. A new CHANGELOG commit does not change an existing release.
 
 Checking jobs use read permissions. Registry and release publication receive
 write permissions in the release job. The documentation job has write access

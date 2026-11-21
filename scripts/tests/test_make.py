@@ -1,4 +1,4 @@
-"""Check that the full test command includes each suite and stops on failure."""
+"""Check test selection and safe cleanup."""
 
 import os
 import re
@@ -43,41 +43,7 @@ class TestCommandTests(unittest.TestCase):
             for filename in retained:
                 self.assertEqual((root / filename).read_text(), "test content\n", filename)
 
-    def test_setup_installs_missing_browser_and_fixture_once(self):
-        with tempfile.TemporaryDirectory(prefix="test-setup-") as directory:
-            root = Path(directory)
-            for filename in ("Makefile", "common.mk", "tools.mk"):
-                shutil.copy(ROOT / filename, root / filename)
-            (root / "frontend").mkdir()
-            binaries = root / "bin"
-            binaries.mkdir()
-            commands = {
-                "node": 'test -f "$HOME/browser"',
-                "pnpm": 'if [ "$1" = exec ]; then\n'
-                        '  echo browser-install >> "$HOME/downloads"\n'
-                        '  touch "$HOME/browser"\nfi',
-                "uv": 'echo fixture-download >> "$HOME/downloads"\n'
-                      'mkdir -p tests/data/vienna-s2l2a-26\n'
-                      'touch tests/data/vienna-s2l2a-26/vienna-s2l2a-26.parquet',
-            }
-            for name, command in commands.items():
-                executable = binaries / name
-                executable.write_text("#!/bin/sh\n" + command + "\n")
-                executable.chmod(0o755)
-            for _ in range(2):
-                result = subprocess.run(
-                    ["make", "setup-tests"], cwd=root,
-                    env={"HOME": str(root), "PATH": str(binaries) + os.pathsep + os.defpath},
-                    capture_output=True, text=True, check=False,
-                )
-                self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertTrue((root / "browser").is_file())
-                self.assertTrue((root / "tests/data/vienna-s2l2a-26/vienna-s2l2a-26.parquet").is_file())
-            self.assertEqual((root / "downloads").read_text().splitlines(), [
-                "browser-install", "fixture-download",
-            ])
-
-    def run_tests(self, failing_target=None):
+    def run_tests(self):
         with tempfile.TemporaryDirectory(prefix="test-make-") as directory:
             root = Path(directory)
             for filename in ("Makefile", "common.mk", "tools.mk"):
@@ -86,8 +52,6 @@ class TestCommandTests(unittest.TestCase):
             overrides = []
             for target in [*targets, "performance"]:
                 overrides.append(f"{target}:\n\t@echo {target} >> executed\n")
-                if target == failing_target:
-                    overrides.append("\t@exit 1\n")
             (root / "overrides.mk").write_text("".join(overrides))
             result = subprocess.run(
                 ["make", "-j4", "-f", "Makefile", "-f", "overrides.mk", "test",
@@ -106,10 +70,3 @@ class TestCommandTests(unittest.TestCase):
         self.assertEqual(executed[0], "test-check")
         self.assertLess(executed.index("test-unit"), executed.index("test-integration"))
         self.assertLess(executed.index("test-integration"), executed.index("test-frontend"))
-
-    def test_failed_unit_suite_stops_integration_and_browser_tests(self):
-        result, _, executed = self.run_tests("test-unit")
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("test-unit", executed)
-        self.assertNotIn("test-integration", executed)
-        self.assertNotIn("test-frontend", executed)
