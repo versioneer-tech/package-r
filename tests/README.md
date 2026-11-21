@@ -58,9 +58,10 @@ results.
 
 ## API integration tests
 
-`tests/integration/run.bash` starts rclone 1.74 or newer and packageR on
-loopback addresses. Set `RCLONE_BIN` if rclone is not on `PATH`. The Make
-target supplies the pinned STAC validator through uv when needed.
+`tests/integration/run.bash` starts rclone 1.76 or newer and packageR on
+loopback addresses. Set `RCLONE_BIN` to an absolute path if the required
+version is not on `PATH`. The Make target supplies the pinned STAC validator
+through uv when needed.
 
 The harness checks:
 

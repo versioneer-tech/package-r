@@ -69,8 +69,9 @@ for an init-container example.
 
 ## Development
 
-Local development uses `rclone serve s3` as a disposable S3-compatible API.
-Production does not need this process.
+Local development uses rclone 1.76 or newer with `rclone serve s3` as a
+disposable S3-compatible API. Set `RCLONE_BIN` to an absolute path to select
+another binary. Production does not need this process.
 
 Use Go, a C compiler, Node.js, pnpm, uv, and Python 3.11 or newer.
 Go checks need CGO for DuckDB. Install the hooks once per checkout, then run

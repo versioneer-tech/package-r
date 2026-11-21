@@ -64,8 +64,7 @@ jobs:
 
   candidate:
     needs: verify_release_commit
-    # Use the same CGO build and runner ABI as the PR candidate.
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: read

@@ -120,29 +120,6 @@ curl_test() {
 	--max-time "${CURL_MAX_TIME_SECONDS}" "$@"
 }
 
-rclone_version_line() {
-  local output
-  output="$("${RCLONE_BIN}" version 2>/dev/null || true)"
-  printf '%s\n' "${output%%$'\n'*}"
-}
-
-require_compatible_rclone() {
-  local line major minor
-  line="$(rclone_version_line)"
-  if [[ "${line}" =~ ^rclone[[:space:]]v([0-9]+)\.([0-9]+) ]]; then
-	major="${BASH_REMATCH[1]}"
-	minor="${BASH_REMATCH[2]}"
-	if ((major > 1 || (major == 1 && minor >= 74))); then
-	  log "Using ${line}"
-	  return 0
-	fi
-  fi
-
-  printf 'rclone 1.74 or newer is required for query-presigned URLs; found: %s\n' \
-	"${line:-unknown version}" >&2
-  return 1
-}
-
 start_rclone() {
   local attempt
   for ((attempt = 1; attempt <= 3; attempt++)); do
@@ -191,7 +168,7 @@ for command_name in cmp curl go python3 stac-check; do
   require_command "${command_name}"
 done
 require_command "${RCLONE_BIN}"
-require_compatible_rclone
+"${REPO_ROOT}/scripts/check-rclone.sh" "${RCLONE_BIN}"
 
 if [[ ! -f "${FIXTURE_DIR}/${CATALOG_PATH}" || \
   ! -f "${FIXTURE_DIR}/${DATASET}/${ITEM_ID}/rgb.tif" || \

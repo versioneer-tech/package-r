@@ -33,4 +33,6 @@ if ((${#missing_commands[@]} > 0)); then
   exit 1
 fi
 
+tests_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+"${tests_dir}/../scripts/check-rclone.sh" "${RCLONE_BIN}"
 printf 'All tools required by make test are available.\n'

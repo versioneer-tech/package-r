@@ -54,6 +54,7 @@ stop_server() {
 serve_s3() {
   local -a args
 
+  "$script_dir/check-rclone.sh" "$rclone_bin"
   args=(
     serve s3 ":local:$serve_root"
     --addr "$address"
@@ -92,6 +93,7 @@ run_development_environment() {
     fi
   done
 
+  "$script_dir/check-rclone.sh" "$rclone_bin"
   sentinel_fixture="$repo_root/tests/data/vienna-s2l2a-26"
   if [ ! -f "$sentinel_fixture/vienna-s2l2a-26.parquet" ] || \
     [ ! -f "$sentinel_fixture/S2B_T33UXP_20260218T100524_L2A/rgb.tif" ] || \

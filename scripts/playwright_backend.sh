@@ -111,22 +111,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
 PY
 }
 
-require_compatible_rclone() {
-  local output line major minor
-  output="$("$rclone_bin" version 2>/dev/null || true)"
-  line="${output%%$'\n'*}"
-  if [[ "$line" =~ ^rclone[[:space:]]v([0-9]+)\.([0-9]+) ]]; then
-	major="${BASH_REMATCH[1]}"
-	minor="${BASH_REMATCH[2]}"
-	if ((major > 1 || (major == 1 && minor >= 74))); then
-	  return 0
-	fi
-  fi
-
-  printf 'rclone 1.74 or newer is required; found: %s\n' "${line:-unknown version}" >&2
-  exit 1
-}
-
 start_rclone() {
   local rclone_port
   rclone_port="$(free_port)"
@@ -170,7 +154,7 @@ cd "$repo_root"
 
 require_command python3
 require_command "$rclone_bin"
-require_compatible_rclone
+"$script_dir/check-rclone.sh" "$rclone_bin"
 
 sentinel_fixture="$repo_root/tests/data/vienna-s2l2a-26"
 if [ ! -f "$sentinel_fixture/vienna-s2l2a-26.parquet" ] || \
