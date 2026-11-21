@@ -20,7 +20,7 @@ SCOPES = ("image", "go", "frontend")
 DUCKDB_MODULES = {
     "driver": "github.com/duckdb/duckdb-go/v2",
     "bindings": "github.com/duckdb/duckdb-go-bindings",
-    "native": "github.com/duckdb/duckdb-go-bindings/lib/linux-amd64",
+    "native": "go.duckdb.org/libduckdb/linux-amd64",
 }
 
 
@@ -137,7 +137,12 @@ def duckdb_inventory(results: list[dict]) -> dict:
                 for package in result.get("Packages") or []]
     versions = {}
     releases = {}
+    native_module = DUCKDB_MODULES["native"]
     for component, module in DUCKDB_MODULES.items():
+        # Daily scans also check published releases that bundle DuckDB 1.x.
+        if component == "native" and releases["driver"] < 20000:
+            module = "github.com/duckdb/duckdb-go-bindings/lib/linux-amd64"
+            native_module = module
         found = {package.get("Version") for package in packages if package.get("Name") == module}
         if len(found) != 1 or not all(found):
             raise ValueError("missing or ambiguous DuckDB inventory: " + module)
@@ -154,7 +159,7 @@ def duckdb_inventory(results: list[dict]) -> dict:
     release = releases["native"]
     return {
         "version": f"{release // 10000}.{release // 100 % 100}.{release % 100}",
-        "native_module": DUCKDB_MODULES["native"],
+        "native_module": native_module,
         "native_module_version": versions["native"],
         "bindings_version": versions["bindings"],
         "driver_version": versions["driver"],

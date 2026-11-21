@@ -54,7 +54,7 @@ test-presign-load: ## Run the timed public presign workloads
 	$Q CGO_ENABLED=1 $(go) test -tags loadtest ./http -run '^TestPublicSharePresignConcurrentHierarchy$$' -count=1 -v
 
 .PHONY: test-tooling
-test-tooling: ## Check secret scan boundaries and release security gates
+test-tooling: ## Check CI selection, secret scan boundaries, and release security gates
 	$Q uv run --locked --group tooling python -m unittest discover -s scripts/tests -v
 
 .PHONY: test-integration

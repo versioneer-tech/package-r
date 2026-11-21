@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,9 @@ import (
 func TestHealthcheckCommand(t *testing.T) {
 	for _, status := range []int{http.StatusOK, http.StatusServiceUnavailable, http.StatusFound} {
 		t.Run(http.StatusText(status), func(t *testing.T) {
+			var requested atomic.Bool
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requested.Store(true)
 				assert.Equal(t, "/health", r.URL.Path)
 				w.Header().Set("Location", "/")
 				w.WriteHeader(status)
@@ -22,9 +25,10 @@ func TestHealthcheckCommand(t *testing.T) {
 			defer server.Close()
 			host, port, err := net.SplitHostPort(server.Listener.Addr().String())
 			require.NoError(t, err)
-			_, err = runPackageRCommandResult(t, "healthcheck", "--address", host, "--port", port)
+			output, err := runPackageRCommandResult(t, "healthcheck", "--address", host, "--port", port)
+			require.True(t, requested.Load(), "health endpoint was not requested: %s", output)
 			if status == http.StatusOK {
-				require.NoError(t, err)
+				require.NoError(t, err, "%s", output)
 			} else {
 				require.Error(t, err)
 			}

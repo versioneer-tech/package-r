@@ -81,7 +81,7 @@ driver, bindings, and Linux AMD64 native-library modules. Their DuckDB
 releases must match, and the bindings and native module versions must be
 equal. Both Go SBOMs must include the native module at the reported version.
 The summary records the native module and DuckDB release version, using
-the [upstream version scheme](https://github.com/duckdb/duckdb-go-bindings/tree/v0.10505.0#semantic-versioning).
+the [upstream version scheme](https://github.com/duckdb/duckdb-go/tree/v2.20000.0#readme).
 This checks the bundled library inventory; it does not add a separate scan
 of DuckDB's C++ code or bundled extensions.
 
@@ -92,8 +92,9 @@ report checksums.
 
 ### Release gate
 
-A release tag must point to a commit that passed the main-branch Tests
-workflow. The release workflow then builds and scans a new candidate.
+A release tag must point to a commit that passed the full main-branch Tests
+workflow. For a documentation-only commit, run Tests manually on `main` first.
+The release workflow then builds and scans a new candidate.
 
 The publish job downloads that candidate and its scan records. It checks the
 image, binary archive, dependency inputs, and report checksums before it can

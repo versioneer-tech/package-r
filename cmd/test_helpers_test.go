@@ -38,6 +38,7 @@ func runPackageRCommand(t *testing.T, args ...string) {
 func runPackageRCommandResult(t *testing.T, args ...string) ([]byte, error) {
 	t.Helper()
 
+	args = append([]string{"--config", filepath.Join(t.TempDir(), "missing-config.yaml")}, args...)
 	cmd := exec.CommandContext(t.Context(), os.Args[0], append([]string{"-test.run=^TestPackageRCommandHelper$", "--"}, args...)...)
 	return cmd.CombinedOutput()
 }

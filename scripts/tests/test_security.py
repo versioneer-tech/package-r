@@ -51,7 +51,7 @@ class SecurityGateTests(unittest.TestCase):
             {"Type": "gobinary", "Packages": [{"Name": "test-go"}, {"Name": "stdlib", "Version": "v1.27.1"}]},
         ]}
         self.duckdb_packages = [
-            {"Name": module, "Version": "v2.10505.0" if component == "driver" else "v0.10505.0"}
+            {"Name": module, "Version": "v2.20000.0" if component == "driver" else "v0.20000.0"}
             for component, module in security.DUCKDB_MODULES.items()
         ]
         for report in (self.image, self.go):
@@ -163,11 +163,24 @@ class SecurityGateTests(unittest.TestCase):
             security.assess("go", self.go, self.source / "frontend/package.json")
 
     def test_native_duckdb_release_is_recorded(self):
-        for scope, report in (("image", self.image), ("go", self.go)):
-            with self.subTest(scope=scope):
-                inventory = security.assess(scope, report, self.source / "frontend/package.json")["duckdb"]
-                self.assertEqual(inventory["version"], "1.5.5")
-                self.assertEqual(inventory["native_module_version"], "v0.10505.0")
+        for encoded, release, native_module in (
+            ("20000", "2.0.0", "go.duckdb.org/libduckdb/linux-amd64"),
+            ("10505", "1.5.5", "github.com/duckdb/duckdb-go-bindings/lib/linux-amd64"),
+        ):
+            for package, component in zip(self.duckdb_packages, security.DUCKDB_MODULES):
+                package["Version"] = ("v2." if component == "driver" else "v0.") + encoded + ".0"
+            self.duckdb_packages[-1]["Name"] = native_module
+            for scope, report in (("image", self.image), ("go", self.go)):
+                with self.subTest(scope=scope, release=release):
+                    inventory = security.assess(scope, report, self.source / "frontend/package.json")["duckdb"]
+                    self.assertEqual(inventory["version"], release)
+                    self.assertEqual(inventory["native_module"], native_module)
+                    self.assertEqual(inventory["native_module_version"], "v0." + encoded + ".0")
+
+    def test_duckdb_native_module_must_match_release(self):
+        self.duckdb_packages[-1]["Name"] = "github.com/duckdb/duckdb-go-bindings/lib/linux-amd64"
+        with self.assertRaisesRegex(ValueError, "DuckDB inventory"):
+            security.assess("go", self.go, self.source / "frontend/package.json")
 
     def test_missing_or_unversioned_duckdb_native_library_is_rejected(self):
         for scope, report in (("image", self.image), ("go", self.go)):
@@ -181,7 +194,7 @@ class SecurityGateTests(unittest.TestCase):
                         security.assess(scope, report, self.source / "frontend/package.json")
 
     def test_inconsistent_or_unknown_duckdb_versions_are_rejected(self):
-        for version in ("v0.10504.0", "v0.10505.1", "v0.3.5"):
+        for version in ("v0.20001.0", "v0.20000.1", "v0.3.5"):
             with self.subTest(version=version):
                 native = self.duckdb_packages[-1]
                 native["Version"] = version

@@ -88,8 +88,10 @@ Commit messages use Conventional Commits, such as `fix: handle empty catalogs`.
 The push hook checks the commit messages in the pushed range.
 
 CI runs the same lint commands, Go unit and race tests, local rclone API tests,
-documentation checks, govulncheck, and Trivy. Playwright and timed load tests
-run through explicit local commands. Hooks do not run tests or build the app.
+documentation checks, govulncheck, and Trivy. Documentation-only changes run
+file, tooling, and documentation checks. Manual CI runs use the full suite.
+Playwright and timed load tests run through explicit local commands.
+Hooks do not run tests or build the app.
 
 Dependabot checks Docker images daily. It checks Go, frontend, Actions, hooks,
 and Python support dependencies weekly.

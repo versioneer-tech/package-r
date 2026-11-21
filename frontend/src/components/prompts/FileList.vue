@@ -18,8 +18,7 @@
     </ul>
 
     <p>
-      {{ $t("prompts.currentlyNavigating") }} <code>{{ nav }}</code
-      >.
+      {{ $t("prompts.currentlyNavigating") }} <code>{{ nav }}</code>.
     </p>
   </div>
 </template>

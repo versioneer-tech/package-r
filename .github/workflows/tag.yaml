@@ -19,7 +19,7 @@ jobs:
       - name: Checkout release commit
         uses: actions/checkout@v7
 
-      - name: Verify successful main-branch tests
+      - name: Verify full main-branch tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
@@ -32,19 +32,35 @@ jobs:
               --header "Authorization: Bearer ${GH_TOKEN}" \
               --header "X-GitHub-Api-Version: 2022-11-28" \
               --data-urlencode "branch=main" \
-              --data-urlencode "event=push" \
               --data-urlencode "head_sha=${release_commit}" \
               --data-urlencode "status=success" \
+              --data-urlencode "per_page=100" \
               "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/pr.yaml/runs"
           )"
 
-          if ! jq -e --arg commit "${release_commit}" \
-            '.workflow_runs | any(.head_sha == $commit and .conclusion == "success")' \
-            <<<"${workflow_runs}" >/dev/null; then
-            printf 'Release commit %s has no successful main-branch Tests workflow run.\n' \
-              "${release_commit}" >&2
-            exit 1
-          fi
+          while IFS= read -r run_id; do
+            jobs="$(
+              curl --fail --silent --show-error --location \
+                --header "Accept: application/vnd.github+json" \
+                --header "Authorization: Bearer ${GH_TOKEN}" \
+                --header "X-GitHub-Api-Version: 2022-11-28" \
+                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100"
+            )"
+            if jq -e '
+              .jobs as $jobs |
+              all(["lint_backend", "lint_frontend", "build", "unit", "rclone_integration", "race", "required_checks"][];
+                  . as $name | any($jobs[]; .name == $name and .conclusion == "success"))
+            ' <<<"${jobs}" >/dev/null; then
+              exit 0
+            fi
+          done < <(jq -r --arg commit "${release_commit}" '
+            .workflow_runs[] | select(.head_sha == $commit and .head_branch == "main"
+              and .conclusion == "success" and (.event == "push" or .event == "workflow_dispatch")) | .id
+          ' <<<"${workflow_runs}")
+          printf 'Release commit %s needs a full successful Tests run on main.\n' \
+            "${release_commit}" >&2
+          printf 'For a documentation-only commit, run Tests manually on main.\n' >&2
+          exit 1
 
   candidate:
     needs: verify_release_commit
@@ -85,7 +101,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - uses: actions/download-artifact@v8
         with:
           artifact-ids: ${{ needs.candidate.outputs.artifact-id }}
@@ -180,12 +196,12 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
 
       - name: Build documentation
         run: make docs

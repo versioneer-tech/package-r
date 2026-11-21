@@ -8,7 +8,7 @@ rclone S3, and synthetic credentials. They do not use cloud accounts.
 | --- | --- | --- |
 | `make test-unit` | Go unit tests | Yes |
 | `make test-race` | Race detection in authentication, cache, HTTP, logging, metrics, and rclone storage code | Yes |
-| `make test-tooling` | Secret scan boundaries and release security gates | Yes |
+| `make test-tooling` | CI selection, secret scan boundaries, and release security gates | Yes |
 | `make test-integration` | API operations through local rclone S3 | Yes |
 | `make test-frontend` | Playwright Chromium browser tests | No |
 | `make test-presign-load` | Timed public presign workloads | No |
@@ -18,6 +18,22 @@ in that order. Use `make test-check` to check its prerequisites alone.
 Lint, documentation, build, and vulnerability checks are separate commands.
 See [release security checks](../SECURITY.md#release-checks) for
 `make vulncheck` and Trivy.
+
+## Select checks
+
+Use the PR base commit, or the target branch for other changes:
+
+```bash
+python3 scripts/ci-checks.py --base main
+```
+
+Without `--head`, this includes committed, staged, unstaged, and untracked
+changes. Empty or unavailable comparisons select full checks.
+
+For `docs_only=true`, run `make lint-files test-tooling docs`. Otherwise,
+also run the full unit suite and the applicable integration tests below.
+CI uses the same selector. Manual CI runs use the full suite. Markdown test
+fixtures and frontend assets require full checks.
 
 ## Sentinel-2 fixture
 

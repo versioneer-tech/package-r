@@ -6,8 +6,7 @@
 
     <div class="card-content">
       <p>
-        {{ $t("prompts.renameMessage") }} <code>{{ oldName() }}</code
-        >:
+        {{ $t("prompts.renameMessage") }} <code>{{ oldName() }}</code>:
       </p>
       <input
         id="focus-prompt"
