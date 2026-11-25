@@ -2,7 +2,7 @@
 
 ## Supported releases
 
-Security fixes apply to the latest published packageR release.
+Security fixes apply to the latest stable packageR release.
 
 ## Report a vulnerability
 
@@ -38,7 +38,7 @@ uses Playwright's Ubuntu 24.04 container to keep browser fonts consistent.
 | [security-check.yaml](.github/workflows/security-check.yaml) | Called by the Tests or release workflow | Scan the supplied candidate and save reports and package inventories. |
 | [go-vulnerabilities.yaml](.github/workflows/go-vulnerabilities.yaml) | Called by Tests or the daily workflow | Check Go source with govulncheck and save its report. |
 | [tag.yaml](.github/workflows/tag.yaml) | A `vnext.X.Y.Z` or `vnext.X.Y.Z-rc.N` tag is pushed | Verify the tested commit, build and scan a release candidate, then publish the release and documentation. |
-| [security-daily.yaml](.github/workflows/security-daily.yaml) | Daily at 04:23 UTC, or manually | Rescan published releases and check current Go source. |
+| [security-daily.yaml](.github/workflows/security-daily.yaml) | Daily at 04:23 UTC, or manually | Rescan supported releases and check current Go source. |
 
 Full Tests runs include:
 
@@ -46,7 +46,7 @@ Full Tests runs include:
 - `make lint-backend lint-frontend`: Go formatting and lint, frontend lint, and types
 - `make docs`: strict documentation and OpenAPI validation
 - `make test`: tooling, Go unit and race tests, rclone API tests, and Chromium
-- a production candidate build, Trivy scans, and govulncheck
+- a production candidate build and smoke check, Trivy scans, and govulncheck
 
 Documentation-only changes run file, tooling, and documentation checks. They
 skip runtime tests, builds, and vulnerability scans. Manual Tests runs select
@@ -63,6 +63,13 @@ A candidate is a build saved for scanning before publication. The shared
 [build-candidate action](.github/actions/build-candidate/action.yml) runs
 `make candidate` with a version and source commit. It selects Go from `go.mod`
 and pnpm from `frontend/package.json`. CGO stays enabled for DuckDB.
+
+Before upload, `make smoke-candidate` runs the saved binary and OCI image
+against a temporary local rclone S3 service. Both must start, report the
+expected version, pass the health probe, serve an embedded JavaScript bundle,
+and return the expected object through a public-share presigned URL. The
+check does not rebuild the candidate. It removes its processes, container,
+image tag, volume, and temporary data when it ends.
 
 The Make target builds the frontend with the frozen pnpm lockfile, embeds it
 in the production Go binary, and builds the Linux AMD64 image. It saves:
@@ -85,6 +92,10 @@ The runtime image uses Distroless C++ for Debian 13. It includes the C and C++
 libraries for DuckDB and runs as UID 1000 and GID 100, without a shell or
 BusyBox. Its health check calls the local `/health` endpoint through
 `package-r healthcheck`, with a two-second timeout.
+
+The build copies Debian's patched `libzstd1` library and its package records
+into the runtime image while the base image still contains the affected
+version. The candidate scan checks the resulting image inventory.
 
 ### Candidate scans
 
@@ -150,7 +161,7 @@ A pushed release tag starts this sequence:
 1. Verify that the exact tagged commit passed a full Tests run on `main`,
    through a push or manual run. A successful PR run alone is not sufficient.
    For a documentation-only commit, run Tests manually on `main` first.
-2. Build a new candidate with the release version.
+2. Build a new candidate with the release version and pass its smoke check.
 3. Scan the new candidate and apply the blocking policy.
 4. Download the candidate and scan records by artifact ID. Check the image,
    binary archive, dependency inputs, and report checksums with
@@ -190,10 +201,19 @@ leave an image published before the GitHub release or documentation is ready.
 
 ### Daily release scans
 
-The scheduled workflow scans all published `vnext` releases, including release
-candidates. Draft releases are excluded. Each release scan checks the image,
-published binary, and frontend production dependencies against current
-vulnerability data, using the same blocking policy.
+The scheduled workflow scans the latest stable `vnext` release. It also scans
+the newest RC for a version newer than that stable release. A stable release
+ends scheduled scans of its RCs and older releases. Draft releases are
+excluded. Selection uses version numbers, not publication order.
+
+For a manual scan of older or deployed versions, set the workflow's
+`release-tags` input to published tags separated by commas. An empty input
+uses the scheduled selection. An unknown tag fails selection.
+
+Each release scan checks the image, published binary, and frontend production
+dependencies against current vulnerability data, using the same blocking
+policy. A finding in a published artifact can require a new release; changes
+to the default branch do not change that artifact.
 
 When a release has a security manifest, the scan uses its immutable image
 digest and source commit and checks the binary and dependency input hashes.
@@ -230,6 +250,11 @@ Artifact checksums and image digests verify content identity. The workflows
 do not sign commits, tags, or images, and do not generate signed build
 attestations.
 
+External Actions use full commit SHAs. Production base images and the
+Playwright test image use content digests. Dependabot checks the configured
+Action and Docker dependencies for updates. The shared rclone installer checks
+its archive against a fixed SHA-256 checksum.
+
 ## Developer checks
 
 ### Hooks
@@ -250,14 +275,16 @@ The push hook checks branch names. CI checks the PR title.
 
 ### Run checks locally
 
-Use Linux AMD64 with the [required tools](tests/README.md#requirements) and
-Docker Buildx. From the repository root:
+Use Linux AMD64 with the [required tools](tests/README.md#requirements),
+Docker Buildx, and Skopeo. The candidate smoke check needs a local Docker
+daemon at `/var/run/docker.sock`. From the repository root:
 
 ```bash
 make check docs
 make setup-tests && make test
 make vulncheck
 make candidate
+make smoke-candidate
 make security
 make security-verify
 ```

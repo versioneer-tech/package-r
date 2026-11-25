@@ -103,6 +103,10 @@ candidate: build ## Build the binary, OCI image, and dependency scan inputs
 	$Q uv run --locked --group tooling python scripts/security.py prepare \
 		--source . --candidate dist/candidate --version '$(VERSION)' --commit "$$(git rev-parse HEAD)"
 
+.PHONY: smoke-candidate
+smoke-candidate: ## Check the saved binary and image against local S3 storage
+	$Q uv run --locked --group tooling python scripts/smoke_candidate.py --candidate dist/candidate
+
 .PHONY: security
 security: $(trivy) ## Scan the existing candidate and enforce the release policy
 	$Q uv run --locked --group tooling python scripts/security.py scan \

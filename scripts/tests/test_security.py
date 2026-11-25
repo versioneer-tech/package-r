@@ -11,6 +11,47 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import security
 
 
+class ReleaseSelectionTests(unittest.TestCase):
+    @staticmethod
+    def release(tag, **values):
+        return {"tag_name": tag, "draft": False, "prerelease": "-rc." in tag,
+                "assets": [{"name": "security-manifest.json"}], **values}
+
+    def test_latest_stable_and_newest_active_candidate_are_selected(self):
+        releases = [self.release(tag) for tag in (
+            "vnext.1.9.0", "vnext.1.10.0-rc.1", "vnext.1.10.0",
+            "vnext.1.11.0-rc.2", "vnext.1.11.0-rc.10", "vnext.1.11.0-rc.3",
+        )]
+        releases.append(self.release("vnext.2.0.0", draft=True))
+        releases.append(self.release("vnext.3.0.0", prerelease=True))
+        self.assertEqual(security.select_releases(releases), {"include": [
+            {"tag": "vnext.1.10.0", "manifest": True},
+            {"tag": "vnext.1.11.0-rc.10", "manifest": True},
+        ]})
+
+    def test_stable_publication_retires_its_candidates(self):
+        releases = [self.release(tag) for tag in (
+            "vnext.1.1.0-rc.1", "vnext.1.1.0", "vnext.1.2.0-rc.1", "vnext.1.2.0",
+        )]
+        self.assertEqual(security.select_releases(releases), {"include": [
+            {"tag": "vnext.1.2.0", "manifest": True},
+        ]})
+
+    def test_first_release_candidate_and_empty_repository(self):
+        self.assertEqual(security.select_releases([]), {"include": []})
+        self.assertEqual(security.select_releases([self.release("vnext.1.0.0-rc.1")]), {"include": [
+            {"tag": "vnext.1.0.0-rc.1", "manifest": True},
+        ]})
+
+    def test_manual_selection_can_scan_an_old_release_and_rejects_unknown_tags(self):
+        releases = [self.release("vnext.1.0.0", assets=[]), self.release("vnext.1.2.0")]
+        self.assertEqual(security.select_releases(releases, "vnext.1.0.0, vnext.1.0.0"), {"include": [
+            {"tag": "vnext.1.0.0", "manifest": False},
+        ]})
+        with self.assertRaisesRegex(ValueError, "Unknown published release tags"):
+            security.select_releases(releases, "vnext.9.0.0")
+
+
 class SecurityGateTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="test-security-")

@@ -14,7 +14,7 @@ from pathlib import Path
 import yaml
 
 REPOSITORY = "ghcr.io/versioneer-tech/package-r"
-RELEASE = re.compile(r"vnext\.\d+\.\d+\.\d+(?:-rc\.\d+)?")
+RELEASE = re.compile(r"vnext\.(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?")
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 SCOPES = ("image", "go", "frontend")
 DUCKDB_MODULES = {
@@ -306,6 +306,34 @@ def release_ref(tag: str, manifest_path: Path) -> None:
         print("image=" + REPOSITORY + ":" + tag)
 
 
+def select_releases(releases: list[dict], tags: str = "") -> dict:
+    published = {
+        release["tag_name"]: release for release in releases
+        if not release["draft"] and RELEASE.fullmatch(release["tag_name"])
+    }
+    if tags.strip():
+        selected = list(dict.fromkeys(re.split(r"[\s,]+", tags.strip())))
+        missing = set(selected) - published.keys()
+        if missing:
+            raise ValueError("Unknown published release tags: " + ", ".join(sorted(missing)))
+    else:
+        def version(tag):
+            return tuple(int(part) if part is not None else -1 for part in RELEASE.fullmatch(tag).groups())
+
+        stable = [tag for tag, release in published.items()
+                  if version(tag)[3] == -1 and not release["prerelease"]]
+        selected = [max(stable, key=version)] if stable else []
+        candidates = [tag for tag in published if version(tag)[3] != -1 and
+                      (not selected or version(tag)[:3] > version(selected[0])[:3])]
+        if candidates:
+            selected.append(max(candidates, key=version))
+    return {"include": [
+        {"tag": tag, "manifest": any(asset["name"] == "security-manifest.json"
+                                     for asset in published[tag]["assets"])}
+        for tag in selected
+    ]}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -323,7 +351,8 @@ def main() -> int:
     ref_parser = commands.add_parser("release-ref")
     ref_parser.add_argument("--tag", required=True)
     ref_parser.add_argument("--manifest", type=Path, required=True)
-    commands.add_parser("releases")
+    releases_parser = commands.add_parser("releases")
+    releases_parser.add_argument("--tags", default="", help="Published tags to scan instead of the supported releases.")
     rescan = commands.add_parser("rescan")
     rescan.add_argument("--source", type=Path, required=True)
     rescan.add_argument("--binary", type=Path, required=True)
@@ -349,11 +378,7 @@ def main() -> int:
         release_ref(args.tag, args.manifest)
     elif args.command == "releases":
         releases = [release for page in json.load(sys.stdin) for release in page]
-        include = [
-            {"tag": release["tag_name"], "manifest": any(asset["name"] == "security-manifest.json" for asset in release["assets"])}
-            for release in releases if not release["draft"] and RELEASE.fullmatch(release["tag_name"])
-        ]
-        print(json.dumps({"include": include}))
+        print(json.dumps(select_releases(releases, args.tags)))
     elif args.command == "rescan":
         with tempfile.TemporaryDirectory(prefix="package-r-rescan-") as directory:
             staged = Path(directory)

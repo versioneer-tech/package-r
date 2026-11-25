@@ -1,0 +1,29 @@
+name: Install rclone
+description: Install the checked rclone binary for local S3 tests
+
+runs:
+  using: composite
+  steps:
+    - name: Install rclone
+      shell: bash
+      env:
+        RCLONE_RELEASE_VERSION: "1.76.0"
+        RCLONE_ARCHIVE_SHA256: b00f00b3266c3764413afe599d3ec316f6f43b3e0ea8a0bc1d186d2133e46df7
+      run: |
+        set -euo pipefail
+        directory="$(mktemp -d "$RUNNER_TEMP/rclone.XXXXXX")"
+        trap 'rm -rf "$directory"' EXIT
+        archive="$directory/rclone.zip"
+        curl --fail --silent --show-error --location \
+          --retry 5 --retry-delay 2 --retry-connrefused \
+          --output "$archive" \
+          "https://github.com/rclone/rclone/releases/download/v${RCLONE_RELEASE_VERSION}/rclone-v${RCLONE_RELEASE_VERSION}-linux-amd64.zip"
+        printf '%s  %s\n' "$RCLONE_ARCHIVE_SHA256" "$archive" | sha256sum --check
+        unzip -q "$archive" -d "$directory"
+        binary="$directory/rclone-v${RCLONE_RELEASE_VERSION}-linux-amd64/rclone"
+        if [[ -w /usr/local/bin ]]; then
+          install -m 0755 "$binary" /usr/local/bin/rclone
+        else
+          sudo install -m 0755 "$binary" /usr/local/bin/rclone
+        fi
+        rclone version

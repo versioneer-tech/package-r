@@ -1,12 +1,23 @@
-FROM debian:trixie-slim AS accounts
+FROM debian:trixie-slim@sha256:8aa5a7bf5a1955bddbe7d74fcdd0b91ab30e74362a8b73af672b0481b35b44a0 AS accounts
 
 RUN if ! getent group 100 >/dev/null; then groupadd --gid 100 package-r; fi \
  && useradd --uid 1000 --gid 100 --home-dir /home/package-r --no-create-home --shell /usr/sbin/nologin package-r \
  && mkdir -p /home/package-r \
  && chown -R 1000:100 /home/package-r
 
-FROM gcr.io/distroless/cc-debian13:nonroot
+# Use Debian's libzstd1 fix until the runtime base includes it.
+RUN apt-get update \
+ && apt-get install --yes --no-install-recommends libzstd1 \
+ && rm -rf /var/lib/apt/lists/* \
+ && mkdir -p /runtime-inventory \
+ && dpkg-query --status libzstd1 > /runtime-inventory/libzstd1 \
+ && cp /var/lib/dpkg/info/libzstd1:amd64.md5sums /runtime-inventory/libzstd1.md5sums
 
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:532c7a94f9e96ba9db75eb9388f4227751131c7cb0a411d1a8521af4096135de
+
+COPY --from=accounts /usr/lib/x86_64-linux-gnu/libzstd.so.1* /usr/lib/x86_64-linux-gnu/
+COPY --from=accounts /usr/share/doc/libzstd1/ /usr/share/doc/libzstd1/
+COPY --from=accounts /runtime-inventory/ /var/lib/dpkg/status.d/
 COPY --from=accounts /etc/passwd /etc/group /etc/
 COPY --from=accounts --chown=1000:100 /home/package-r /home/package-r
 COPY --chmod=755 package-r /package-r
