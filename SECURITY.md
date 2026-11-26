@@ -320,6 +320,10 @@ markdownlint, Hadolint, and Gitleaks. Gitleaks checks staged content with
 redacted output; CI checks repository files. Neither scans full Git history.
 Hooks do not run tests or build the application.
 
+Frontend lint caches results for unchanged files in
+`frontend/node_modules/.tmp/eslintcache`. Delete that file to force a full
+lint run. Type checking still checks the project on each run.
+
 Commit messages use Conventional Commits, such as `fix: handle empty catalogs`.
 The push hook checks branch names. CI checks the PR title.
 
@@ -383,6 +387,7 @@ and local databases. `pnpm run clean` in `frontend` uses `make clean-frontend`.
 
 ### Dependency updates
 
-[Dependabot](.github/dependabot.yml) checks Docker images daily. It checks Go,
-frontend, Actions, hooks, and Python support dependencies weekly and opens
-update PRs. Published releases need a new release to include dependency fixes.
+[Dependabot](.github/dependabot.yml) checks Docker images daily and groups
+base-image digest updates in one PR. When enabled in the repository settings,
+security updates open PRs as fixes become available. Publish a new release to
+deliver dependency fixes.

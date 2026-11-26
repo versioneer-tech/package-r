@@ -1,12 +1,5 @@
 version: 2
 
-multi-ecosystem-groups:
-  python-tools:
-    schedule:
-      interval: weekly
-    commit-message:
-      prefix: chore
-
 updates:
   - package-ecosystem: docker
     directory: /
@@ -14,6 +7,11 @@ updates:
       interval: daily
     commit-message:
       prefix: chore
+    groups:
+      container-images:
+        applies-to: version-updates
+        # These images use named tags. SemVer filters exclude digest-only updates.
+        patterns: ["debian", "distroless/cc-debian13"]
 
   - package-ecosystem: gomod
     directory: /
@@ -23,6 +21,8 @@ updates:
       prefix: chore
     groups:
       go-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
         update-types: [minor, patch]
 
   - package-ecosystem: npm
@@ -36,6 +36,8 @@ updates:
         update-types: ["version-update:semver-major"]
     groups:
       frontend-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
         update-types: [minor, patch]
 
   - package-ecosystem: github-actions
@@ -46,7 +48,9 @@ updates:
       prefix: ci
     groups:
       actions:
+        applies-to: version-updates
         patterns: ["*"]
+        update-types: [minor, patch]
 
   - package-ecosystem: pre-commit
     directory: /
@@ -56,15 +60,19 @@ updates:
       prefix: chore
     groups:
       hooks:
+        applies-to: version-updates
         patterns: ["*"]
+        update-types: [minor, patch]
 
-  # Keep the MkDocs pins in pyproject.toml and docs/requirements.txt together.
+  # uv also reads docs/requirements.txt and tests/requirements.txt.
   - package-ecosystem: uv
     directory: /
-    patterns: ["*"]
-    multi-ecosystem-group: python-tools
-
-  - package-ecosystem: pip
-    directories: [/docs, /tests]
-    patterns: ["*"]
-    multi-ecosystem-group: python-tools
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+    groups:
+      python-tools:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: [minor, patch]
