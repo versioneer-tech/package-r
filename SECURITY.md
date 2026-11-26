@@ -191,9 +191,9 @@ and GitHub releases. The documentation job can write to `gh-pages`.
 Publication has several steps. If a later step fails, the image can already
 be in the registry while the GitHub release or documentation is still missing.
 
-### Sign a release tag
+### Sign commits
 
-List the keys on the computer where you will sign releases:
+List the keys on the computer where you will sign commits:
 
 ```sh
 gpg --list-secret-keys --keyid-format LONG --fingerprint
@@ -210,31 +210,43 @@ Export the public key and configure Git for this checkout. Replace
 gpg --armor --export YOUR_FULL_KEY_FINGERPRINT > /tmp/release-signing-key.asc
 git config --local gpg.format openpgp
 git config --local user.signingkey YOUR_FULL_KEY_FINGERPRINT
-git config --local tag.gpgsign true
+git config --local commit.gpgsign true
 ```
 
 Add the contents of `/tmp/release-signing-key.asc` to your GitHub account.
 See [GitHub's GPG setup](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account).
 Keep the private key on your signing device.
 
-Choose an unused version and add its release notes to `CHANGELOG.md`. Commit
-and push the changes to `main`, then wait for a full successful Tests run on
-that commit. For a documentation-only commit, run Tests manually on `main`.
-From a clean `main` checkout, create, verify, and push the signed tag. Replace
-the example version below with the version you chose:
+This signs new commits and leaves tags unsigned. The release workflow accepts
+unsigned tags. It does not verify commit or tag signatures. To require signed
+commits on `main`, configure GitHub's
+[signed commit rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#require-signed-commits).
+
+### Create a release
+
+Choose an unused version. Add a matching `## vnext.X.Y.Z - YYYY-MM-DD` section
+to `CHANGELOG.md`, with a short list of changes since the previous release.
+Check the notes that CI will publish. Replace the example version below with
+the version you chose:
 
 ```sh
 release_tag=vnext.1.2.1
-scripts/sign_tag.sh "$release_tag"
-git verify-tag "$release_tag"
+python3 scripts/release_notes.py "$release_tag"
+```
+
+Commit and push the changes to `main`, then wait for a full successful Tests
+run on that commit. For a documentation-only commit, open **Actions → Tests →
+Run workflow**, select `main`, and wait for all checks to pass.
+
+From a clean `main` checkout at that same commit, create and push the tag:
+
+```sh
+git tag "$release_tag"
 git push origin "$release_tag"
 ```
 
-The helper shows the release notes and asks before it creates the signed tag.
-GPG can ask for the key's passphrase. The helper does not push the tag.
-CI publishes the GitHub notes. Editing `CHANGELOG.md` after publication does
-not change an existing release. The release workflow does not verify the tag
-signature. GitHub's rule for signed commits does not add this check.
+This tag needs no message. CI reads the release notes from `CHANGELOG.md`.
+Editing `CHANGELOG.md` after publication does not change an existing release.
 
 ### Daily release scans
 
@@ -284,9 +296,9 @@ development dependencies and general build dependencies have no separate
 Trivy scan.
 
 Checksums and image digests detect changes to saved files and images. They do
-not prove who built them. The workflows do not sign commits, tags, or images,
-and do not generate signed build attestations. The local helper signs release
-tags, but CI does not verify their signatures.
+not prove who built them. Contributors sign commits locally. CI does not
+verify commit or tag signatures, sign images, or generate signed build
+attestations.
 
 External Actions use full commit SHAs. Production base images and the
 Playwright test image use content digests. Dependabot checks the configured

@@ -15,6 +15,10 @@ now-deprecated File Browser project is no longer maintained.
 Existing capabilities, including package sharing and dynamic STAC APIs, remain.
 See the [documentation](docs/index.md) for details.
 
+## vnext.1.2.1 - 2026-11-26
+
+- dependency upgrades
+
 ## vnext.1.2.0 - 2026-11-21
 
 - dependency upgrades and security hardenings (distroless)

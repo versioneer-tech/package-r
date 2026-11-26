@@ -1,4 +1,4 @@
 # Read the Docs uses these pins. Keep them aligned with pyproject.toml.
-mkdocs-material==9.8.1
+mkdocs-material==9.8.2
 mike==2.2.0
 openapi-spec-validator==0.9.0
