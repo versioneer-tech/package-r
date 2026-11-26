@@ -5,9 +5,9 @@
 [![Go version](https://img.shields.io/github/go-mod/go-version/versioneer-tech/package-r)](go.mod)
 [![License](https://img.shields.io/github/license/versioneer-tech/package-r)](LICENSE)
 
-packageR publishes a prefix of S3-compatible objects as a public package.
-Recipients can open it in a browser without an account. An optional share
-password controls access.
+packageR lets you share files and folders from S3-compatible storage through
+a web interface. Recipients open a share link in their browser without an
+account. You can protect each share with a password.
 
 The web interface supports directory navigation, uploads, downloads, and
 object operations. It previews JSON, Markdown, PDF, common image formats,
@@ -15,9 +15,9 @@ and Cloud Optimized GeoTIFF (COG). Parquet catalogs are exposed as public
 STAC JSON. Authenticated users and public shares can request time-limited
 download URLs.
 
-All sessions use one S3 identity. Its storage policy sets the maximum access.
-packageR can reduce access with user scopes, path rules, and action
-permissions.
+All users access storage through one S3 identity. Its storage policy controls
+which buckets and objects packageR can access. User scopes, path rules, and
+permissions further limit what each user can do.
 
 See the [packageR documentation](https://package-r.versioneer.at/) for setup,
 configuration, public packages, the HTTP API, and architecture decisions.
@@ -134,9 +134,13 @@ for an init-container example.
 
 ## Development
 
+- [Contributing](CONTRIBUTING.md): issues and pull requests.
 - [Tests and performance](tests/README.md): tools, test data, and Make commands.
 - [Local development](.vscode/README.md): VS Code and STAC Browser.
-- [Security and release checks](SECURITY.md): hooks, CI, dependency updates, and cleanup.
+- [Local CI checks](SECURITY.md#run-checks-locally): check selection and the full
+  lint, test, candidate, and scan sequence.
+- [Security and release checks](SECURITY.md): hooks, releases, dependency updates,
+  and cleanup.
 
 ## Thanks
 

@@ -106,8 +106,8 @@ without changing stored preferences.
 
 ## Resources
 
-Resource paths are below the authenticated identity's scope and the configured
-storage root.
+Resource paths are relative to the user's scope within the configured storage
+root.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -152,8 +152,8 @@ offset and continue with `PATCH`, or delete it.
 
 ## Shares
 
-Shares are declared when the runtime database is prepared. Authenticated users
-can list the public shares available in their scope:
+Create shares before starting the server. Signed-in users can list the public
+shares available in their scope:
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -231,6 +231,6 @@ Catalog queries have these requirements:
 - The catalog file must not exceed 256 MiB
 - Up to four catalog queries run at once per process; other requests wait for
   a slot or request cancellation
-- DuckDB reads a signed URL with HTTP range requests and does not stage the
-  catalog on local disk
+- DuckDB reads the catalog through a signed URL with HTTP range requests,
+  without saving a copy on local disk
 - The internal catalog URL is valid for at most 15 minutes

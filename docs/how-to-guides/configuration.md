@@ -4,8 +4,8 @@ Server options use this order of priority: command-line flags, `PACKAGE_R_`
 environment variables, configuration file, database settings, then defaults.
 Use `package-r config init` to create a database and `package-r config set`
 to change an existing database. Run these commands before you start the server.
-Object-storage credentials belong to the process and are not stored in the
-database or user records.
+packageR gets storage credentials from its environment or credential provider.
+It does not store them in the database or user records.
 
 ## Runtime state
 
@@ -24,7 +24,7 @@ preferences. It does not change objects in storage.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `PACKAGE_R_DATABASE` | `/tmp/package-r.db` | Bolt runtime-cache path. |
+| `PACKAGE_R_DATABASE` | `/tmp/package-r.db` | Path to the local Bolt database. |
 | `PACKAGE_R_ADDRESS` | `127.0.0.1` | Listen address. |
 | `PACKAGE_R_PORT` | `8888` | HTTP port. |
 | `PACKAGE_R_LOG` | `stdout` | Log output. |
@@ -77,9 +77,10 @@ Startup fails when only one static key variable is set. Do not put projected
 tokens or static credentials in packageR configuration, logs, or the Bolt
 database.
 
-User settings cannot change the endpoint, credentials, root, or bucket
-catalog. The credential provider refreshes temporary credentials when the
-selected identity method supports refresh.
+User settings cannot change the server's endpoint, credentials, root, or bucket
+list.
+The credential provider refreshes temporary credentials when the selected
+identity method supports it.
 
 ### Cache directories
 
@@ -115,8 +116,8 @@ PACKAGE_R_ROOT=/
 PACKAGE_R_BUCKETS=data,archive
 ```
 
-packageR then creates the top-level listing from this catalog and does not use
-S3 bucket discovery. Opening and listing a configured bucket still needs its
+packageR shows these buckets at the top level without asking S3 for a bucket
+list. Opening and listing a configured bucket still needs its
 bucket-list permission, such as AWS `s3:ListBucket`. Object actions need the
 matching provider permissions. Bucket names must be unique. packageR rejects
 a rename between buckets because each bucket has a separate backend.
@@ -169,8 +170,9 @@ the user:
   --auth.jwt.audience=package-r
 ```
 
-The mapper selects the packageR username. It does not limit token validation.
-Use `.sub` unless the identity provider defines another stable, unique claim.
+The mapper selects the token claim used as the packageR username. Use `.sub`
+unless the identity provider defines another stable, unique claim. The JWKS,
+issuer, and audience settings control token verification.
 
 If claim mapping is set without a JWKS URL, packageR logs a warning and only
 decodes the token. This is allowed for a trusted upstream proxy.
@@ -207,13 +209,12 @@ packageR applies these access controls in order:
 
 1. The S3 credentials and their storage policy define the maximum access.
 2. `PACKAGE_R_ROOT` selects the service root or one direct bucket.
-3. `PACKAGE_R_BUCKETS` can replace service-root discovery with an explicit
-   bucket catalog.
+3. `PACKAGE_R_BUCKETS` can set the bucket list at the service root.
 4. The user scope selects a subtree below that root. Paths cannot escape it.
 5. Hidden-file handling, global rules, and user rules filter normalized paths.
    Matching rules are evaluated in order, and the last matching rule wins.
-6. User-directory mode denies sibling homes and protects their shared parent
-   from recursive changes. This boundary cannot be overridden by a user rule.
+6. User-directory mode hides other users' home directories and protects their
+   parent directory from recursive changes. A user rule cannot override this.
 7. User permission flags control actions such as create, rename, modify, and
    delete.
 

@@ -6,13 +6,17 @@
 
 import argparse
 import subprocess
+from pathlib import PurePosixPath
 
 
 def documentation_only(paths):
     # Screenshot baselines are also browser test inputs.
     return bool(paths) and all(
-        (path.startswith("docs/") and not path.startswith("docs/imgs/screenshots/"))
-        or path in {"mkdocs.yml", ".readthedocs.yaml", ".markdownlint.yaml", "tests/README.md"}
+        (path.startswith("docs/") and not path.startswith("docs/imgs/screenshots/")
+         and PurePosixPath(path).suffix.lower() in {
+             ".md", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico",
+         })
+        or path in {"docs/reference-guides/openapi.yaml", "tests/README.md"}
         or (path.endswith(".md") and ("/" not in path or path.startswith(".github/")))
         for path in paths
     )

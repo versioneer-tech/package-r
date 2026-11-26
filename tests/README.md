@@ -8,10 +8,9 @@ Run this from the repository root on Linux:
 make setup-tests && make test
 ```
 
-Setup installs frontend dependencies, installs Chromium and its system libraries
-if Chromium cannot launch, and downloads missing Sentinel-2 test data. The
-system library install can ask for `sudo`. Run setup again after a Playwright
-update.
+Setup installs frontend dependencies and downloads missing Sentinel-2 test
+data. If Chromium cannot launch, it installs the browser and required system
+libraries. This can ask for `sudo`. Run setup again after a Playwright update.
 
 ### Requirements
 
@@ -23,11 +22,12 @@ Install these tools before setup:
 - Python 3.11 or newer, uv, and jq.
 - rclone 1.76 or newer. Set `RCLONE_BIN` to an absolute path if it is not on `PATH`.
 
-`make test-check` checks the C/C++ libraries and tools, then launches headless
-Chromium. An old or missing library, Playwright package, or browser
-stops `make test` before the suites or services start. Individual suites can
-run on other systems. They build against the host's libraries and do not prove
-that the prebuilt release binary can run there. If you set
+`make test-check` checks library versions and tools, then launches headless
+Chromium. If a library is too old or a required tool or browser is missing,
+`make test` stops before it builds the application or starts test services.
+You can run individual suites on other systems. Those suites build against
+the host libraries, so passing them does not check whether the release binary
+can run on that host. If you set
 `PLAYWRIGHT_BROWSERS_PATH`, use the same value for setup and tests.
 
 ### Test suites
@@ -47,9 +47,9 @@ also run on its own:
 
 ### Test data
 
-API and browser tests use a temporary copy of `tests/data`, local rclone S3,
-and synthetic credentials. They preserve the source data and do not use cloud
-accounts.
+API and browser tests copy `tests/data` to a temporary directory and use local
+rclone S3 with test credentials. They leave the source data unchanged and do
+not use cloud accounts.
 
 `make setup-tests` downloads the Vienna Sentinel-2 fixture to
 `tests/data/vienna-s2l2a-26` if its Parquet catalog is missing. To download only
@@ -150,9 +150,9 @@ Run this separately on an idle host, from the repository root:
 make performance
 ```
 
-It needs Go and the C/C++ toolchain. It uses synthetic data and a simulated
-object store, so no setup target, Sentinel-2 data, rclone, or Playwright is
-needed. These timed workloads run only through `make performance`.
+It needs Go and the C/C++ toolchain. It uses test data and a simulated object
+store, so you do not need `make setup-tests`, Sentinel-2 data, rclone, or
+Playwright. These tests run only through `make performance`.
 
 The command enables the `loadtest` build tag and runs four workloads: 1,000
 and 10,000 password-protected public presign requests, each with concurrency

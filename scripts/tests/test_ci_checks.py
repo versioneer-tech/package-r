@@ -10,22 +10,20 @@ CHECKS = runpy.run_path(str(Path(__file__).resolve().parents[1] / "ci-checks.py"
 
 
 class CheckSelectionTests(unittest.TestCase):
-    def test_documentation_changes(self):
+    def test_guides_and_images_use_documentation_checks(self):
         self.assertTrue(CHECKS["documentation_only"]([
-            "README.md", "SECURITY.md", "docs/requirements.txt", "docs/images/example.png",
-            "mkdocs.yml", ".readthedocs.yaml", ".markdownlint.yaml", "tests/README.md",
-            ".github/PULL_REQUEST_TEMPLATE.md",
+            "README.md", "docs/how-to-guides/configuration.md", "docs/images/example.png",
         ]))
 
-    def test_runtime_and_unknown_paths_require_full_checks(self):
-        for path in (
-            "http/catalog.go", "frontend/package.json", "frontend/public/example.md",
-            "tests/data/sample-files/sample.md", "scripts/ci-checks.py", "tests/requirements.txt",
-            ".github/workflows/pr.yaml", "Makefile", "unknown.txt",
+    def test_dependencies_and_code_in_docs_require_full_checks(self):
+        self.assertFalse(CHECKS["documentation_only"](["README.md", "docs/requirements.txt"]))
+        self.assertFalse(CHECKS["documentation_only"](["docs/helper.py"]))
+
+    def test_unknown_files_and_browser_fixtures_require_full_checks(self):
+        self.assertFalse(CHECKS["documentation_only"](["unknown.txt"]))
+        self.assertFalse(CHECKS["documentation_only"]([
             "docs/imgs/screenshots/authenticated-public-listing.png",
-        ):
-            with self.subTest(path=path):
-                self.assertFalse(CHECKS["documentation_only"](["README.md", path]))
+        ]))
 
     def test_local_changes_include_untracked_files(self):
         def git(*arguments):

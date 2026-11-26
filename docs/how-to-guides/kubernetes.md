@@ -181,9 +181,9 @@ Run one replica because each Pod has its own database and session-signing
 key. Replacing the Pod ends existing login sessions and resets display
 preferences.
 
-Change the bucket, paths, authentication, permissions, and share definitions
-in the init-container commands. Do not add bootstrap logic to the main
-container. See [Configuration](configuration.md) for the available settings
+Set the bucket, paths, authentication, permissions, and shares in the
+init-container commands. Keep database setup in the init containers. See
+[Configuration](configuration.md) for the available settings
 and [catalog setup](share-and-preview-data.md#publish-a-stac-compatible-parquet-catalog)
 to add a Parquet catalog to the share.
 

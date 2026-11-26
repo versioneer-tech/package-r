@@ -1,8 +1,9 @@
 # Package, share, and preview data
 
-packageR publishes an object prefix as a browser package. Recipients do not
-need an account. Operators define packages before startup. Users can open the
-links in the web interface, but cannot change them.
+Operators create public shares before starting packageR. A share points to a
+folder or a single file in object storage. Recipients can open the link
+without an account. Signed-in users can find share links in the web interface;
+they cannot change the shares.
 
 ## Package an object prefix
 
@@ -21,9 +22,8 @@ On a server at `https://packages.example.org`, these links are
 `https://packages.example.org/share/public/` and
 `https://packages.example.org/share/report/`.
 
-A prefix package lets a public visitor navigate below the configured path. A
-single-object package opens that object. The visitor cannot navigate above the
-configured path.
+A folder share lets visitors browse its contents and subfolders. A file share
+opens that file. Visitors cannot browse above the shared path.
 
 The package name is part of its URL. It must contain 1 to 20 lowercase letters,
 digits, dots, or hyphens.
@@ -36,9 +36,8 @@ Use `--expiration` to set the share lifetime. Use a positive number with days
 example, use `10d`, `2m`, `3H`, or `2y`. Leave it empty to create a share
 without an expiration.
 
-A hard-to-guess name can reduce accidental discovery, but it is not an access
-control. Add a share password when recipients must authenticate before they
-open the package.
+Anyone who knows the share URL can open it unless you set a password. Use a
+password when access must be limited to recipients who know it.
 
 ![Public share directory](../imgs/screenshots/vienna-s2l2a-26-directory.png)
 
@@ -105,7 +104,7 @@ Set the relative catalog path when you add the share:
   --catalog-name=vienna-s2l2a-26.parquet
 ```
 
-Use `--asset-mappings` only when asset URLs do not match paths inside the
+Use `--asset-mappings` when packageR cannot match an asset URL to a file in the
 share. [ADR-002](../architecture/0002-publish-parquet-catalogs-as-stac.md#decision)
 shows the JSON format and a mapping example.
 

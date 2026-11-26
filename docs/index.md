@@ -1,8 +1,8 @@
 # packageR
 
-packageR publishes an S3-compatible object prefix as a public package.
-Recipients can browse and open package objects without an account. An optional
-share password controls access.
+Use packageR to share files and folders from S3-compatible storage. Recipients
+open a share link in their browser and browse the files without an account.
+You can protect each share with a password.
 
 The web interface also lets signed-in users browse and manage objects. A
 Parquet catalog inside a package can provide public [SpatioTemporal Asset
@@ -18,9 +18,9 @@ Object operations: Browser -> packageR API -> rclone VFS -> object storage
 Previews and downloads: Browser -> object storage (presigned URL)
 ```
 
-One storage identity is shared by all packageR sessions. Its storage policy
-sets the maximum access. packageR can reduce that access with user scopes,
-path rules, and action permissions. See
+All users access storage through one S3 identity. Its storage policy controls
+which buckets and objects packageR can access. User scopes, path rules, and
+permissions further limit what each user can do. See
 [Configuration](how-to-guides/configuration.md) for the full access model.
 
 ## Choose a guide

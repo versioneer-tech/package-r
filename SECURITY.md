@@ -21,15 +21,15 @@ Do not include live credentials, tokens, presigned URLs, or private data.
 
 ## Release checks
 
-CI checks changes before release. A release publishes the image and binary
-that passed the security scan. Daily jobs scan published releases again with
-current vulnerability data.
+CI tests and scans each production build before release. The release job
+publishes the saved image and binary that passed these checks. Daily jobs
+scan published releases again with current vulnerability data.
 
 ### CI workflows
 
-The [workflows](.github/workflows/) use shared Make targets for local and CI
-checks. All jobs that select a runner use Ubuntu 24.04. The combined test job
-uses Playwright's Ubuntu 24.04 container to keep browser fonts consistent.
+The [workflows](.github/workflows/) use the same Make targets as local checks.
+Jobs run on Ubuntu 24.04. The test job uses Playwright's Ubuntu 24.04 container
+so screenshot comparisons use the same browser fonts.
 
 | File | Trigger | Purpose |
 | --- | --- | --- |
@@ -51,28 +51,26 @@ Full Tests runs include:
 Documentation-only changes run file, tooling, and documentation checks. They
 skip runtime tests, builds, and vulnerability scans. Manual Tests runs select
 all checks. The `required_checks` job fails if a required job fails or is
-unexpectedly skipped. Repository rules must require this status to block
-merging.
+unexpectedly skipped. To block merges when checks fail, require this status
+in the repository's branch rules.
 
 The [test guide](tests/README.md) covers setup and test scope. Timed load tests
 run separately with `make performance`.
 
 ### Candidate build
 
-A candidate is a build saved for scanning before publication. The shared
-[build-candidate action](.github/actions/build-candidate/action.yml) runs
-`make candidate` with a version and source commit. It selects Go from `go.mod`
-and pnpm from `frontend/package.json`. CGO stays enabled for DuckDB.
+A candidate is a saved production build. CI runs it and scans it before the
+release job publishes it. The release job uses the saved files without
+building them again.
 
-Before upload, `make smoke-candidate` runs the saved binary and OCI image
-against a temporary local rclone S3 service. Both must start, report the
-expected version, pass the health probe, serve an embedded JavaScript bundle,
-and return the expected object through a public-share presigned URL. The
-check does not rebuild the candidate. It removes its processes, container,
-image tag, volume, and temporary data when it ends.
+The [build-candidate action](.github/actions/build-candidate/action.yml) runs
+`make candidate` with a version and source commit. It uses the Go version in
+`go.mod` and the pnpm version in `frontend/package.json`. DuckDB needs CGO,
+so the build keeps it enabled.
 
-The Make target builds the frontend with the frozen pnpm lockfile, embeds it
-in the production Go binary, and builds the Linux AMD64 image. It saves:
+`make candidate` installs frontend dependencies from the frozen pnpm lockfile,
+builds the frontend, embeds it in the Go binary, and builds the Linux AMD64
+container image. It saves these files:
 
 | Path under `dist/candidate/` | Contents |
 | --- | --- |
@@ -81,9 +79,15 @@ in the production Go binary, and builds the Linux AMD64 image. It saves:
 | `security-manifest.json` | Version, full source commit, image digest, and artifact checksums |
 | `inputs/` | Go and frontend dependency manifests used by the scans |
 
-The action uploads this directory and returns its GitHub artifact ID. Later
-jobs download that exact upload. The artifact ID identifies the upload; the
-image digest identifies the image contents.
+Before upload, `make smoke-candidate` runs the saved binary and image against
+a temporary local rclone S3 service. Both must start, report the expected
+version, pass the health probe, serve the embedded JavaScript bundle, and
+read a shared object through a presigned URL. The check removes its processes,
+container, image tag, volume, and temporary data when it ends.
+
+The action uploads the directory to GitHub Actions. Later jobs download it
+by its artifact ID and check its contents against the saved checksums and
+image digest.
 
 The standalone binary needs the host libraries listed in
 [README.md](README.md#binary).
@@ -108,11 +112,11 @@ scans the saved candidate without rebuilding it.
 | Standalone binary | Compiled Go dependencies and the Go standard library in the release download |
 | Frontend | Production dependencies from `frontend/pnpm-lock.yaml` |
 
-The separate frontend scan is needed because the JavaScript assets are
-embedded in the Go binary. An image scan cannot recover their full dependency
-inventory. The frontend scan excludes development dependencies. If the
-lockfile has separate tooling and application documents, the scan uses the
-application document and leaves the source lockfile unchanged.
+The image scan cannot identify all dependencies in the embedded JavaScript.
+A separate scan reads production dependencies from the frontend lockfile;
+it excludes development dependencies. If the lockfile has separate tooling
+and application documents, the scan uses the application document and leaves
+the source lockfile unchanged.
 
 ### Go source checks
 
@@ -137,10 +141,10 @@ All three Trivy scans use this policy:
 | Image OS at end of support | Block publication |
 | Scanner error or missing required inventory, report, or SBOM | Block publication |
 
-The checks require an identified image OS, OS packages, versioned Go standard
-libraries, and a frontend production dependency inventory. All three scans
-and all three software bills of materials (SBOMs) must be present. The gate
-does not use vulnerability ignore lists.
+The reports must identify the required packages: the image OS and its packages,
+the Go standard library and its version, and frontend production dependencies.
+All three scans and all three software bills of materials (SBOMs) must be
+present. The gate does not use vulnerability ignore lists.
 
 #### DuckDB native library
 
@@ -151,8 +155,8 @@ equal. Both Go SBOMs must include the native module at the reported version.
 
 `scan-summary.json` records the native module and DuckDB release version,
 using the [upstream version scheme](https://github.com/duckdb/duckdb-go/tree/v2.20000.0#readme).
-This verifies the bundled library inventory. It does not add a separate scan
-of DuckDB's C++ code or extensions.
+These checks confirm which DuckDB library is bundled. They do not scan its C++
+code or extensions separately.
 
 ### Release gate
 
@@ -166,8 +170,8 @@ A pushed release tag starts this sequence:
 4. Download the candidate and scan records by artifact ID. Check the image,
    binary archive, dependency inputs, and report checksums with
    `make security-verify`.
-5. Copy the checked OCI archive to the registry without rebuilding it.
-   Require the registry to preserve its image manifest digest.
+5. Copy the checked OCI archive to the registry without rebuilding it, and
+   preserve its image manifest digest.
 6. Create the GitHub release with the binary archive, security manifest,
    three SBOMs, an archive of the scan records, and notes from `CHANGELOG.md`.
 7. Build and publish versioned documentation.
@@ -181,30 +185,63 @@ followed by GitHub's generated notes and comparison link. RC tags use an exact
 RC section if present, otherwise the base version's section. A missing or
 empty section stops publication.
 
-To create a signed stable tag from a clean `main` checkout:
+Checking jobs have read permissions. The release job can write to the registry
+and GitHub releases. The documentation job can write to `gh-pages`.
+
+Publication has several steps. If a later step fails, the image can already
+be in the registry while the GitHub release or documentation is still missing.
+
+### Sign a release tag
+
+List the keys on the computer where you will sign releases:
 
 ```sh
-scripts/sign_tag.sh vnext.1.2.0
+gpg --list-secret-keys --keyid-format LONG --fingerprint
 ```
 
-The helper checks and shows the release notes, then includes them in the signed
-tag. GPG can ask for the key's passphrase. Push `main` if needed, wait for the
-full Tests run to pass, then push the tag as shown by the helper. CI publishes
-the GitHub notes. A new CHANGELOG commit does not change an existing release.
+Choose your signing key and copy the full fingerprint below its `sec` line.
+If no key is listed, create one with `gpg --full-generate-key`, then repeat
+the command above. Use an email verified on your GitHub account.
 
-Checking jobs use read permissions. Registry and release publication receive
-write permissions in the release job. The documentation job has write access
-to publish to `gh-pages`.
+Export the public key and configure Git for this checkout. Replace
+`YOUR_FULL_KEY_FINGERPRINT` with the fingerprint you copied:
 
-These steps are separate operations. A failure after image publication can
-leave an image published before the GitHub release or documentation is ready.
+```sh
+gpg --armor --export YOUR_FULL_KEY_FINGERPRINT > /tmp/release-signing-key.asc
+git config --local gpg.format openpgp
+git config --local user.signingkey YOUR_FULL_KEY_FINGERPRINT
+git config --local tag.gpgsign true
+```
+
+Add the contents of `/tmp/release-signing-key.asc` to your GitHub account.
+See [GitHub's GPG setup](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account).
+Keep the private key on your signing device.
+
+Choose an unused version and add its release notes to `CHANGELOG.md`. Commit
+and push the changes to `main`, then wait for a full successful Tests run on
+that commit. For a documentation-only commit, run Tests manually on `main`.
+From a clean `main` checkout, create, verify, and push the signed tag. Replace
+the example version below with the version you chose:
+
+```sh
+release_tag=vnext.1.2.1
+scripts/sign_tag.sh "$release_tag"
+git verify-tag "$release_tag"
+git push origin "$release_tag"
+```
+
+The helper shows the release notes and asks before it creates the signed tag.
+GPG can ask for the key's passphrase. The helper does not push the tag.
+CI publishes the GitHub notes. Editing `CHANGELOG.md` after publication does
+not change an existing release. The release workflow does not verify the tag
+signature. GitHub's rule for signed commits does not add this check.
 
 ### Daily release scans
 
-The scheduled workflow scans the latest stable `vnext` release. It also scans
-the newest RC for a version newer than that stable release. A stable release
-ends scheduled scans of its RCs and older releases. Draft releases are
-excluded. Selection uses version numbers, not publication order.
+The daily workflow scans the latest stable `vnext` release. If a newer version
+has release candidates (RCs), it also scans the newest RC. With no stable
+release, it scans only the newest RC. It skips drafts, older releases, and
+superseded RCs. Versions are compared by number, regardless of publication date.
 
 For a manual scan of older or deployed versions, set the workflow's
 `release-tags` input to published tags separated by commas. An empty input
@@ -227,9 +264,10 @@ finding fails the workflow.
 ### Reports and retention
 
 Trivy writes JSON reports and CycloneDX JSON SBOMs to `build/security/`.
-Each SBOM lists detected packages and their versions. Reports include all
-severities. `scan-summary.json` records the result, scanner and vulnerability
-database versions, unfixed HIGH counts and IDs, and report checksums.
+An SBOM lists detected packages and their versions. Scan reports list known
+vulnerabilities at all severities. `scan-summary.json` records the result,
+scanner and vulnerability database versions, unfixed HIGH counts and IDs,
+and report checksums.
 govulncheck writes `build/security/govulncheck.txt`.
 
 | Record | Where it is retained |
@@ -241,14 +279,14 @@ govulncheck writes `build/security/govulncheck.txt`.
 
 ### Limits
 
-The checks depend on the scanners' package detection and vulnerability data.
-A successful scan does not prove that a release has no vulnerabilities.
-Frontend development dependencies and general build dependencies have no
-separate Trivy scan.
+Scans can report only known vulnerabilities in packages they detect. Frontend
+development dependencies and general build dependencies have no separate
+Trivy scan.
 
-Artifact checksums and image digests verify content identity. The workflows
-do not sign commits, tags, or images, and do not generate signed build
-attestations.
+Checksums and image digests detect changes to saved files and images. They do
+not prove who built them. The workflows do not sign commits, tags, or images,
+and do not generate signed build attestations. The local helper signs release
+tags, but CI does not verify their signatures.
 
 External Actions use full commit SHAs. Production base images and the
 Playwright test image use content digests. Dependabot checks the configured
@@ -277,20 +315,41 @@ The push hook checks branch names. CI checks the PR title.
 
 Use Linux AMD64 with the [required tools](tests/README.md#requirements),
 Docker Buildx, and Skopeo. The candidate smoke check needs a local Docker
-daemon at `/var/run/docker.sock`. From the repository root:
+daemon at `/var/run/docker.sock`. Use the pinned Playwright CI container for
+browser screenshot comparisons. Run these commands from the repository root.
+The subshell stops at the first failed command:
 
 ```bash
-make check docs
-make setup-tests && make test
-make vulncheck
-make candidate
-make smoke-candidate
-make security
-make security-verify
+(
+  set -e
+
+  make check docs
+  make setup-tests
+  make test
+  make vulncheck
+
+  make candidate VERSION="snapshot-$(git rev-parse HEAD)"
+  make smoke-candidate
+  make security
+  make security-verify
+)
 ```
 
-Local checks do not publish artifacts. The test guide covers setup and
-check selection.
+These are the same Make targets used by CI. Local checks do not publish
+artifacts. The candidate stays in `dist/candidate/`, and scan records stay
+in `build/security/` for inspection.
+
+For change selection, use the known PR base commit or the target branch:
+
+```bash
+python3 scripts/ci-checks.py --base main
+```
+
+Without `--head`, the selector includes committed, staged, unstaged, and
+untracked changes. For `docs_only=true`, run
+`make lint-files test-tooling docs`. Otherwise, run the full sequence above.
+Dependency files, build configuration, screenshot baselines, unknown files,
+and empty or unavailable comparisons select full checks.
 
 To rescan a release, put its source checkout at the release commit in
 `build/release-source` and its published binary archive in

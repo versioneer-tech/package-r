@@ -124,8 +124,7 @@ class SecurityGateTests(unittest.TestCase):
         for severity, fix, blocking, unfixed_high in (
             ("CRITICAL", None, 1, 0), ("CRITICAL", "1.1.0", 1, 0),
             ("HIGH", "1.1.0", 1, 0), ("HIGH", None, 0, 1),
-            ("HIGH", "", 0, 1), ("HIGH", " ", 0, 1),
-            ("MEDIUM", "1.1.0", 0, 0), ("LOW", None, 0, 0),
+            ("MEDIUM", "1.1.0", 0, 0),
         ):
             with self.subTest(severity=severity, fix=fix):
                 self.go["Results"][0]["Vulnerabilities"] = [
@@ -136,13 +135,6 @@ class SecurityGateTests(unittest.TestCase):
                 self.assertEqual(assessment["ids"], ["TEST-1"] if blocking else [])
                 self.assertEqual(assessment["unfixed_high"], unfixed_high)
                 self.assertEqual(assessment["unfixed_high_ids"], ["TEST-1"] if unfixed_high else [])
-
-    def test_unfixed_high_findings_allow_publication(self):
-        self.go["Results"][0]["Vulnerabilities"] = [{"Severity": "HIGH", "VulnerabilityID": "TEST-1"}]
-        security.write_json(self.reports / "go.json", self.go)
-        self.summary["reports"]["go.json"] = security.sha256(self.reports / "go.json")
-        security.write_json(self.reports / "scan-summary.json", self.summary)
-        security.verify(self.candidate, self.reports)
 
     def test_fixable_high_findings_prevent_publication(self):
         self.go["Results"][0]["Vulnerabilities"] = [

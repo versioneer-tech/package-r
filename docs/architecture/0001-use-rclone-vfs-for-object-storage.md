@@ -19,10 +19,10 @@ packageR embeds rclone in the Go process.
 
 - rclone creates an S3 backend at the service root or one bucket
 - The service root uses S3 discovery by default
-- An explicit bucket catalog creates a synthetic service root without S3
-  bucket discovery and routes each bucket to its own backend
-- An adapter exposes rclone VFS as the inherited `afero.Fs` interface
-- The VFS instances use the same process storage configuration
+- A configured bucket list supplies the top-level directories without S3
+  bucket discovery; each bucket has its own backend
+- An adapter gives the application access to rclone VFS through `afero.Fs`
+- All VFS instances use the server's storage configuration
 - A user scope selects a path below the backend root
 - Object operations use the scoped VFS
 - Presigned GET URLs use `PublicLink` from the same rclone backend
@@ -30,21 +30,22 @@ packageR embeds rclone in the Go process.
 - Integration tests use `rclone serve s3` with temporary data
 - DuckDB reads checked catalog files from short-lived signed URLs
 
-Bootstrap configuration rebuilds the packageR database. The database is a
-disposable runtime cache. `PACKAGE_R_ROOT=/` exposes discovered buckets, or
-the buckets in `PACKAGE_R_BUCKETS` when that value is set. A bucket name in
-`PACKAGE_R_ROOT` exposes that bucket as `/` and requires an empty bucket
-catalog. User records do not set the storage root, endpoint, credentials, or
-bucket catalog. Public shares are set before startup.
+The deployment creates the database from configuration before packageR starts.
+It can recreate the database when the process is replaced. `PACKAGE_R_ROOT=/`
+shows discovered buckets, or the buckets in `PACKAGE_R_BUCKETS` when set.
+A bucket name in `PACKAGE_R_ROOT` shows that bucket as `/` and requires an
+empty `PACKAGE_R_BUCKETS`. User records cannot change the server's root,
+endpoint, credentials, or bucket list. Public shares are set before startup.
 
-One S3 identity is used by each packageR process. Its storage policy sets the
-maximum access. User scopes, path rules, and action permissions can reduce
-this access. User-directory mode hides sibling homes and protects their shared
-parent. It does not select different storage credentials.
+Each packageR process uses one S3 identity for all users. Its storage policy
+controls which buckets and objects packageR can access. User scopes, path
+rules, and permissions further limit what each user can do. User-directory
+mode hides other users' homes and protects their parent directory. All users
+still use the same storage identity.
 
 ## Consequences
 
-File operations and presigned URLs share one configuration and path model.
+File operations and presigned URLs use the same credentials and scoped paths.
 The deployment does not need a privileged mount. The browser can use direct
 object URLs for formats such as COG.
 
